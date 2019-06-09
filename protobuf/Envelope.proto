@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: FILE
+  package_name: "pl.agh.edu.agh.wmazur.avs.model.protobuf"
+  flat_package: true
+};
+
+message Envelope {
+    oneof message{
+        Acknowledged acknowledged = 1;
+        SimulationEvent simulationEvent = 2;
+        ConnectivityEvents connectivityEvents = 3;
+    }
+
+    message Acknowledged{}
+}
+
+message ConnectivityEvents {
+    EventType type = 1;
+    string targetId = 2;
+    uint32 activeClients = 3;
+
+     enum EventType{
+        ClientJoined = 0;
+        ClientLeaved = 1;
+     }
+}
+
+message SimulationEvent {
+    oneof command{
+        CreateEntity create = 1;
+        DeleteEntity delete = 2;
+        EditEntity edit = 3;
+    }
+}
+
+message CreateEntity {
+
+}
+
+message DeleteEntity {
+
+}
+
+message EditEntity {
+
+}
+

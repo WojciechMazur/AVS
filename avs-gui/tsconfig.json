@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "removeComments": true,
+    "sourceMap": true,
+    "strict": true,
+    "alwaysStrict": false,
+    "outDir": "./dist/out-tsc"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "types": [
+    "babylonjs",
+    "babylonjs-gui",
+    "babylonjs-materials",
+    "babylonjs-inspector",
+    "babylonjs-loaders"
+  ]
+}
