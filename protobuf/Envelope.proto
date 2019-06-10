@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
+import "Vehicle.proto";
 
 option (scalapb.options) = {
   scope: FILE
@@ -13,6 +14,7 @@ message Envelope {
         Acknowledged acknowledged = 1;
         SimulationEvent simulationEvent = 2;
         ConnectivityEvents connectivityEvents = 3;
+        StateRequest  stateRequest = 4;
     }
 
     message Acknowledged{}
@@ -34,6 +36,21 @@ message SimulationEvent {
         CreateEntity create = 1;
         DeleteEntity delete = 2;
         EditEntity edit = 3;
+    }
+}
+
+message StateRequest{
+    uint64 fromTimestamp = 1;
+    repeated string forEntities = 2;
+}
+
+message StateUpdate{
+    UpdateType updateType = 1;
+    repeated Vehicle vehicles = 2;
+
+    enum UpdateType{
+        full = 0;
+        delta = 1;
     }
 }
 

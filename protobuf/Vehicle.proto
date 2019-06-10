@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: FILE
+  package_name: "pl.agh.edu.agh.wmazur.avs.model.protobuf"
+  flat_package: true
+};
+
+
+message Vehicle{
+    string id = 1;
+    Position position = 2;
+    Position targetPosition = 3;
+    float acceleration = 4;
+    uint32 speed = 5;
+
+}
+
+message Position{
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}

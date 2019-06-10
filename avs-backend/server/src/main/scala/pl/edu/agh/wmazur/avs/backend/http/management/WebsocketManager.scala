@@ -23,13 +23,8 @@ object WebsocketManager {
     Behaviors.receive[Protocol] { (context, message) =>
       message match {
         case ClientJoined(connectionId, actorRef) =>
-//          val connectionManager =
-//            context.spawn(
-//              new ConnectionManager(connectionId, context.self).behaviour,
-//              connectionId)
           context.watch(actorRef)
           context.log.debug(s"Connection $connectionId established")
-//          replyTo ! connectionId
           supervise(connections + (connectionId -> actorRef))
 
         case ClientLeaved(connectionId) =>
