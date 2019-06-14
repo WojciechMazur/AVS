@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: FILE
+  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model.common"
+  flat_package: true
+};
+
+message Position{
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}

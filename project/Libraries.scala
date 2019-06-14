@@ -2,11 +2,12 @@ import sbt._
 
 object Libraries {
   object Versions {
-    lazy val scala = "2.12.8"
+    val scala = "2.12.8"
 
-    lazy val akka = "2.5.23"
-    lazy val akkaHttp = "10.1.8"
-    lazy val scalaTest = "3.0.5"
+    val quickLens = "1.4.12"
+    val akka = "2.5.23"
+    val akkaHttp = "10.1.8"
+    val scalaTest = "3.0.5"
   }
 
   import Versions._
@@ -42,6 +43,7 @@ object Libraries {
   )
 
   lazy val common: Seq[ModuleID] = Seq(
+    "com.softwaremill.quicklens" %% "quicklens" % Versions.quickLens,
     "org.scalactic" %% "scalactic" % Versions.scalaTest,
     "org.scalatest" %% "scalatest" % Versions.scalaTest % "test"
   )

@@ -1,20 +1,19 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
-import "Vehicle.proto";
-
+import "StateUpdate.proto";
 option (scalapb.options) = {
   scope: FILE
-  package_name: "pl.agh.edu.agh.wmazur.avs.model.protobuf"
+  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model"
   flat_package: true
 };
 
 message Envelope {
     oneof message{
         Acknowledged acknowledged = 1;
-        SimulationEvent simulationEvent = 2;
+        StateModificationEvent simulationEvent = 2;
         ConnectivityEvents connectivityEvents = 3;
-        StateRequest  stateRequest = 4;
+        StateUpdate stateUpdate = 4;
     }
 
     message Acknowledged{}
@@ -31,7 +30,7 @@ message ConnectivityEvents {
      }
 }
 
-message SimulationEvent {
+message StateModificationEvent {
     oneof command{
         CreateEntity create = 1;
         DeleteEntity delete = 2;
@@ -39,20 +38,6 @@ message SimulationEvent {
     }
 }
 
-message StateRequest{
-    uint64 fromTimestamp = 1;
-    repeated string forEntities = 2;
-}
-
-message StateUpdate{
-    UpdateType updateType = 1;
-    repeated Vehicle vehicles = 2;
-
-    enum UpdateType{
-        full = 0;
-        delta = 1;
-    }
-}
 
 message CreateEntity {
 

@@ -9,13 +9,19 @@ import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Sink}
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
 import akka.util.ByteString
-import pl.agh.edu.agh.wmazur.avs.model.protobuf.{
+import protobuf.pl.agh.edu.agh.wmazur.avs.model.{
   ConnectivityEvents,
   Envelope,
-  SimulationEvent
+  StateModificationEvent
 }
-import pl.edu.agh.wmazur.avs.backend.http.codec.WebsocketEventsEncoder
-import pl.edu.agh.wmazur.avs.backend.http.flows.ProtobufCodec
+import pl.edu.agh.wmazur.avs.backend.http.codec.{
+  SimulationStateEncoder,
+  WebsocketMessageEncoder
+}
+import pl.edu.agh.wmazur.avs.backend.http.flows.{
+  ProtobufCodec,
+  SimulationEngineProxy
+}
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
   ClientJoined,
@@ -23,17 +29,10 @@ import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
   ConnectionId,
   WebsocketFailure
 }
+import pl.edu.agh.wmazur.avs.backend.http.simulation.SimulationEngine
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-/*
-TODO Komunikacja pomiędzy WebsocketManager, a Simulation Manager w oparciu proxy w postaci aktora+
-
-ws ~> [StateModificationEvent] ~> simulationProxyActor
-simulation ~> new SimulationState ~> wsManager ~> dispatch to each ws
-
- */
 
 class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
     implicit actorSystem: ActorSystem[_],
@@ -57,10 +56,6 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
             import GraphDSL.Implicits._
             import WebsocketRoute._
 
-            // Message collectors
-            val entityCommands = builder.add(collectEntityCommands)
-            val connectivityEvents = builder.add(collectConnectivityEvents)
-
             // Events created at opening / closing connection
             val connectionOpenedMessages = builder.materializedValue.map(ref =>
               ClientJoined(connectionId, ref))
@@ -69,13 +64,6 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
                                  ClientLeaved(connectionId),
                                  err => WebsocketFailure(err))
 
-            // Concrete events coders
-            val wsEventsEncoder = builder.add(WebsocketEventsEncoder.flow)
-            val wsEventsDecoder = builder.add {
-              Flow[ConnectivityEvents]
-                .filter(_.`type`.isUnrecognized)
-                .map(e => ClientLeaved(e.targetId))
-            }
             // Utility hubs
             val connectivityEventsMerge =
               builder.add(Merge[WebsocketManager.Protocol](2))
@@ -83,14 +71,14 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
             val dispatchDecodedMsg = builder.add(Broadcast[Envelope.Message](2))
 
             //Flow blueprint
-            dispatchDecodedMsg ~> entityCommands ~> Sink.ignore
-            dispatchDecodedMsg ~> connectivityEvents ~> wsEventsDecoder ~> connectivityEventsMerge
+            dispatchDecodedMsg ~> collectEntityCommands
+            dispatchDecodedMsg ~> collectConnectivityEvents ~> connectivityEventsMerge
             connectionOpenedMessages ~> connectivityEventsMerge
             connectivityEventsMerge ~> websocketManagerSink
 
             //Events sent from WebsocketManager Actor
-            websocketEvents ~> wsEventsEncoder ~> protobuffMessagesMerge
-
+            websocketEvents ~> WebsocketMessageEncoder.flow ~> protobuffMessagesMerge
+            SimulationEngine.simulationStateSource ~> SimulationStateEncoder.flow ~> protobuffMessagesMerge
             FlowShape(dispatchDecodedMsg.in, protobuffMessagesMerge.out)
         }
       }
@@ -112,19 +100,19 @@ object WebsocketRoute {
     new WebsocketRoute(wsManagerRef)
   }
 
-  lazy val eventCollectors: Seq[Flow[Envelope.Message, _, NotUsed]] =
-    Seq(collectConnectivityEvents, collectEntityCommands)
-
   val collectConnectivityEvents
-    : Flow[Envelope.Message, ConnectivityEvents, NotUsed] =
+    : Flow[Envelope.Message, WebsocketManager.Protocol, NotUsed] =
     Flow[Envelope.Message]
       .collect {
         case Envelope.Message.ConnectivityEvents(event) => event
       }
+      .filter(_.`type`.isUnrecognized)
+      .map(e => ClientLeaved(e.targetId))
 
-  val collectEntityCommands: Flow[Envelope.Message, SimulationEvent, NotUsed] =
+  val collectEntityCommands: Sink[Envelope.Message, NotUsed] =
     Flow[Envelope.Message]
       .collect {
         case Envelope.Message.SimulationEvent(event) => event
       }
+      .to(SimulationEngineProxy.clientCommandsSink)
 }

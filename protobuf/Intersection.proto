@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+import "Common.proto";
+
+option (scalapb.options) = {
+  scope: FILE
+  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model.intersection"
+  flat_package: true
+};
+
+
+message Intersection{
+
+}
