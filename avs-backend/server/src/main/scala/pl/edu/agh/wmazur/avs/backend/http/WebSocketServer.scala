@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContextExecutor
 object WebSocketServer extends App {
 
   implicit val systemGuardian: Behavior[akka.NotUsed] = Behaviors.setup { ctx =>
-    val manager = ctx.spawn(WebsocketManager.supervise(), "ws-manager")
+    val manager = ctx.spawn(WebsocketManager.init, "ws-manager")
     Http().bindAndHandle(new WebsocketRoute(manager).route, "localhost", 8081)
 
     Behaviors.receiveSignal {

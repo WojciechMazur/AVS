@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "scalapb/scalapb.proto";
 import "StateUpdate.proto";
+
 option (scalapb.options) = {
   scope: FILE
   package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model"
@@ -14,6 +15,7 @@ message Envelope {
         StateModificationEvent simulationEvent = 2;
         ConnectivityEvents connectivityEvents = 3;
         StateUpdate stateUpdate = 4;
+        StateRequest stateRequest = 5;
     }
 
     message Acknowledged{}
@@ -38,6 +40,9 @@ message StateModificationEvent {
     }
 }
 
+message StateRequest{
+    StateUpdate.UpdateType type = 1;
+}
 
 message CreateEntity {
 

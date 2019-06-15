@@ -15,7 +15,7 @@ trait MessageEncoder[-In, OutWrapper <: Envelope.Message] {
   final implicit def outToEnvelopeMessage(out: Out): Envelope.Message =
     toWrapper(out)
 
-  final def flow: Flow[In, Envelope.Message, NotUsed] =
+  final val flow: Flow[In, Envelope.Message, NotUsed] =
     Flow[In]
       .collect(decodingFunction)
       .map(outToEnvelopeMessage)

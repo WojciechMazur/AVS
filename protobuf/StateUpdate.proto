@@ -16,12 +16,30 @@ option (scalapb.options) = {
 message StateUpdate{
     UpdateType updateType = 1;
     uint64 timestamp = 2;
-    repeated Vehicle vehicles = 3;
-    repeated Road roads = 4;
-    repeated Intersection intersections = 5;
-
+    Created created = 3;
+    Updated updated = 4;
+    Deleted deleted = 5;
 
     UpdateMeta meta = 15;
+
+    message Created{
+        repeated Vehicle vehicles = 1;
+        repeated Road roads = 2;
+        repeated Intersection intersections = 3;
+    }
+
+    message Updated{
+        repeated Vehicle vehicles = 3;
+        repeated Road roads = 4;
+        repeated Intersection intersections = 5;
+    }
+
+    message Deleted{
+        repeated string vehicles = 3;
+        repeated string roads = 4;
+        repeated string intersections = 5;
+    }
+
     enum UpdateType{
         Delta = 0;
         Full = 1;

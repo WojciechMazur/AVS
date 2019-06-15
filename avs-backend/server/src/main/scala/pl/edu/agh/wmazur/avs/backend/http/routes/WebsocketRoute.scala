@@ -2,25 +2,32 @@ package pl.edu.agh.wmazur.avs.backend.http.routes
 
 import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives.{handleWebSocketMessages, path, _}
 import akka.http.scaladsl.server.Route
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Sink}
+import akka.stream.scaladsl.{
+  Broadcast,
+  Flow,
+  GraphDSL,
+  Merge,
+  Sink,
+  Source,
+  ZipWith
+}
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
-import akka.util.ByteString
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.{
-  ConnectivityEvents,
-  Envelope,
-  StateModificationEvent
+import pl.agh.edu.agh.wmazur.avs.model.entity.utils.{
+  SimulationStateDelta,
+  SimulationStateUpdate
 }
 import pl.edu.agh.wmazur.avs.backend.http.codec.{
-  SimulationStateEncoder,
+  SimulationStateUpdateEncoder,
   WebsocketMessageEncoder
 }
 import pl.edu.agh.wmazur.avs.backend.http.flows.{
   ProtobufCodec,
-  SimulationEngineProxy
+  SimulationEngineProxy,
+  SimulationStateDeltaParser,
+  StateUpdateDecider
 }
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
@@ -30,9 +37,10 @@ import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
   WebsocketFailure
 }
 import pl.edu.agh.wmazur.avs.backend.http.simulation.SimulationEngine
+import protobuf.pl.agh.edu.agh.wmazur.avs.model.{Envelope, StateRequest}
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
     implicit actorSystem: ActorSystem[_],
@@ -54,6 +62,7 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
         GraphDSL.create(websocketEventsSource) {
           implicit builder => websocketEvents =>
             import GraphDSL.Implicits._
+            import StateUpdateDecider._
             import WebsocketRoute._
 
             // Events created at opening / closing connection
@@ -68,9 +77,19 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
             val connectivityEventsMerge =
               builder.add(Merge[WebsocketManager.Protocol](2))
             val protobuffMessagesMerge = builder.add(Merge[Envelope.Message](2))
-            val dispatchDecodedMsg = builder.add(Broadcast[Envelope.Message](2))
+            val dispatchDecodedMsg = builder.add(Broadcast[Envelope.Message](3))
+
+            val stateUpdateDecider = builder.add {
+              ZipWith[StateRequest,
+                      SimulationStateDelta,
+                      Future[SimulationStateUpdate]](decider)
+            }
+            val stateUpdate = builder.add {
+              Flow[Future[SimulationStateUpdate]].mapAsync(1)(identity)
+            }
 
             //Flow blueprint
+            dispatchDecodedMsg ~> collectStateRequests ~> stateRequestsMerger ~> stateUpdateDecider.in0
             dispatchDecodedMsg ~> collectEntityCommands
             dispatchDecodedMsg ~> collectConnectivityEvents ~> connectivityEventsMerge
             connectionOpenedMessages ~> connectivityEventsMerge
@@ -78,7 +97,10 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
 
             //Events sent from WebsocketManager Actor
             websocketEvents ~> WebsocketMessageEncoder.flow ~> protobuffMessagesMerge
-            SimulationEngine.simulationStateSource ~> SimulationStateEncoder.flow ~> protobuffMessagesMerge
+
+            SimulationEngineProxy.simulationStatePublisher ~> SimulationStateDeltaParser.flow ~> stateUpdateDecider.in1
+            stateUpdateDecider.out ~> stateUpdate ~> SimulationStateUpdateEncoder.flow ~> protobuffMessagesMerge
+
             FlowShape(dispatchDecodedMsg.in, protobuffMessagesMerge.out)
         }
       }
@@ -93,8 +115,7 @@ object WebsocketRoute {
   def apply()(implicit actorSystem: ActorSystem[_],
               materializer: ActorMaterializer): WebsocketRoute = {
     val wsManagerRef = Await.result(
-      actorSystem.systemActorOf(WebsocketManager.supervise(), "wsManager")(
-        5.seconds),
+      actorSystem.systemActorOf(WebsocketManager.init, "wsManager")(5.seconds),
       Duration.Inf
     )
     new WebsocketRoute(wsManagerRef)
@@ -115,4 +136,10 @@ object WebsocketRoute {
         case Envelope.Message.SimulationEvent(event) => event
       }
       .to(SimulationEngineProxy.clientCommandsSink)
+
+  val collectStateRequests: Flow[Envelope.Message, StateRequest, NotUsed] =
+    Flow[Envelope.Message]
+      .collect {
+        case Envelope.Message.StateRequest(v) => v
+      }
 }

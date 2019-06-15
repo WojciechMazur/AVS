@@ -35,7 +35,7 @@ case class ProtobufCodec(
       .map(ByteString.fromArray)
       .map(BinaryMessage.apply)
 
-  def flow: Flow[Message, Message, NotUsed] =
+  val flow: Flow[Message, Message, NotUsed] =
     Flow[Message]
       .via(messageDecoder)
       .via(innerFlow)

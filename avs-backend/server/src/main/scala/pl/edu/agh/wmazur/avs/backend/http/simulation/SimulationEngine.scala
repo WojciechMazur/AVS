@@ -5,6 +5,7 @@ import akka.stream.SourceShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, ZipWith}
 import com.softwaremill.quicklens._
 import pl.agh.edu.agh.wmazur.avs.model.SimulationState
+import pl.agh.edu.agh.wmazur.avs.model.entity.vehicle.DefaultVehicle
 import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationEngineProxy
 import protobuf.pl.agh.edu.agh.wmazur.avs.model.StateModificationEvent
 
@@ -18,10 +19,20 @@ object SimulationEngine {
 
   val stateProcessingFlow: Flow[SimulationState, SimulationState, NotUsed] =
     Flow[SimulationState]
-//      .throttle(1, 1.seconds)
       .map { state =>
-        println(state)
-        state
+        val cars = state.vehicles.collect {
+          case (id, v: DefaultVehicle) =>
+            val deltaPos = v.speed * state.tickDelta.toUnit(SECONDS)
+            val updated = v
+              .modify(_.position)
+              .using(
+                pos =>
+                  pos
+                    .withX(pos.x + deltaPos.toFloat)
+                    .withZ(pos.z + deltaPos.toFloat))
+            id -> updated
+        }
+        state.copy(vehicles = cars)
       }
 
   val recoverOrInitState: Source[SimulationState, NotUsed] =
@@ -39,16 +50,12 @@ object SimulationEngine {
       Iterator.single(elem.toList) ++ Iterator.continually(List.empty)
     }
 
-  def simulationStateSource: Source[SimulationState, NotUsed] =
+  val simulationStateSource: Source[SimulationState, NotUsed] =
     Source.fromGraph {
       GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
-
         val simulationProcessor =
           builder.add(stateProcessingFlow.prepend(recoverOrInitState))
-
-        val simulationStateDispatch =
-          builder.add(Broadcast[SimulationState](2))
 
         val stateZipper = builder.add(
           ZipWith[TickSource.TickDelta,
@@ -63,13 +70,15 @@ object SimulationEngine {
                 .using(_ + delta.toMillis)
           })
 
+        val stateBroadcast = builder.add(Broadcast[SimulationState](2))
+
         stateZipper.in0 <~ TickSource.source
         stateZipper.in1 <~ groupedStateExternalChanges
-        stateZipper.in2 <~ simulationStateDispatch
+        stateZipper.in2 <~ stateBroadcast
 
-        stateZipper.out ~> simulationProcessor ~> simulationStateDispatch
+        stateZipper.out ~> simulationProcessor ~> stateBroadcast
 
-        SourceShape(simulationStateDispatch.outlet)
+        SourceShape(stateBroadcast.outlet)
       }
     }
 
