@@ -20,7 +20,7 @@ object Settings {
       scalapb
         .gen() -> (scalaSource in Compile).value,
     ),
-//    PB.deleteTargetDirectory in Compile := false,
+    PB.deleteTargetDirectory in Compile := false,
     libraryDependencies += "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
   )
 

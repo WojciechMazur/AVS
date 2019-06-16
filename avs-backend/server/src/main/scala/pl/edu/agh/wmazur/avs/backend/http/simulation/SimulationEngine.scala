@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur.avs.backend.http.simulation
 import akka.NotUsed
 import akka.stream.SourceShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, ZipWith}
+import com.github.jpbetz.subspace.Vector3
 import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.DefaultVehicle
 import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationEngineProxy
@@ -25,11 +26,7 @@ object SimulationEngine {
             val deltaPos = v.speed * state.tickDelta.toUnit(SECONDS)
             val updated = v
               .modify(_.position)
-              .using(
-                pos =>
-                  pos
-                    .withX(pos.x + deltaPos.toFloat)
-                    .withZ(pos.z + deltaPos.toFloat))
+              .using(_ + Vector3(deltaPos.toFloat, 0, deltaPos.toFloat))
             id -> updated
         }
         state.copy(vehicles = cars)

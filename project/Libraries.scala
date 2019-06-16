@@ -4,10 +4,11 @@ object Libraries {
   object Versions {
     val scala = "2.12.8"
 
-    val quickLens = "1.4.12"
     val akka = "2.5.23"
     val akkaHttp = "10.1.8"
+    val chimney = "0.3.2"
     val scalaTest = "3.0.5"
+    val quickLens = "1.4.12"
   }
 
   import Versions._
@@ -38,8 +39,13 @@ object Libraries {
     "com.typesafe.akka" %% "akka-persistence" % akka
   )
 
+  val math: Seq[ModuleID] = Seq(
+    "com.github.jpbetz" % "subspace" % "0.1.0"
+  )
+
   lazy val marshalling: Seq[ModuleID] = Seq(
-    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion,
+    "io.scalaland" %% "chimney" % Versions.chimney
   )
 
   lazy val common: Seq[ModuleID] = Seq(

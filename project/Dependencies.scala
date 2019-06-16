@@ -2,13 +2,6 @@ import sbt._
 import Libraries._
 
 object Dependencies {
-//  lazy val core: Seq[ModuleID] = Libraries.clean(
-//    libGdxCore,
-//  )
-//
-//  lazy val desktop: Seq[ModuleID] = Libraries.clean(
-//    libGdxDesktop
-//  )
 
   lazy val server: Seq[ModuleID] = Libraries.clean(
     akkaActors,
@@ -17,6 +10,6 @@ object Dependencies {
     akkaHttp
   )
 
-  lazy val model: Seq[ModuleID] = Libraries.clean(marshalling, akkaActors)
+  lazy val model: Seq[ModuleID] = Libraries.clean(marshalling, math, akkaActors)
 
 }

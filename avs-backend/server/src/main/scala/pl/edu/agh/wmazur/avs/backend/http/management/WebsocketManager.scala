@@ -27,23 +27,25 @@ object WebsocketManager {
 
   private def supervise(
       connections: Connections = Map.empty): Behaviors.Receive[Protocol] =
-    Behaviors.receive[Protocol] { (context, message) =>
-      message match {
-        case ClientJoined(connectionId, actorRef) =>
-          context.watch(actorRef)
-          context.log.debug(s"Connection $connectionId established")
-          supervise(connections + (connectionId -> actorRef))
+    Behaviors.receivePartial[Protocol] {
+      case (context, message) =>
+        message match {
+          case ClientJoined(connectionId, actorRef) =>
+            context.watch(actorRef)
+            context.log.debug(s"Connection $connectionId established")
+            supervise(connections + (connectionId -> actorRef))
 
-        case ClientLeaved(connectionId) =>
-          val connectionManager = connections(connectionId)
-          context.unwatch(connectionManager)
-          context.log.debug(s"Connection $connectionId terminated")
-          supervise(connections - connectionId)
+          case ClientLeaved(connectionId) =>
+            val connectionManager = connections(connectionId)
+            context.unwatch(connectionManager)
+            context.log.debug(s"Connection $connectionId terminated")
+            supervise(connections - connectionId)
 
-        case Dispatch(msg) =>
-          connections.foreach { case (_, ref) => ref ! msg }
-          Behaviors.same
-      }
+          case Dispatch(msg) =>
+            connections.foreach { case (_, ref) => ref ! msg }
+            Behaviors.same
+          case _ => Behaviors.same
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package pl.edu.agh.wmazur.avs.model.state
 
+import com.github.jpbetz.subspace.Vector3
 import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{DefaultVehicle, Vehicle}
@@ -8,7 +9,6 @@ import pl.edu.agh.wmazur.avs.model.state.SimulationState.{
   RoadId,
   VehicleId
 }
-import protobuf.pl.edu.agh.wmazur.avs.model.common.Vector3
 
 import scala.collection.immutable.{HashMap, Map}
 import scala.concurrent.duration._
@@ -33,8 +33,8 @@ object SimulationState {
                     roads = HashMap.empty,
                     intersections = HashMap.empty)
       .copy(
-        vehicles = Map("a1" -> DefaultVehicle("a1", Vector3(), 1.0f),
-                       "a2" -> DefaultVehicle("a2", Vector3(x = 1f), 2.0f),
-                       "a3" -> DefaultVehicle("a3", Vector3(x = 2f), 3.0f))
+        vehicles = Map("a1" -> DefaultVehicle("a1", Vector3.fill(0), 1.0f),
+                       "a2" -> DefaultVehicle("a2", Vector3(1f, 0, 0), 2.0f),
+                       "a3" -> DefaultVehicle("a3", Vector3(2f, 0, 0), 3.0f))
       )
 }

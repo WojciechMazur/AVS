@@ -40,7 +40,8 @@ export class CarsManager extends ISystemManager{
 			let position = vehicle.currentPosition
 	
 			if (entity != null && position != null) {
-				entity.mesh.position.set(<number>position.x, <number>position.y, <number>position.z)
+				entity.mesh.lookAt(new Vector3(position.x!, position.y!, position.z!))
+				entity.mesh.position.set(position.x!, position.y!, position.z!)
 			}
 	
 			this.entities.set(id, entity)

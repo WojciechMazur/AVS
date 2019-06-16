@@ -1,6 +1,6 @@
 package pl.edu.agh.wmazur.avs.model.entity
 
-import protobuf.pl.edu.agh.wmazur.avs.model.common.Vector3
+import com.github.jpbetz.subspace.Vector3
 
 trait Entity {
   type EntityId = String
