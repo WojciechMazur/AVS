@@ -3,10 +3,10 @@ package pl.edu.agh.wmazur.avs.backend.http.flows
 import akka.NotUsed
 import akka.stream.scaladsl.{BroadcastHub, Keep, MergeHub, Sink, Source}
 import akka.stream.typed.scaladsl.ActorMaterializer
-import pl.agh.edu.agh.wmazur.avs.model.SimulationState
 import pl.edu.agh.wmazur.avs.backend.http.WebSocketServer
 import pl.edu.agh.wmazur.avs.backend.http.simulation.SimulationEngine
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.StateModificationEvent
+import pl.edu.agh.wmazur.avs.model.state.SimulationState
+import protobuf.pl.edu.agh.wmazur.avs.model.StateModificationEvent
 
 object SimulationEngineProxy {
   private implicit lazy val actorMaterialier: ActorMaterializer =

@@ -5,7 +5,7 @@ import "Common.proto";
 
 option (scalapb.options) = {
   scope: FILE
-  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model.road"
+  package_name: "protobuf.pl.edu.agh.wmazur.avs.model.road"
   flat_package: true
 };
 

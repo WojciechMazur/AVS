@@ -1,6 +1,6 @@
-package pl.agh.edu.agh.wmazur.avs.model.entity.road
+package pl.edu.agh.wmazur.avs.model.entity.road
 
-import pl.agh.edu.agh.wmazur.avs.model.entity.utils.DeltaOps
+import pl.edu.agh.wmazur.avs.model.entity.utils.DeltaOps
 
 trait Road extends DeltaOps[Road] {
   //TODO implementacja

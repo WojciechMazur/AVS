@@ -5,7 +5,7 @@ import "StateUpdate.proto";
 
 option (scalapb.options) = {
   scope: FILE
-  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model"
+  package_name: "protobuf.pl.edu.agh.wmazur.avs.model"
   flat_package: true
 };
 

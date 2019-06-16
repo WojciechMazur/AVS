@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.util.ByteString
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.Envelope
+import protobuf.pl.edu.agh.wmazur.avs.model.Envelope
 
 import scala.concurrent.duration._
 

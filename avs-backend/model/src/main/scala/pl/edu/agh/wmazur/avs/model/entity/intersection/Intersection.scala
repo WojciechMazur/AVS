@@ -1,6 +1,6 @@
-package pl.agh.edu.agh.wmazur.avs.model.entity.intersection
+package pl.edu.agh.wmazur.avs.model.entity.intersection
 
-import pl.agh.edu.agh.wmazur.avs.model.entity.utils.DeltaOps
+import pl.edu.agh.wmazur.avs.model.entity.utils.DeltaOps
 
 trait Intersection extends DeltaOps[Intersection] {
   //TODO implementacja

@@ -4,10 +4,10 @@ import akka.NotUsed
 import akka.stream.SourceShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, ZipWith}
 import com.softwaremill.quicklens._
-import pl.agh.edu.agh.wmazur.avs.model.SimulationState
-import pl.agh.edu.agh.wmazur.avs.model.entity.vehicle.DefaultVehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.DefaultVehicle
 import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationEngineProxy
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.StateModificationEvent
+import pl.edu.agh.wmazur.avs.model.state.SimulationState
+import protobuf.pl.edu.agh.wmazur.avs.model.StateModificationEvent
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._

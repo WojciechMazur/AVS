@@ -1,19 +1,17 @@
 package pl.edu.agh.wmazur.avs.backend.http.codec
 
-import pl.agh.edu.agh.wmazur.avs.model.entity.utils.SimulationStateUpdate
-import pl.agh.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.Envelope.Message
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.StateUpdate
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.StateUpdate.{
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.state.SimulationStateUpdate
+import protobuf.pl.edu.agh.wmazur.avs.model.Envelope.Message
+import protobuf.pl.edu.agh.wmazur.avs.model.StateUpdate
+import protobuf.pl.edu.agh.wmazur.avs.model.StateUpdate.{
   Created,
   Deleted,
   UpdateMeta,
   UpdateType,
   Updated
 }
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.vehicle.{
-  Vehicle => ProtoVehicle
-}
+import protobuf.pl.edu.agh.wmazur.avs.model.vehicle.{Vehicle => ProtoVehicle}
 
 import scala.concurrent.duration._
 

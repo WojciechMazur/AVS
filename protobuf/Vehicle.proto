@@ -5,15 +5,15 @@ import "Common.proto";
 
 option (scalapb.options) = {
   scope: FILE
-  package_name: "protobuf.pl.agh.edu.agh.wmazur.avs.model.vehicle"
+  package_name: "protobuf.pl.edu.agh.wmazur.avs.model.vehicle"
   flat_package: true
 };
 
 
 message Vehicle{
     string id = 1;
-    Position currentPosition = 2;
-    Position targetPosition = 3;
+   Vector3 currentPosition = 2;
+   Vector3 targetPosition = 3;
     float acceleration = 4;
     float speed = 5;
 

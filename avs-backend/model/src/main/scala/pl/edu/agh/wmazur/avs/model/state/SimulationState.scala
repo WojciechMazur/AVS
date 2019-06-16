@@ -1,9 +1,14 @@
-package pl.agh.edu.agh.wmazur.avs.model
-import pl.agh.edu.agh.wmazur.avs.model.SimulationState._
-import pl.agh.edu.agh.wmazur.avs.model.entity.intersection.Intersection
-import pl.agh.edu.agh.wmazur.avs.model.entity.road.Road
-import pl.agh.edu.agh.wmazur.avs.model.entity.vehicle.{DefaultVehicle, Vehicle}
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.common.Position
+package pl.edu.agh.wmazur.avs.model.state
+
+import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
+import pl.edu.agh.wmazur.avs.model.entity.road.Road
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{DefaultVehicle, Vehicle}
+import pl.edu.agh.wmazur.avs.model.state.SimulationState.{
+  IntersectionId,
+  RoadId,
+  VehicleId
+}
+import protobuf.pl.edu.agh.wmazur.avs.model.common.Vector3
 
 import scala.collection.immutable.{HashMap, Map}
 import scala.concurrent.duration._
@@ -28,8 +33,8 @@ object SimulationState {
                     roads = HashMap.empty,
                     intersections = HashMap.empty)
       .copy(
-        vehicles = Map("a1" -> DefaultVehicle("a1", Position(), 1.0f),
-                       "a2" -> DefaultVehicle("a2", Position(x = 1f), 2.0f),
-                       "a3" -> DefaultVehicle("a3", Position(x = 2f), 3.0f))
+        vehicles = Map("a1" -> DefaultVehicle("a1", Vector3(), 1.0f),
+                       "a2" -> DefaultVehicle("a2", Vector3(x = 1f), 2.0f),
+                       "a3" -> DefaultVehicle("a3", Vector3(x = 2f), 3.0f))
       )
 }

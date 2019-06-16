@@ -6,13 +6,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.FlowShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, Zip}
 import akka.stream.typed.scaladsl.ActorSink
-import pl.agh.edu.agh.wmazur.avs.model.SimulationState
-import pl.agh.edu.agh.wmazur.avs.model.entity.utils.{
+import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationStateDeltaParser.LastStateProvider.UpdateState
+import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager
+import pl.edu.agh.wmazur.avs.model.state.{
+  SimulationState,
   SimulationStateDelta,
   SimulationStateUpdate
 }
-import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationStateDeltaParser.LastStateProvider.UpdateState
-import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager
 
 object SimulationStateDeltaParser {
   val flow: Flow[SimulationState, SimulationStateDelta, NotUsed] =
@@ -61,7 +61,7 @@ object SimulationStateDeltaParser {
 
     def persist(state: SimulationState = SimulationState.init)
       : Behaviors.Receive[Protocol] =
-      Behaviors.receiveMessage[Protocol] {
+      Behaviors.receiveMessagePartial[Protocol] {
         case UpdateState(updatedState) =>
           persist(updatedState)
         case GetState(ref) =>

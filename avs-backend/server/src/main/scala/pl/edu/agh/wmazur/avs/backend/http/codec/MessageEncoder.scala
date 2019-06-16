@@ -2,7 +2,7 @@ package pl.edu.agh.wmazur.avs.backend.http.codec
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.Envelope
+import protobuf.pl.edu.agh.wmazur.avs.model.Envelope
 
 import scala.language.implicitConversions
 

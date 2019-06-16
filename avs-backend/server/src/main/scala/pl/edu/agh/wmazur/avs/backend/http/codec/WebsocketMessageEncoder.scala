@@ -3,9 +3,9 @@ package pl.edu.agh.wmazur.avs.backend.http.codec
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.ConnectivityEvents.EventType
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.{ConnectivityEvents, Envelope}
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.Envelope.Message
+import protobuf.pl.edu.agh.wmazur.avs.model.ConnectivityEvents.EventType
+import protobuf.pl.edu.agh.wmazur.avs.model.{ConnectivityEvents, Envelope}
+import protobuf.pl.edu.agh.wmazur.avs.model.Envelope.Message
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager
 import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
   ClientJoined,

@@ -4,21 +4,9 @@ import akka.NotUsed
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives.{handleWebSocketMessages, path, _}
 import akka.http.scaladsl.server.Route
-import akka.stream.scaladsl.{
-  Broadcast,
-  Flow,
-  GraphDSL,
-  Merge,
-  Sink,
-  Source,
-  ZipWith
-}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Sink, ZipWith}
 import akka.stream.typed.scaladsl.{ActorSink, ActorSource}
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
-import pl.agh.edu.agh.wmazur.avs.model.entity.utils.{
-  SimulationStateDelta,
-  SimulationStateUpdate
-}
 import pl.edu.agh.wmazur.avs.backend.http.codec.{
   SimulationStateUpdateEncoder,
   WebsocketMessageEncoder
@@ -36,8 +24,11 @@ import pl.edu.agh.wmazur.avs.backend.http.management.WebsocketManager.{
   ConnectionId,
   WebsocketFailure
 }
-import pl.edu.agh.wmazur.avs.backend.http.simulation.SimulationEngine
-import protobuf.pl.agh.edu.agh.wmazur.avs.model.{Envelope, StateRequest}
+import pl.edu.agh.wmazur.avs.model.state.{
+  SimulationStateDelta,
+  SimulationStateUpdate
+}
+import protobuf.pl.edu.agh.wmazur.avs.model.{Envelope, StateRequest}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
