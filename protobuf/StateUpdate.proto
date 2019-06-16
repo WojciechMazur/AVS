@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "scalapb/scalapb.proto";
+import "Common.proto";
+import "Vehicle.proto";
+import "Road.proto";
+import "Intersection.proto";
+
+option (scalapb.options) = {
+  scope: FILE
+  package_name: "protobuf.pl.edu.agh.wmazur.avs.model"
+  flat_package: true
+};
+
+
+message StateUpdate{
+    UpdateType updateType = 1;
+    uint64 timestamp = 2;
+    Created created = 3;
+    Updated updated = 4;
+    Deleted deleted = 5;
+
+    UpdateMeta meta = 15;
+
+    message Created{
+        repeated Vehicle vehicles = 1;
+        repeated Road roads = 2;
+        repeated Intersection intersections = 3;
+    }
+
+    message Updated{
+        repeated Vehicle vehicles = 3;
+        repeated Road roads = 4;
+        repeated Intersection intersections = 5;
+    }
+
+    message Deleted{
+        repeated string vehicles = 3;
+        repeated string roads = 4;
+        repeated string intersections = 5;
+    }
+
+    enum UpdateType{
+        Delta = 0;
+        Full = 1;
+    }
+    message UpdateMeta{
+        uint32 updatesPerSecond = 1;
+
+    }
+}
+

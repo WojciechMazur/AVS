@@ -1,0 +1,6 @@
+package pl.edu.agh.wmazur.avs.model.entity.utils
+
+trait DeltaOps[T] {
+  def delta(old: T): Option[T]
+  def isUpdatedBy(old: T): Boolean
+}

@@ -1,7 +1,7 @@
 import {ArcRotateCamera, Color3, Engine, PointLight, Scene, Vector3} from "@babylonjs/core"
 import {IsometricCamera} from "../camera/IsometricCamera"
 import {CarsManager} from "../logic/CarsManager"
-import {Car} from "../model/Car"
+import {WebSocketEntityClient} from "../logic/WebSocketEntityClient"
 
 export class BasicScene {
 	public camera: ArcRotateCamera
@@ -10,11 +10,14 @@ export class BasicScene {
 	private readonly _engine: Engine
 	private _scene: Scene
 	private carsManager: CarsManager
+	private websocketClient: WebSocketEntityClient
 	
 	constructor(canvas: HTMLCanvasElement, engine: Engine){
 		this._engine = engine
 		this._scene = new Scene(this._engine)
-		this.carsManager	= new CarsManager()
+		
+		this.websocketClient = new WebSocketEntityClient()
+		this.carsManager	= new CarsManager(this._scene, this.websocketClient)
 		this.camera = new IsometricCamera("camera",30, Vector3.Zero(), this._scene)
 		this.camera.attachControl(canvas, true, false)
 		this._scene.activeCamera=this.camera
@@ -27,18 +30,19 @@ export class BasicScene {
 		this.light.intensity = 0.4
 		
 		
-		for(let x=0; x<100; x++){
-			for(let y=0; y<100; y++){
-				let car = new Car("car_" + x + "_" + y, new Vector3(x*5, 0, y*5), this._scene)
-				this.carsManager.add(car)
-			}
-		}
+	// 	for(let x=0; x<100; x++){
+	// 		for(let y=0; y<100; y++){
+	// 			let car = new Car("car_" + x + "_" + y, new Vector3(x*5, 0, y*5), this._scene)
+	// 			this.carsManager.add(car)
+	// 		}
+	// 	}
 	}
 	
 	public runRenderLoop(): void {
 		let _this = this
 		this._engine.runRenderLoop(() => {
-		_this.carsManager && _this.carsManager.runLogic()
+			_this.carsManager && _this.carsManager.runLogic()
+			
 			this._scene.render()
 		})
 	}

@@ -1,18 +1,21 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
+import "StateUpdate.proto";
 
 option (scalapb.options) = {
   scope: FILE
-  package_name: "pl.agh.edu.agh.wmazur.avs.model.protobuf"
+  package_name: "protobuf.pl.edu.agh.wmazur.avs.model"
   flat_package: true
 };
 
 message Envelope {
     oneof message{
         Acknowledged acknowledged = 1;
-        SimulationEvent simulationEvent = 2;
+        StateModificationEvent simulationEvent = 2;
         ConnectivityEvents connectivityEvents = 3;
+        StateUpdate stateUpdate = 4;
+        StateRequest stateRequest = 5;
     }
 
     message Acknowledged{}
@@ -29,12 +32,16 @@ message ConnectivityEvents {
      }
 }
 
-message SimulationEvent {
+message StateModificationEvent {
     oneof command{
         CreateEntity create = 1;
         DeleteEntity delete = 2;
         EditEntity edit = 3;
     }
+}
+
+message StateRequest{
+    StateUpdate.UpdateType type = 1;
 }
 
 message CreateEntity {

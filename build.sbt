@@ -28,15 +28,15 @@ lazy val model: Project = submodule("avs-backend", "model")
   )
 
 
-lazy val simulation = submodule("avs-backend", "simulation")
+lazy val simulation: Project = submodule("avs-backend", "simulation")
   .settings(withCommons():_*)
-  .dependsOn(model, server)
+  .dependsOn(model)
 
-lazy val server = submodule("avs-backend", "server")
+lazy val server: Project = submodule("avs-backend", "server")
   .settings(withCommons(
     libraryDependencies ++= Dependencies.server,
   ): _*
-  ).dependsOn(model)
+  ).dependsOn(model, simulation)
 
 def submodule(parent: String, moduleName: String): Project = Project(
   id = moduleName,
