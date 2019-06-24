@@ -12,8 +12,8 @@ option (scalapb.options) = {
 
 message Vehicle{
     string id = 1;
-   Vector3 currentPosition = 2 [(scalapb.field).type = "com.github.jpbetz.subspace.Vector3"];
-   Vector3 targetPosition = 3 [(scalapb.field).type = "com.github.jpbetz.subspace.Vector3"];
+    Vector3 currentPosition = 2;
+    Vector3 targetPosition = 3;
     float acceleration = 4;
     float speed = 5;
 

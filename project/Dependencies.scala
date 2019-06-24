@@ -10,6 +10,8 @@ object Dependencies {
     akkaHttp
   )
 
-  lazy val model: Seq[ModuleID] = Libraries.clean(marshalling, math, akkaActors)
+  lazy val model: Seq[ModuleID] =
+    Libraries.clean(geospatial, marshalling, math, akkaActors)
 
+  lazy val simulation: Seq[ModuleID] = Libraries.clean()
 }

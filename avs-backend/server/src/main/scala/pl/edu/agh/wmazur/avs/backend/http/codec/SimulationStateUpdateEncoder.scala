@@ -1,5 +1,6 @@
 package pl.edu.agh.wmazur.avs.backend.http.codec
 
+import mikera.vectorz.Vector3
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.state.SimulationStateUpdate
 import protobuf.pl.edu.agh.wmazur.avs.model.Envelope.Message
@@ -12,14 +13,16 @@ import protobuf.pl.edu.agh.wmazur.avs.model.StateUpdate.{
   Updated
 }
 import protobuf.pl.edu.agh.wmazur.avs.model.vehicle.{Vehicle => ProtoVehicle}
-
+import protobuf.pl.edu.agh.wmazur.avs.model.common.{Vector3 => ProtoVector3}
 import scala.concurrent.duration._
 
 object SimulationStateUpdateEncoder
     extends MessageEncoder[SimulationStateUpdate, Message.StateUpdate] {
   def vehicleEncoder(vehicle: Vehicle): ProtoVehicle = ProtoVehicle(
-    id = vehicle.id,
-    currentPosition = Some(vehicle.position),
+    id = vehicle.id.toString,
+    currentPosition = Some(
+      ProtoVector3
+        .of(vehicle.position.getX.toFloat, 0f, vehicle.position.getY.toFloat)),
     speed = vehicle.speed,
     acceleration = vehicle.acceleration
   )
@@ -50,7 +53,7 @@ object SimulationStateUpdateEncoder
           ))
         .withDeleted(
           Deleted(
-            vehicles = update.vehicles.removed.toSeq,
+            vehicles = update.vehicles.removed.toSeq.map(_.toString),
             intersections = Nil,
             roads = Nil
           ))

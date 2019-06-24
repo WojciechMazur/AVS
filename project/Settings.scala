@@ -7,12 +7,12 @@ object Settings {
   def withCommons(settings: Seq[SettingsDefinition]*): Seq[SettingsDefinition] =
     (common ++ settings.flatten).distinct
 
-  lazy val common: Seq[
-    Def.Setting[_ >: String with Task[Seq[String]] with Seq[File] <: Object]] =
+  lazy val common: Seq[Def.Setting[_]] =
     Seq(
       scalaVersion := Versions.scala,
       javacOptions ++= javacCommonOptions,
       scalacOptions in Compile += "-feature",
+      libraryDependencies ++= Libraries.common
     )
 
   lazy val scalaPbSettings: Seq[SettingsDefinition] = Seq(

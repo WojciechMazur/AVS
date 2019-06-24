@@ -6,6 +6,8 @@ version := "0.1"
 
 scalaVersion := Libraries.Versions.scala
 
+resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
+
 lazy val root = (project in file("."))
   .aggregate(backend, frontend)
 

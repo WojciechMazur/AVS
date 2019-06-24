@@ -8,6 +8,8 @@ object Libraries {
     val akkaHttp = "10.1.8"
     val chimney = "0.3.2"
     val scalaTest = "3.0.5"
+    val scalaGraph = "1.12.5"
+    val spatial4j = "0.7"
     val quickLens = "1.4.12"
   }
 
@@ -40,7 +42,13 @@ object Libraries {
   )
 
   val math: Seq[ModuleID] = Seq(
-    "com.github.jpbetz" % "subspace" % "0.1.0"
+//    "org.scalanlp" %% "breeze" % "0.13.2",
+    "net.mikera" % "vectorz" % "0.48.0"
+  )
+
+  val geospatial: Seq[ModuleID] = Seq(
+    "org.locationtech.spatial4j" % "spatial4j" % Versions.spatial4j,
+    "org.scala-graph" %% "graph-core" % Versions.scalaGraph
   )
 
   lazy val marshalling: Seq[ModuleID] = Seq(
