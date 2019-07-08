@@ -48,6 +48,7 @@ object Libraries {
 
   val geospatial: Seq[ModuleID] = Seq(
     "org.locationtech.spatial4j" % "spatial4j" % Versions.spatial4j,
+    "org.locationtech.jts" % "jts-core" % "1.16.1",
     "org.scala-graph" %% "graph-core" % Versions.scalaGraph
   )
 

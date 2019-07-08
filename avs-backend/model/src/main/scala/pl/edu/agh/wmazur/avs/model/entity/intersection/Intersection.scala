@@ -18,19 +18,20 @@ trait Intersection extends Entity with DeltaOps[Intersection] {
   def inletsLimit: Int = 4
   def outletsLimit: Int = inletsLimit
 
-  def inletRoads: Iterable[Road]
-  def outletRoads: Iterable[Road]
-  lazy val roads: Iterable[Road] = inletRoads ++ outletRoads
+  def entryRoads: Iterable[Road]
+  def exitRoads: Iterable[Road]
+//  lazy val roads: Iterable[Road] = inletRoads ++ outletRoads
+  def roads: Iterable[Road]
 
   lazy val centerPoint: Point = this.area.getCenter
   lazy val centerPointVec2: Vector2 = centerPoint.vector
 
-  val entryPoints: Map[Lane, Point] = inletRoads
+  val entryPoints: Map[Lane, Point] = entryRoads
     .flatMap(_.lanes)
     .map(lane => lane -> lane.exitPoint)
     .toMap
 
-  val exitPoints: Map[Lane, Point] = outletRoads
+  val exitPoints: Map[Lane, Point] = exitRoads
     .flatMap(_.lanes)
     .map(lane => lane -> lane.entryPoint)
     .toMap
@@ -40,11 +41,10 @@ trait Intersection extends Entity with DeltaOps[Intersection] {
   val exitHeading: Map[Lane, Angle] =
     exitPoints.mapValues(_.angle(centerPointVec2))
 
-  val lanesById: Map[LaneId, Lane] = (inletRoads ++ outletRoads).flatMap {
-    road =>
-      road.lanes.map { lane =>
-        lane.id -> lane
-      }
+  val lanesById: Map[LaneId, Lane] = (entryRoads ++ exitRoads).flatMap { road =>
+    road.lanes.map { lane =>
+      lane.id -> lane
+    }
   }.toMap
 
   def intersectionManager: IntersectionManager

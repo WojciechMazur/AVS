@@ -16,12 +16,12 @@ class ReservationGridSpec extends FlatSpec {
     val tiles = 0.to(5).map(id => TimeTile(id, 0))
     val wasReserved = grid.reserve(1, tiles)
     assert(wasReserved)
-    0.to(5).foreach(id => assert(grid.isReserved(0, id)))
+    0.to(5).foreach(id => assert(grid.isReservedAt(0, id)))
   }
 
   it must "allow to remove reservation" in {
     grid.cancel(1)
-    0.to(5).foreach(id => assert(!grid.isReserved(0, id)))
+    0.to(5).foreach(id => assert(!grid.isReservedAt(0, id)))
   }
 
   it must "allow to reserve in multiple time grids" in {
@@ -37,7 +37,7 @@ class ReservationGridSpec extends FlatSpec {
     val wasReserved = grid.reserve(2, timeTiles)
     assert(wasReserved)
 
-    timeTiles.foreach(tt => assert(grid.isReserved(tt.timestamp, tt.tileId)))
+    timeTiles.foreach(tt => assert(grid.isReservedAt(tt.timestamp, tt.tileId)))
   }
 
   it must "deny overriding reservation" in {

@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur.avs.model.entity.utils
 import mikera.vectorz._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 object MathUtils {
@@ -21,7 +22,7 @@ object MathUtils {
   }
 
   implicit class DoubleUtils(double: Double) {
-    def round(position: Int = 2): Double = {
+    def roundToPosition(position: Int = 2): Double = {
       val multiply = position match {
         case 2 => defaultMultiply
         case p => Math.pow(10, p)
@@ -59,12 +60,24 @@ object MathUtils {
     }
   }
 
-  def withConstraint[T <: Ordered[T]](value: T, min: T, max: T): T =
+  def withConstraint[T](value: T, min: T, max: T)(implicit num: Numeric[T]): T =
     value match {
-      case v if v > max => max
-      case v if v < min => min
-      case v            => v
+      case v if num.gt(v, max) => max
+      case v if num.lt(v, min) => min
+      case v                   => v
     }
+  @tailrec
+  def recenter[T](inputValue: T, minValue: T, maxValue: T)(
+      implicit num: Numeric[T]): T = {
+    val range = num.minus(maxValue, minValue)
+    inputValue match {
+      case _ if num.lt(inputValue, minValue) =>
+        recenter(num.plus(inputValue, range), minValue, maxValue)
+      case _ if num.gt(inputValue, maxValue) =>
+        recenter(num.min(inputValue, range), minValue, maxValue)
+      case _ => inputValue
+    }
+  }
 
   val Pi2: Double = Math.PI * 2
 

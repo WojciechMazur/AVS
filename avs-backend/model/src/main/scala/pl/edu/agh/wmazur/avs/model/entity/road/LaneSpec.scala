@@ -8,7 +8,11 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 case class LaneSpec(
     speedLimit: Velocity,
     width: Dimension,
-    length: Dimension,
+    road: Road,
+    leadsIntoLane: Option[Lane] = None,
+    leadsFromLane: Option[Lane] = None,
+    leftNeighbourLane: Option[Lane] = None,
+    rightNeighbourLane: Option[Lane] = None
 ) {
   lazy val halfWidth: Dimension = width / 2
 }

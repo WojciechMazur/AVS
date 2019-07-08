@@ -1,9 +1,14 @@
 package pl.edu.agh.wmazur.avs.model.entity
 
-import org.locationtech.spatial4j.shape.{Point, Shape, Rectangle}
+import mikera.vectorz.Vector2
+import org.locationtech.spatial4j.context.SpatialContext
+import org.locationtech.spatial4j.shape.{Point, Rectangle, Shape}
 trait Entity extends Identifiable {
   def id: Id
   def area: Shape
-  def position: Point = area.getCenter
+  lazy val bufferedArea: Shape = area.getBuffered(0.0000001, SpatialContext.GEO)
+  def position: Point
 
+  type Self <: Entity
+  def entitySettings: EntitySettings[Self]
 }

@@ -1,7 +1,7 @@
 package pl.edu.agh.wmazur.avs.simulation.map.micro
 
 import org.locationtech.spatial4j.context.SpatialContext
-import org.locationtech.spatial4j.shape.{Rectangle, SpatialRelation}
+import org.locationtech.spatial4j.shape.{Rectangle, Shape, SpatialRelation}
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.TileId
@@ -66,5 +66,9 @@ case class TilesGrid(shape: Rectangle, granularity: Double) {
       case East if tileId % cellsX != cellsX - 1 =>
         tiles(expectedTileId)
     }
+  }
+
+  def occupiedByShape(shape: Shape): Seq[Tile] = {
+    tiles.filter(_.rec.relate(shape).intersects())
   }
 }

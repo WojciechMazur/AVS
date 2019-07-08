@@ -1,101 +1,62 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle.movement
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Angle,
   Velocity
 }
-import MathUtils._
-import com.softwaremill.quicklens._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDelta
 
-case class VelocityReachingMovement(
-    override val uniformMovement: VehicleMovement.UniformVehicleMovement,
-    override val _acceleration: Acceleration,
-    _targetVelocity: Velocity
-) extends PhysicalMovement(uniformMovement, _acceleration) {
-  val targetVelocity: Velocity = MathUtils.withConstraint(
-    _targetVelocity,
-    vehicleSpec.minVelocity,
-    vehicleSpec.maxVelocity) match {
-    case v if acceleration.isZero => v
-    case _ if acceleration > 0.0  => vehicleSpec.maxVelocity
-    case _ if acceleration < 0.0  => vehicleSpec.minVelocity
-  }
+trait VelocityReachingMovement
+    extends AcceleratingMovement
+    with SteeringMovement {
+  def targetVelocity: Velocity
 
-  def withSteadyVelocity: VelocityReachingMovement = {
-    copy(_acceleration = 0, _targetVelocity = velocity)
-  }
-
-  def stop: VelocityReachingMovement = {
-    velocity match {
-      case v if v > 0.0 =>
-        copy(_acceleration = vehicleSpec.maxDeceleration, _targetVelocity = 0)
-      case v if v < 0.0 =>
-        copy(_acceleration = vehicleSpec.maxAcceleration, _targetVelocity = 0)
-      case _ => copy(_acceleration = 0, _targetVelocity = 0.0f)
+  override protected def checkBounds(): VelocityReachingMovement = {
+    val boundedTargetVelocity = MathUtils.withConstraint(this.targetVelocity,
+                                                         spec.minVelocity,
+                                                         spec.maxVelocity)
+    val targetVelocity = acceleration match {
+      case a if a.isZero => boundedTargetVelocity
+      case a if a > 0.0  => spec.maxVelocity
+      case a if a < 0.0  => spec.minVelocity
     }
-  }
 
-  def maxAccelerationAndTargetVelocity: VelocityReachingMovement = {
-    copy(_acceleration = vehicleSpec.maxAcceleration,
-         _targetVelocity = vehicleSpec.maxVelocity)
-  }
+    val self = super.checkBounds().asInstanceOf[VelocityReachingMovement]
 
-  def maxAccelerationWithTargetVelocity(
-      targetVelocity: Velocity): VelocityReachingMovement = {
-    if (velocity < targetVelocity) {
-      copy(_acceleration = vehicleSpec.maxAcceleration,
-           _targetVelocity = targetVelocity)
-    } else if (velocity > targetVelocity) {
-      copy(_acceleration = vehicleSpec.maxDeceleration,
-           _targetVelocity = targetVelocity)
+    if (this.targetVelocity != targetVelocity) {
+      self.withTargetVelocity(targetVelocity)
     } else {
-      copy(_acceleration = 0)
-    }
-  }
-
-  def maxVelocityWithAcceleration(
-      acceleration: Acceleration): VelocityReachingMovement = {
-    if (acceleration > 0) {
-      copy(_acceleration = acceleration,
-           _targetVelocity = vehicleSpec.maxVelocity)
-    } else if (acceleration < 0) {
-      copy(_acceleration = acceleration,
-           _targetVelocity = vehicleSpec.minVelocity)
-    } else {
-      copy(_acceleration = acceleration, _targetVelocity = velocity)
+      self
     }
   }
 
   private def moveWithAcceleration(accelerationDelta: Acceleration,
                                    tickDelta: TimeDelta) = {
     this
-      .modify(_.uniformMovement.velocity)
-      .setTo(velocity + accelerationDelta / 2)
+      .withVelocity(velocity + accelerationDelta / 2)
       .moveWithConstantVelocity(tickDelta)
-      .asInstanceOf[VelocityReachingMovement]
-      .modify(_.uniformMovement.velocity)
-      .setTo(velocity + accelerationDelta)
+      .withVelocity(velocity + accelerationDelta)
   }
 
   private def moveWithPartialAcceleration(targetVelocityDelta: Velocity,
                                           timeDelta: TimeDelta,
                                           accelerationDuration: TimeDelta) = {
     this
-      .modify(_.uniformMovement.velocity)
-      .setTo(velocity + targetVelocityDelta / 2)
+      .withVelocity(velocity + targetVelocityDelta / 2)
       .moveWithConstantVelocity(accelerationDuration)
-      .asInstanceOf[VelocityReachingMovement]
-      .modify(_.uniformMovement.velocity)
-      .setTo(velocity + targetVelocityDelta)
+      .withVelocity(velocity + targetVelocityDelta)
+      .asInstanceOf[this.type]
       .moveWithConstantVelocity(timeDelta - accelerationDuration)
   }
 
   private def moveWhenAccelerating(tickDelta: TimeDelta) = {
     velocity match {
-      case v if v >= targetVelocity => moveWithConstantVelocity(tickDelta)
+      case v if v >= targetVelocity =>
+        moveWithConstantVelocity(tickDelta)
       case _ =>
         val accelerationDelta = acceleration * tickDelta
         val targetVelocityDelta = targetVelocity - velocity
@@ -113,7 +74,8 @@ case class VelocityReachingMovement(
 
   private def moveWhenDeaccelerating(tickDelta: TimeDelta) = {
     velocity match {
-      case v if v <= targetVelocity => moveWithConstantVelocity(tickDelta)
+      case v if v <= targetVelocity =>
+        moveWithConstantVelocity(tickDelta)
       case _ =>
         val accelerationDelta = acceleration * tickDelta
         val targetVelocityDelta = targetVelocity - velocity
@@ -135,21 +97,56 @@ case class VelocityReachingMovement(
       case acc if acc > 0    => moveWhenAccelerating(tickDelta)
       case _                 => moveWhenDeaccelerating(tickDelta)
     }
-}
 
-object VelocityReachingMovement {
-  def apply(
-      vehicleSpec: VehicleSpec,
-      position: Point,
-      heading: Angle,
-      velocity: Velocity,
-      steeringAngle: Angle,
-      acceleration: Acceleration,
-      targetVelocity: Velocity
-  ): VelocityReachingMovement =
-    new VelocityReachingMovement(
-      SteeringMovement(vehicleSpec, position, heading, velocity, steeringAngle),
-      acceleration,
-      targetVelocity
-    )
+  def withSteadyVelocity: VelocityReachingMovement =
+    this.withTargetVelocity(velocity).withAcceleration(0)
+
+  def stop: VelocityReachingMovement = {
+    val acceleration = velocity match {
+      case v if v > 0.0 => spec.maxDeceleration
+      case v if v < 0.0 => spec.maxAcceleration
+      case _            => 0d
+    }
+    this.withTargetVelocity(0).withAcceleration(acceleration)
+  }
+
+  def maxAccelerationAndTargetVelocity: VelocityReachingMovement =
+    this
+      .withAcceleration(spec.maxAcceleration)
+      .withTargetVelocity(spec.maxVelocity)
+
+  def maxAccelerationWithTargetVelocity(
+      targetVelocity: Velocity): VelocityReachingMovement = {
+    val acceleration = velocity match {
+      case v if v > targetVelocity => spec.maxDeceleration
+      case v if v < targetVelocity => spec.maxAcceleration
+      case _                       => 0d
+    }
+
+    this
+      .withTargetVelocity(targetVelocity)
+      .withAcceleration(acceleration)
+  }
+
+  def maxVelocityWithAcceleration(
+      acceleration: Acceleration): VelocityReachingMovement = {
+    val targetVelocity = acceleration match {
+      case a if a.isZero => velocity
+      case a if a > 0    => spec.maxVelocity
+      case a if a < 0    => spec.minVelocity
+    }
+    this
+      .withTargetVelocity(targetVelocity)
+      .withAcceleration(acceleration)
+  }
+
+  def withTargetVelocity(targetVelocity: Velocity): VelocityReachingMovement
+
+  override def withAcceleration(
+      acceleration: Acceleration): VelocityReachingMovement
+  override def withVelocity(velocity: Velocity): VelocityReachingMovement
+  override def withSteeringAngle(steeringAngle: Angle): VelocityReachingMovement
+  override def withHeading(heading: Angle): VelocityReachingMovement
+
+  override def withPosition(position: Point): VelocityReachingMovement
 }

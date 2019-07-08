@@ -1,5 +1,8 @@
 package pl.edu.agh.wmazur.avs.simulation.reservation
+import java.util.concurrent.TimeUnit
+
 import scala.collection._
+import scala.concurrent.duration.FiniteDuration
 
 class ReservationArray(arraySize: Int) {
   import ReservationArray._
@@ -27,7 +30,7 @@ class ReservationArray(arraySize: Int) {
       .map {
         case (key, _) => key
       }
-      .getOrElse(0)
+      .getOrElse(0L)
 
     if (!wasAlreadyReserved) {
       tiles
@@ -108,18 +111,26 @@ class ReservationArray(arraySize: Int) {
   def reservationExists(reservationId: ReservationId): Boolean =
     reservedTimeTilesByReservation.contains(reservationId)
 
-  def isReserved(timestamp: Timestamp, tileId: TileId): Boolean =
+  def isReservedAt(timestamp: Timestamp, tileId: TileId): Boolean =
     reservationGrids.get(timestamp).exists(_(tileId).isDefined)
 
   def latestReservationTime(): Option[Timestamp] =
     reservationGrids.lastOption.map(_._1)
+
+  def firstAvailableTimestamp(time: Timestamp): Timestamp = {
+    time / timeStepMillis * timeStepMillis
+  }
 }
 
 object ReservationArray {
+  import scala.concurrent.duration._
   type ReservationId = Int
-  type Timestamp = Int
+  type Timestamp = Long
   type TileId = Int
 
+  //TODO Add to config
+  val timeStep: FiniteDuration = 1.second / 60
+  val timeStepMillis = timeStep.toMillis
   case class TimeTile(tileId: TileId, timestamp: Timestamp)
 
 }

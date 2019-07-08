@@ -23,8 +23,8 @@ object SimulationStateUpdateEncoder
     currentPosition = Some(
       ProtoVector3
         .of(vehicle.position.getX.toFloat, 0f, vehicle.position.getY.toFloat)),
-    speed = vehicle.speed,
-    acceleration = vehicle.acceleration
+    speed = vehicle.velocity.floatValue(),
+    acceleration = vehicle.acceleration.floatValue()
   )
 
   override protected def decodingFunction: PartialFunction[
