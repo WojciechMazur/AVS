@@ -2,8 +2,10 @@ package pl.edu.agh.wmazur.avs.model.entity.road
 
 import org.locationtech.jts.geom.{Geometry, LineString}
 import org.locationtech.spatial4j.shape.Point
+import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.{Entity, Identifiable}
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Dimension}
 
 trait Lane extends Entity with Identifiable {
   def spec: LaneSpec
@@ -32,10 +34,14 @@ trait Lane extends Entity with Identifiable {
     ).flatten
   }
 
+  def collectorPoint: Option[CollectorPoint]
+  def spawnPoint: Option[SpawnPoint]
   def getGeometryFraction(start: Double, end: Double): Geometry
 
-  def pointAtNormalizedDistance(distance: Double): Point
-  def headingAtNormalizedDistance(distance: Double): Angle
+  def pointAtNormalizedDistance(distance: Dimension): Point
+  def headingAtNormalizedDistance(distance: Dimension): Angle
   def distanceAlongLane(point: Point): Dimension
   def normalizedDistanceAlongLane(point: Point): Dimension
 }
+
+object Lane extends IdProvider[Lane]

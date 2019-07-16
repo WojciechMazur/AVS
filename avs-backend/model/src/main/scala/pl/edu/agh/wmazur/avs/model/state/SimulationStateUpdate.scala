@@ -49,7 +49,7 @@ object SimulationStateUpdate {
             current: SimulationState): SimulationStateDelta = {
     SimulationStateDelta(
       timeDelta = current.tickDelta,
-      timestamp = current.totalTicks,
+      timestamp = current.currentTime,
       vehicles = entityDelta(previous.vehicles, current.vehicles),
       roads = entityDelta(previous.roads, current.roads),
       intersections = entityDelta(previous.intersections, current.intersections)
@@ -58,7 +58,7 @@ object SimulationStateUpdate {
 
   def apply(current: SimulationState): SimulationStateFullUpdate =
     SimulationStateFullUpdate(
-      timestamp = current.totalTicks,
+      timestamp = current.currentTime,
       vehicles = EntitiesUpdate(created = current.vehicles.values),
       roads = EntitiesUpdate(created = current.roads.values),
       intersections = EntitiesUpdate(created = current.intersections.values)

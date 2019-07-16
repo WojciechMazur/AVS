@@ -2,19 +2,22 @@ package pl.edu.agh.wmazur.avs.model.entity.utils
 
 import mikera.vectorz.Vector2
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
-import org.locationtech.jts.geom.{Coordinate, LineString, Point => JtsPoint}
+import org.locationtech.jts.geom.util.LineStringExtracter
+import org.locationtech.jts.geom.{Coordinate, LineString}
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.context.jts.{
   JtsSpatialContext,
   JtsSpatialContextFactory
 }
-import org.locationtech.spatial4j.shape.Point
+import org.locationtech.spatial4j.distance.DistanceUtils
 import org.locationtech.spatial4j.shape.impl.PointImpl
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory
+import org.locationtech.spatial4j.shape.{Point, Shape}
+import pl.edu.agh.wmazur.avs
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
+import scala.collection.{breakOut, immutable}
 import scala.language.implicitConversions
-import scala.collection.breakOut
 
 object SpatialUtils {
   implicit val shapeFactory: JtsShapeFactory = new JtsShapeFactory(
@@ -26,17 +29,66 @@ object SpatialUtils {
     val vector: Vector2 = Vector2.of(point.getX, point.getY)
   }
 
+  implicit def geomToPointUtils(
+      point: org.locationtech.jts.geom.Point): PointUtils =
+    PointUtils(Point2(point.getX, point.getY))
+
+  implicit class PointUtils(point: Point) {
+    def simpleCoordinates: Vector2 = Vector2.of(
+      point.x * DistanceUtils.DEG_TO_KM * 1000,
+      point.y * DistanceUtils.DEG_TO_KM * 1000
+    )
+
+    def angle(that: Point): Angle = Math.atan2(
+      that.y - point.y,
+      that.x - point.x
+    )
+
+    def moveRotate(dimension: avs.Dimension, angle: Angle): Point = {
+      Point2(
+        point.x + dimension.geoDegrees * Math.cos(angle),
+        point.y + dimension.geoDegrees * Math.sin(angle)
+      )
+    }
+
+    def moveInternal(x: Double, y: Double): Point = Point2(
+      point.x + x,
+      point.y + y
+    )
+
+    def move(xDelta: avs.Dimension, yDelta: avs.Dimension): Point =
+      moveInternal(xDelta.geoDegrees, yDelta.geoDegrees)
+
+    //scalastyle:off
+    def +(dim: avs.Dimension): Point = {
+      Point2(point.x + dim.geoDegrees, point.y + dim.geoDegrees)
+    }
+    def -(dim: avs.Dimension): Point = {
+      Point2(point.x - dim.geoDegrees, point.y - dim.geoDegrees)
+    }
+
+    //scalastyle:on
+
+    def angleDegrees(that: Point): Angle = angle(that) * 180 / Math.PI
+  }
+
   implicit def pointToVector(point: Point): Vector2 = {
     Vector2.of(point.getX, point.getY)
   }
 
-  object PointFactory {
+  object Point2 {
     def apply(x: Double, y: Double): Point = {
       new PointImpl(x, y, SpatialContext.GEO)
     }
+    def middlePoint(p1: Point, p2: Point): Point = {
+      Point2(
+        (p1.getX + p2.getX) / 2,
+        (p1.getY + p2.getY) / 2
+      )
+    }
   }
 
-  object LineFactory {
+  object LineGeometryFactory {
     def apply(start: Point, second: Point, tail: Point*): LineString = {
       val coords: Array[Coordinate] = (start :: second :: Nil ++ tail)
         .map { point =>
@@ -47,8 +99,31 @@ object SpatialUtils {
                      shapeFactory.getGeometryFactory)
     }
 
-    def apply(start: Point, end: Point): LineString = {
-      LineFactory.apply(start, end)
+    def apply(start: Coordinate, end: Coordinate): LineString = {
+      new LineString(new CoordinateArraySequence(Array(start, end)),
+                     shapeFactory.getGeometryFactory)
+    }
+  }
+
+  object LineFactory {
+    def apply(start: Point, second: Point, tail: Point*): Shape = {
+      (start :: second :: Nil ++ tail).foldLeft {
+        shapeFactory.lineString
+      } {
+        case (builder, point) => builder.pointXY(point.getX, point.getY)
+      }
+    }.build()
+  }
+
+  object PolygonFactory {
+    def apply(points: Iterable[Point], centroid: Point): Shape = {
+      val pointsSorted = SpatialUtils.pointsSorted(points, centroid)
+
+      (pointsSorted :+ pointsSorted.head)
+        .foldLeft(shapeFactory.polygon()) {
+          case (polygon, point) => polygon.pointXY(point.x, point.y)
+        }
+        .build()
     }
   }
 
@@ -81,6 +156,26 @@ object SpatialUtils {
 
   def closestDistanceSquared(lineString: LineString, point: Point): Double = {
     Math.sqrt(closestDistance(lineString, point))
+  }
+
+  def pointsSorted(points: Iterable[Point],
+                   centroid: Point): immutable.Seq[Point] = {
+    val x = points.map { point =>
+      point -> point.angle(centroid)
+    }.toVector
+    val y = x
+      .sortBy { case (_, angle) => angle }
+    y.map { case (point, _) => point }
+  }
+
+  def lineStringsIntersection(shape: Shape, line: LineString): Option[Point] = {
+    val geometry = shapeFactory.getGeometryFrom(shape)
+    val lineString = LineStringExtracter
+      .getLines(geometry)
+      .asInstanceOf[java.util.List[LineString]]
+      .get(0)
+
+    lineStringsIntersection(lineString, line)
   }
 
   def lineStringsIntersection(ls1: LineString, ls2: LineString): Option[Point] =
@@ -118,17 +213,17 @@ object SpatialUtils {
 
         val x = determinant(det12, x1 - x2, det34, x3 - x4) / det
         val y = determinant(det12, y1 - y2, det34, y3 - y4) / det
-        Some(PointFactory(x, y))
+        Some(Point2(x, y))
       case det if det == 0 =>
         val points = Vector(
-          PointFactory(x1, y1),
-          PointFactory(x2, y2),
-          PointFactory(x3, y3),
-          PointFactory(x4, y4)
+          Point2(x1, y1),
+          Point2(x2, y2),
+          Point2(x3, y3),
+          Point2(x4, y4)
         )
 
-        val line1 = LineFactory(points(0), points(1))
-        val line2 = LineFactory(points(2), points(3))
+        val line1 = LineGeometryFactory(points(0), points(1))
+        val line2 = LineGeometryFactory(points(2), points(3))
 
         points
           .foldLeft((Double.MaxValue, Option.empty[Point])) {

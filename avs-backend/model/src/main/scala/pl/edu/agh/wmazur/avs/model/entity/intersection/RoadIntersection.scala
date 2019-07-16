@@ -1,18 +1,16 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
-import org.locationtech.jts.geom.util.LineStringExtracter
-import org.locationtech.jts.geom.{Coordinate, Geometry, LineString}
+import org.locationtech.jts.geom.{Geometry, LineString}
 import org.locationtech.spatial4j.shape.{Point, Shape}
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.EntitySettings
 import pl.edu.agh.wmazur.avs.model.entity.intersection.RoadIntersection.IntersectionAreaSegments
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle.Vin
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Dimension}
-
-import scala.collection.JavaConverters._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
 case class RoadIntersection(
-    id: Vin = RoadIntersection.idProvider.getId,
+    id: Vin,
     roads: Iterable[Road]
 ) extends Intersection {
   import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
@@ -22,11 +20,11 @@ case class RoadIntersection(
   val lanes: Iterable[Lane] = roads.flatMap(_.lanes)
   private val iaSegments: RoadIntersection.IntersectionAreaSegments =
     extractAreaSegments(roads)
-  val centroid: Point = RoadIntersection.shapeFactory
+  lazy val centroid: Point = RoadIntersection.shapeFactory
     .makeShapeFromGeometry(iaSegments.geometry.get.getCentroid)
     .asInstanceOf[Point]
 
-  val wayPoints: Vector[Point] =
+  lazy val wayPoints: Vector[Point] =
     (iaSegments.entryPoints.values ++ iaSegments.exitPoints.values)
       .map { point =>
         point -> point.angle(centroid)
@@ -44,22 +42,26 @@ case class RoadIntersection(
   override val exitRoads: Set[Road] =
     iaSegments.exitPoints.keySet.map(roadAtLane)
 
-  override val intersectionManager: IntersectionManager = ???
+  lazy val entryPoints: Map[Lane, Point] = iaSegments.entryPoints
+  lazy val exitPoints: Map[Lane, Point] = iaSegments.exitPoints
+  lazy val entryHeadings: Map[Lane, Angle] = iaSegments.entryHeadings
+  lazy val exitHeading: Map[Lane, Angle] = iaSegments.exitHeadings
+
+  override def intersectionManager: IntersectionManager = ???
 
   override lazy val area: Shape =
     RoadIntersection.shapeFactory.makeShapeFromGeometry {
       iaSegments.geometry.get.union {
-        shapeFactory.getGeometryFactory.createPolygon {
-          wayPoints
-            .map(shapeFactory.getGeometryFrom(_).getCoordinate)
-            .asJava
-            .toArray
-            .asInstanceOf[Array[Coordinate]]
+        shapeFactory.getGeometryFrom {
+          PolygonFactory(
+            wayPoints,
+            centroid
+          )
         }
       }
     }
 
-  override val position: Point = centroid
+  override lazy val position: Point = centroid
 
   private def findIntersectionGeometry(roads: Iterable[Road]): Geometry = {
     val (_, geometry) =
@@ -134,13 +136,14 @@ case class RoadIntersection(
 
   private def extractAreaSegments(
       roads: Iterable[Road]): IntersectionAreaSegments = {
-    import scala.collection.JavaConverters._
     val intersectionGeometry = findIntersectionGeometry(roads)
-    val geometrySegments = LineStringExtracter
-      .getLines(intersectionGeometry)
-      .asScala
+    val geometrySegments = intersectionGeometry.getCoordinates
+      .sliding(2, 1)
+      .map {
+        case Array(c1, c2) => LineGeometryFactory(c1, c2)
+      }
       .toList
-      .asInstanceOf[List[LineString]]
+
     val intersectionShape =
       RoadIntersection.shapeFactory.makeShapeFromGeometry(intersectionGeometry)
     val (minDistanceFromLanes, maxDistanceFromLanes) =
@@ -160,7 +163,7 @@ case class RoadIntersection(
           if (intersectionShape.relate(lane.entryPoint).intersects()) {
             (0d, inletPoints, inletHeadings)
           } else {
-            val fraction = (minDistanceFromLanes(lane) - expansionOffset) max 0d
+            val fraction = (minDistanceFromLanes(lane) - expansionOffset).meters max 0d
             (
               fraction,
               inletPoints + (lane -> lane.pointAtNormalizedDistance(fraction)),
@@ -172,7 +175,7 @@ case class RoadIntersection(
           if (intersectionShape.relate(lane.exitPoint).intersects()) {
             (1d, outletPoints, outletHeadings)
           } else {
-            val fraction = (maxDistanceFromLanes(lane) - expansionOffset) min 1d
+            val fraction = (maxDistanceFromLanes(lane) - expansionOffset).meters min 1d
             (
               fraction,
               outletPoints + (lane -> lane.pointAtNormalizedDistance(fraction)),
@@ -186,9 +189,10 @@ case class RoadIntersection(
         val filledGeometryFragment = geometryFragment.union {
           geometryFragment.symDifference(geometryFragment)
         }
-        val newGeometry = geometry
-          .map(_.union(filledGeometryFragment))
-          .getOrElse(filledGeometryFragment)
+        val newGeometry = geometry match {
+          case Some(geo) => geo.union(filledGeometryFragment)
+          case _         => filledGeometryFragment
+        }
 
         IntersectionAreaSegments(Some(newGeometry),
                                  newEntryPoints,
@@ -204,6 +208,9 @@ object RoadIntersection extends EntitySettings[RoadIntersection] {
   //Offset for additional space at intersection, e.q crosswalks
   val expansionDistance: Dimension = 4.0
   private val shapeFactory = SpatialUtils.shapeFactory
+
+  def apply(roads: Iterable[Road]): RoadIntersection =
+    new RoadIntersection(Intersection.nextId, roads)
 
   private case class IntersectionAreaSegments(
       geometry: Option[Geometry] = None,

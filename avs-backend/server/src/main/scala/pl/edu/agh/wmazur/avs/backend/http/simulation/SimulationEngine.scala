@@ -5,6 +5,11 @@ import akka.stream.SourceShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, ZipWith}
 import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.backend.http.flows.SimulationEngineProxy
+import pl.edu.agh.wmazur.avs.backend.http.simulation.stage.{
+  DriversExecutor,
+  VehiclesCollector,
+  VehiclesSpawner
+}
 import pl.edu.agh.wmazur.avs.model.state.SimulationState
 import protobuf.pl.edu.agh.wmazur.avs.model.StateModificationEvent
 
@@ -17,18 +22,10 @@ object SimulationEngine {
 
   val stateProcessingFlow: Flow[SimulationState, SimulationState, NotUsed] =
     Flow[SimulationState]
-      .map { state =>
-//        val cars = state.vehicles.collect {
-//          case (id, v: DefaultVehicle) =>
-//            val deltaPos = v.speed * state.tickDelta.toUnit(SECONDS)
-//            val updated = v
-//              .modify(_.position)
-//              .using(_ + Vector3(deltaPos.toFloat, 0, deltaPos.toFloat))
-//            id -> updated
-//        }
-//        state.copy(vehicles = cars)
-        state
-      }
+      .via(VehiclesSpawner.flow)
+      .via(DriversExecutor.flow)
+      //
+      .via(VehiclesCollector.flow)
 
   val recoverOrInitState: Source[SimulationState, NotUsed] =
     Source.single(SimulationState.init)
@@ -61,8 +58,8 @@ object SimulationEngine {
               stateUpdatedByExternalChanges(simulationState, events)
                 .modify(_.tickDelta)
                 .setTo(delta)
-                .modify(_.totalTicks)
-                .using(_ + delta.toMillis)
+                .modify(_.currentTime)
+                .using(_ + delta.toMillis.toInt)
           })
 
         val stateBroadcast = builder.add(Broadcast[SimulationState](2))

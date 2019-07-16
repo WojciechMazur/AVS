@@ -1,13 +1,13 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle.movement
 
-import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.Point
-import org.locationtech.spatial4j.shape.impl.PointImpl
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{
+  Point2,
+  PointUtils
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDelta
-
 trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
   def moveWithConstantVelocity(tickDelta: TimeDelta): VehicleMovement = {
     if (steeringAngle.abs < VehicleMovement.steeringAngleThreshold) {
@@ -18,16 +18,13 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
   }
 
   private def moveStraight(timeDelta: TimeDelta): VehicleMovement = {
-    val newPosition = new PointImpl(
-      position.getX + velocity * Math.cos(heading) * timeDelta,
-      position.getX + velocity * Math.sin(heading) * timeDelta,
-      SpatialContext.GEO
-    )
+    val newPosition = position.moveRotate(velocity * timeDelta, heading)
     withPosition(newPosition)
   }
 
   private def moveByArc(timeDelta: TimeDelta): VehicleMovement = {
-    val rotationRate = velocity * Math.tan(steeringAngle / spec.wheelBase)
+    val rotationRate = velocity * Math.tan(
+      steeringAngle / spec.wheelBase.meters)
     val finalHeading: Angle = MathUtils.boundedAngle {
       heading + rotationRate * timeDelta
     }.toFloat
@@ -35,16 +32,13 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
     val rearWheelPos = spec.pointBetweenBackWheels(position, heading)
 
     val wheelsOffset = spec.wheelBase / Math.tan(steeringAngle)
-    val xDelta = rearWheelPos.getX - wheelsOffset * (Math.sin(heading) - Math
-      .sin(finalHeading))
-    val yDelta = position.getY - wheelsOffset * (Math.cos(finalHeading) - Math
-      .cos(heading))
 
-    val newPosition = new PointImpl(
-      xDelta + spec.rearAxleDisplacement * Math.cos(finalHeading),
-      yDelta + spec.rearAxleDisplacement * Math.sin(finalHeading),
-      SpatialContext.GEO
-    )
+    val newPosition = Point2(
+      x = rearWheelPos.getX - wheelsOffset.geoDegrees *
+        (Math.sin(heading) - Math.sin(finalHeading)),
+      y = position.getY - wheelsOffset.geoDegrees *
+        (Math.cos(finalHeading) - Math.cos(heading))
+    ).moveRotate(spec.rearAxleDisplacement, finalHeading)
 
     this
       .withPosition(newPosition)

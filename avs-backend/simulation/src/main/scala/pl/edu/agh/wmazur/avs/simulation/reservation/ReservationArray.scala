@@ -111,6 +111,8 @@ class ReservationArray(arraySize: Int) {
   def reservationExists(reservationId: ReservationId): Boolean =
     reservedTimeTilesByReservation.contains(reservationId)
 
+  def isRestrictedTile(tileId: TileId): Boolean = false
+
   def isReservedAt(timestamp: Timestamp, tileId: TileId): Boolean =
     reservationGrids.get(timestamp).exists(_(tileId).isDefined)
 

@@ -26,28 +26,21 @@ trait Intersection extends Entity with DeltaOps[Intersection] {
   lazy val centerPoint: Point = this.area.getCenter
   lazy val centerPointVec2: Vector2 = centerPoint.vector
 
-  val entryPoints: Map[Lane, Point] = entryRoads
-    .flatMap(_.lanes)
-    .map(lane => lane -> lane.exitPoint)
-    .toMap
+  def entryPoints: Map[Lane, Point]
+  def exitPoints: Map[Lane, Point]
+  def entryHeadings: Map[Lane, Angle]
+  def exitHeading: Map[Lane, Angle]
 
-  val exitPoints: Map[Lane, Point] = exitRoads
-    .flatMap(_.lanes)
-    .map(lane => lane -> lane.entryPoint)
-    .toMap
-
-  val entryHeadings: Map[Lane, Angle] =
-    entryPoints.mapValues(_.angle(centerPointVec2))
-  val exitHeading: Map[Lane, Angle] =
-    exitPoints.mapValues(_.angle(centerPointVec2))
-
-  val lanesById: Map[LaneId, Lane] = (entryRoads ++ exitRoads).flatMap { road =>
-    road.lanes.map { lane =>
-      lane.id -> lane
-    }
+  lazy val lanesById: Map[LaneId, Lane] = (entryRoads ++ exitRoads).flatMap {
+    road =>
+      road.lanes.map { lane =>
+        lane.id -> lane
+      }
   }.toMap
 
   def intersectionManager: IntersectionManager
 
   override def isUpdatedBy(old: Intersection): Boolean = false
 }
+
+object Intersection extends IdProvider[Intersection]

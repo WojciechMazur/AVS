@@ -7,7 +7,8 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.TileId
 import pl.edu.agh.wmazur.avs.utils.{BasicDirection, _}
 
-case class TilesGrid(shape: Rectangle, granularity: Double) {
+case class TilesGrid(area: Shape, granularity: Double) {
+  val shape: Rectangle = area.getBoundingBox
   val (cellsX, cellWidth) = calcTileSpec(shape.getWidth)
   val (cellsY, cellHeight) = calcTileSpec(shape.getHeight)
   val size: Int = cellsX * cellsY
@@ -44,6 +45,11 @@ case class TilesGrid(shape: Rectangle, granularity: Double) {
       Tile(id, rec, isEdge)
     }
   }.toVector
+
+  val tilesOutsideArea: Set[TileId] =
+    tiles
+      .filterNot(_.rec.relate(area).intersects())
+      .map(_.id)(scala.collection.breakOut)
 
   def getNeighbourTile(tile: Tile, direction: BasicDirection): Option[Tile] = {
     getNeighbourTile(tile.id, direction)

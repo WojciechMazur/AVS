@@ -18,8 +18,8 @@ sealed trait VehicleMovement {
   def position: Point
   def heading: Angle
   def velocity: Velocity
-  def acceleration: Acceleration = 0
-  def steeringAngle: Angle = 0
+  def acceleration: Acceleration
+  def steeringAngle: Angle
   def spec: VehicleSpec
 
   val positionVector: Vector2 = position

@@ -2,37 +2,35 @@ package pl.edu.agh.wmazur.avs.simulation.reservation
 
 import java.util.concurrent.TimeUnit
 
-import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
-  BasicVehicle,
-  Vehicle,
-  VehicleSpec
-}
-import pl.edu.agh.wmazur.avs.simulation.map.micro.{Tile, TilesGrid}
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager._
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.ReservationSchedule.AccelerationEvent
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.{
-  TimeTile,
-  Timestamp
-}
 import com.softwaremill.quicklens._
+import pl.edu.agh.wmazur.avs
+import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
-import pl.edu.agh.wmazur.avs.simulation.driver.{CrashTestDummy, VehicleDriver}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, Vehicle}
+import pl.edu.agh.wmazur.avs.simulation.driver.CrashTestDriver
+import pl.edu.agh.wmazur.avs.simulation.map.micro.{Tile, TilesGrid}
+import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.ReservationSchedule.AccelerationEvent
+import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager._
+import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.{
+  TimeTile,
+  Timestamp
+}
 
 import scala.annotation.tailrec
 import scala.collection._
 import scala.concurrent.duration._
 
-class GridReservationManager(config: ManagerConfig,
-                             intersection: Intersection) {
+case class GridReservationManager(config: ManagerConfig,
+                                  intersection: Intersection) {
 
   val tilesGrid = TilesGrid(
-    intersection.area.getBoundingBox,
+    intersection.area,
     config.granularity
   )
   val reservationGrid = ReservationGrid(tilesGrid, 10.seconds)
@@ -45,18 +43,19 @@ class GridReservationManager(config: ManagerConfig,
     val arrivalLane = intersection.lanesById(query.arrivalLaneId)
     val departueLane = intersection.lanesById(query.departureLaneId)
 
-    val testVehicle = createTestVehicle(vehicle = query.vehicle,
-                                        arrivalVelocity = query.arrivalVelocity,
-                                        maxVelocity = query.maxTurnVelocity,
-                                        arrivalLane = arrivalLane)
-    val testDriver = CrashTestDummy(testVehicle, arrivalLane, departueLane)
+    val testVehicle = {
+      val v = createTestVehicle(vehicle = query.vehicle,
+                                arrivalVelocity = query.arrivalVelocity,
+                                maxVelocity = query.maxTurnVelocity,
+                                arrivalLane = arrivalLane)
+      v.withDriver(CrashTestDriver(v, arrivalLane, departueLane))
+    }
 
     findTimeTilesPath(vehicle = testVehicle,
-                      driver = testDriver,
                       arrivalTime = query.arrivalTime,
                       isAccelerating = query.isAccelerating)
       .collect {
-        case (tiles, exitTime) =>
+        case (tiles, exitTime, exitVelocity) =>
           val accelerationProfile = calculateAccelerationProfile(
             arrivalTime = query.arrivalTime,
             arrivalVelocity = query.arrivalVelocity,
@@ -69,7 +68,7 @@ class GridReservationManager(config: ManagerConfig,
           ReservationSchedule(
             vin = query.vin,
             exitTime = exitTime,
-            exitVelocity = testVehicle.velocity,
+            exitVelocity = exitVelocity,
             tilesCovered = tiles.toList,
             accelerationSchedule = accelerationProfile
           )
@@ -78,18 +77,17 @@ class GridReservationManager(config: ManagerConfig,
 
   private def findTimeTilesPath(
       vehicle: Vehicle,
-      driver: VehicleDriver,
       arrivalTime: Timestamp,
-      isAccelerating: Boolean): Option[(Set[TimeTile], Timestamp)] = {
+      isAccelerating: Boolean): Option[(Set[TimeTile], Timestamp, Velocity)] = {
     assert {
       intersection.bufferedArea.relate(vehicle.pointAtMiddleFront).intersects()
     }
-
+    val driver = vehicle.driver
     @tailrec
     def iterate(driver: VehicleDriver,
                 currentTime: Timestamp,
                 timeTiles: Set[TimeTile] = Set.empty)
-      : Option[(Set[TimeTile], Timestamp)] = {
+      : Option[(Set[TimeTile], Timestamp, Velocity)] = {
       val vehicle = driver.vehicle
       val vehicleWithinIntersectionArea = {
         val positionIntersects =
@@ -114,7 +112,7 @@ class GridReservationManager(config: ManagerConfig,
         val newDriverState =
           moveTestVehicle(
             driver,
-            ReservationArray.timeStep,
+            config.timeStep,
             isAccelerating
           )
 
@@ -124,22 +122,25 @@ class GridReservationManager(config: ManagerConfig,
           .occupiedByShape(vehicle.bufferedArea)
           .flatMap { tile =>
             val timeBuffer = calculateTimeBuffer(tile).toMillis
-            val timeRange = (currentTime - timeBuffer) to (currentTime + timeBuffer)
+            val timeRange = (currentTime - timeBuffer) to (currentTime + timeBuffer) by config.timeStep.toMillis
             timeRange.map(timestamp => TimeTile(tile.id, timestamp))
           }(breakOut)
 
         if (tilesToReservation.exists(
-              tt => reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
+              tt =>
+                //TODO, przywrócić?
+//              reservationGrid.isRestrictedTile(tt.tileId) ||
+                reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
           None
         } else {
           iterate(
             newDriverState,
-            currentTime + ReservationArray.timeStepMillis,
+            currentTime + config.timeStepMillis,
             timeTiles ++ tilesToReservation
           )
         }
       } else {
-        Some((timeTiles, currentTime))
+        Some((timeTiles, currentTime, vehicle.velocity))
       }
     }
 
@@ -181,10 +182,9 @@ class GridReservationManager(config: ManagerConfig,
           .withVelocity(arrivalVelocity)
           .modify(_.spec.maxVelocity)
           .setTo(maxVelocity)
-          .modifyAll(_.spec.wheelRadius,
-                     _.spec.wheelWidth,
-                     _.steeringAngle,
-                     _.acceleration)
+          .modifyAll(_.spec.wheelRadius, _.spec.wheelWidth)
+          .setTo(avs.Dimension(0d))
+          .modifyAll(_.gauges.steeringAngle, _.gauges.acceleration)
           .setTo(0)
     }
   }
@@ -231,14 +231,18 @@ object GridReservationManager {
   type Vin = Int
   type LaneId = Int
 
-  case class ManagerConfig(
-      timeStep: Int,
-      timeBuffer: FiniteDuration,
-      internalTimeBuffer: FiniteDuration,
-      edgeTimeBuffer: FiniteDuration,
-      enableEdgeTimeBuffer: Boolean = true,
-      granularity: Float
-  )
+  case class ManagerConfig(timeStep: FiniteDuration,
+                           granularity: Float,
+                           enableEdgeTimeBuffer: Boolean = true)(
+      _timeBuffer: FiniteDuration = timeStep,
+      _internalTimeBuffer: FiniteDuration = timeStep,
+      _edgeTimeBuffer: FiniteDuration = timeStep,
+  ) {
+    val timeBuffer: FiniteDuration = _timeBuffer.min(timeStep)
+    val internalTimeBuffer: FiniteDuration = _internalTimeBuffer.min(timeStep)
+    val edgeTimeBuffer: FiniteDuration = _edgeTimeBuffer.min(timeStep)
+    val timeStepMillis: Timestamp = timeStep.toMillis
+  }
 
   case class ReservationQuery(
       vin: Vin,
@@ -249,7 +253,10 @@ object GridReservationManager {
       departureLaneId: LaneId,
       vehicle: Vehicle,
       isAccelerating: Boolean
-  )
+  ) {
+    require(arrivalVelocity != 0f || isAccelerating,
+            "Unable to schedule stopped, non accelerating vehicle")
+  }
 
   case class ReservationSchedule(
       vin: Vin,
