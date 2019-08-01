@@ -1,0 +1,127 @@
+package pl.edu.agh.wmazur.avs.model.entity.road
+
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior}
+import org.locationtech.spatial4j.shape.{Point, Shape}
+import pl.edu.agh.wmazur.avs.Agent
+import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.{
+  Context,
+  PositionReading,
+  Protocol,
+  Terminated,
+  TrySpawn
+}
+import pl.edu.agh.wmazur.avs.model.entity.road.RoadSpawnerWorker.NotSpawned
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
+import pl.edu.agh.wmazur.avs.simulation.EntityManager
+import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+
+class LaneSpawnerWorker(val context: ActorContext[Protocol],
+                        spawnerContext: Context)
+    extends Agent[Protocol] {
+  val spawnPoint: Option[SpawnPoint] = spawnerContext.lane.spawnPoint
+  var nextSpawnTime: Timestamp = 0L
+
+  override protected val initialBehaviour: Behavior[Protocol] = idle
+
+  lazy val idle: Behaviors.Receive[Protocol] = Behaviors.receiveMessage {
+    case TrySpawn(drivers, entityManagerRef, currentTime) =>
+      if (spawnPoint.isDefined && nextSpawnTime <= currentTime) {
+        drivers.foreach { ref =>
+//          context.watchWith(ref, Terminated(ref))
+          val adapter =
+            context.messageAdapter[AutonomousDriver.PositionReading] {
+              case AutonomousDriver.PositionReading(driverRef,
+                                                    position,
+                                                    area) =>
+                PositionReading(driverRef, position, area)
+            }
+          ref ! AutonomousDriver.GetPositionReading(adapter)
+        }
+        getReadings(entityManagerRef, drivers, Set.empty)
+      } else {
+        spawnerContext.roadSpawner ! NotSpawned(spawnerContext.lane)
+        Behaviors.same
+      }
+  }
+
+  private def getReadings(
+      entityManagerRef: ActorRef[EntityManager.Protocol],
+      awaiting: Set[ActorRef[AutonomousDriver.Protocol]],
+      readings: Set[PositionReading]): Behavior[Protocol] = {
+
+    if (awaiting.isEmpty) {
+      trySpawn(entityManagerRef, readings)
+    } else {
+      Behaviors.receiveMessagePartial {
+        case reading @ PositionReading(driverRef, _, _) =>
+          getReadings(entityManagerRef,
+                      awaiting - driverRef,
+                      readings + reading)
+        case Terminated(ref) =>
+          getReadings(entityManagerRef, awaiting - ref, readings)
+      }
+    }
+  }
+
+  private def trySpawn(entityManagerRef: ActorRef[EntityManager.Protocol],
+                       readings: Set[PositionReading]): Behavior[Protocol] = {
+    val spawnPoint = spawnerContext.lane.spawnPoint.get
+    val lane = spawnerContext.lane
+
+    if (spawnPoint.canSpawn(readings)) {
+      val spec = spawnPoint.getRandomSpec
+      entityManagerRef ! EntityManager.SpawnProtocol
+        .SpawnBasicVehicle(replyTo = context.self,
+                           spec = spec,
+                           position = lane.entryPoint,
+                           heading = lane.heading,
+                           velocity = spec.maxVelocity,
+                           lane = lane)
+      waitForSpawnResult()
+    } else {
+      spawnerContext.roadSpawner ! RoadSpawnerWorker.NotSpawned(lane)
+      idle
+    }
+  }
+
+  def waitForSpawnResult(): Behavior[Protocol] =
+    Behaviors.receiveMessagePartial {
+      case LaneSpawnerWorker.Spawned(driverRef, id) =>
+        spawnerContext.roadSpawner ! RoadSpawnerWorker
+          .SpawnedAtLane(spawnerContext.lane, driverRef, id)
+        nextSpawnTime += SpawnPoint.spawnInterval.toMillis
+        idle
+    }
+
+}
+
+object LaneSpawnerWorker {
+  private case class Context(
+      roadSpawner: ActorRef[RoadSpawnerWorker.Protocol],
+      lane: Lane,
+  )
+  def init(replyTo: ActorRef[RoadSpawnerWorker.Protocol],
+           lane: Lane): Behavior[Protocol] =
+    Behaviors.setup[Protocol] { ctx =>
+      val context = Context(roadSpawner = replyTo, lane = lane)
+      new LaneSpawnerWorker(ctx, context)
+    }
+
+  sealed trait Protocol extends SimulationProtocol
+  case class TrySpawn(drivers: Set[ActorRef[AutonomousDriver.Protocol]],
+                      entityManagerRef: ActorRef[EntityManager.Protocol],
+                      currentTime: Timestamp)
+      extends Protocol
+  case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
+                             position: Point,
+                             area: Shape)
+      extends Protocol
+  case class Spawned(driverRef: ActorRef[AutonomousDriver.Protocol],
+                     id: Vehicle#Id)
+      extends Protocol
+  case class Terminated(ref: ActorRef[AutonomousDriver.Protocol])
+      extends Protocol
+}

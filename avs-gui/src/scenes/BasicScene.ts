@@ -2,6 +2,7 @@ import {ArcRotateCamera, Color3, Engine, PointLight, Scene, Vector3} from "@baby
 import {IsometricCamera} from "../camera/IsometricCamera"
 import {CarsManager} from "../logic/CarsManager"
 import {WebSocketEntityClient} from "../logic/WebSocketEntityClient"
+import { RoadsManager } from "../logic/RoadsManager";
 
 export class BasicScene {
 	public camera: ArcRotateCamera
@@ -10,6 +11,7 @@ export class BasicScene {
 	private readonly _engine: Engine
 	private _scene: Scene
 	private carsManager: CarsManager
+	private roadsManager: RoadsManager
 	private websocketClient: WebSocketEntityClient
 	
 	constructor(canvas: HTMLCanvasElement, engine: Engine){
@@ -18,6 +20,8 @@ export class BasicScene {
 		
 		this.websocketClient = new WebSocketEntityClient()
 		this.carsManager	= new CarsManager(this._scene, this.websocketClient)
+		this.roadsManager = new RoadsManager(this._scene, this.websocketClient)
+
 		this.camera = new IsometricCamera("camera",30, Vector3.Zero(), this._scene)
 		this.camera.attachControl(canvas, true, false)
 		this._scene.activeCamera=this.camera

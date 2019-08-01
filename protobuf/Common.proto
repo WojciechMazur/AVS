@@ -13,3 +13,16 @@ message Vector3{
     float y = 2;
     float z = 3;
 }
+
+message BoundingBox{
+    float minX = 1;
+    float maxX = 2;
+    float minY = 3;
+    float maxY = 4;
+}
+
+message Geometry{
+    Vector3 position = 1;
+    repeated Vector3 indices = 2;
+
+}

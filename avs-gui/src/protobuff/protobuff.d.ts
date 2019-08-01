@@ -1,101 +1,305 @@
 import * as $protobuf from "protobufjs";
-/** Properties of a Position. */
-export interface IPosition {
+/** Properties of a Vector3. */
+export interface IVector3 {
 
-    /** Position x */
+    /** Vector3 x */
     x?: (number|null);
 
-    /** Position y */
+    /** Vector3 y */
     y?: (number|null);
 
-    /** Position z */
+    /** Vector3 z */
     z?: (number|null);
 }
 
-/** Represents a Position. */
-export class Position implements IPosition {
+/** Represents a Vector3. */
+export class Vector3 implements IVector3 {
 
     /**
-     * Constructs a new Position.
+     * Constructs a new Vector3.
      * @param [properties] Properties to set
      */
-    constructor(properties?: IPosition);
+    constructor(properties?: IVector3);
 
-    /** Position x. */
+    /** Vector3 x. */
     public x: number;
 
-    /** Position y. */
+    /** Vector3 y. */
     public y: number;
 
-    /** Position z. */
+    /** Vector3 z. */
     public z: number;
 
     /**
-     * Creates a new Position instance using the specified properties.
+     * Creates a new Vector3 instance using the specified properties.
      * @param [properties] Properties to set
-     * @returns Position instance
+     * @returns Vector3 instance
      */
-    public static create(properties?: IPosition): Position;
+    public static create(properties?: IVector3): Vector3;
 
     /**
-     * Encodes the specified Position message. Does not implicitly {@link Position.verify|verify} messages.
-     * @param message Position message or plain object to encode
+     * Encodes the specified Vector3 message. Does not implicitly {@link Vector3.verify|verify} messages.
+     * @param message Vector3 message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encode(message: IPosition, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encode(message: IVector3, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Encodes the specified Position message, length delimited. Does not implicitly {@link Position.verify|verify} messages.
-     * @param message Position message or plain object to encode
+     * Encodes the specified Vector3 message, length delimited. Does not implicitly {@link Vector3.verify|verify} messages.
+     * @param message Vector3 message or plain object to encode
      * @param [writer] Writer to encode to
      * @returns Writer
      */
-    public static encodeDelimited(message: IPosition, writer?: $protobuf.Writer): $protobuf.Writer;
+    public static encodeDelimited(message: IVector3, writer?: $protobuf.Writer): $protobuf.Writer;
 
     /**
-     * Decodes a Position message from the specified reader or buffer.
+     * Decodes a Vector3 message from the specified reader or buffer.
      * @param reader Reader or buffer to decode from
      * @param [length] Message length if known beforehand
-     * @returns Position
+     * @returns Vector3
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Position;
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Vector3;
 
     /**
-     * Decodes a Position message from the specified reader or buffer, length delimited.
+     * Decodes a Vector3 message from the specified reader or buffer, length delimited.
      * @param reader Reader or buffer to decode from
-     * @returns Position
+     * @returns Vector3
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Position;
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Vector3;
 
     /**
-     * Verifies a Position message.
+     * Verifies a Vector3 message.
      * @param message Plain object to verify
      * @returns `null` if valid, otherwise the reason why it is not
      */
     public static verify(message: { [k: string]: any }): (string|null);
 
     /**
-     * Creates a Position message from a plain object. Also converts values to their respective internal types.
+     * Creates a Vector3 message from a plain object. Also converts values to their respective internal types.
      * @param object Plain object
-     * @returns Position
+     * @returns Vector3
      */
-    public static fromObject(object: { [k: string]: any }): Position;
+    public static fromObject(object: { [k: string]: any }): Vector3;
 
     /**
-     * Creates a plain object from a Position message. Also converts values to other types if specified.
-     * @param message Position
+     * Creates a plain object from a Vector3 message. Also converts values to other types if specified.
+     * @param message Vector3
      * @param [options] Conversion options
      * @returns Plain object
      */
-    public static toObject(message: Position, options?: $protobuf.IConversionOptions): { [k: string]: any };
+    public static toObject(message: Vector3, options?: $protobuf.IConversionOptions): { [k: string]: any };
 
     /**
-     * Converts this Position to JSON.
+     * Converts this Vector3 to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a BoundingBox. */
+export interface IBoundingBox {
+
+    /** BoundingBox minX */
+    minX?: (number|null);
+
+    /** BoundingBox maxX */
+    maxX?: (number|null);
+
+    /** BoundingBox minY */
+    minY?: (number|null);
+
+    /** BoundingBox maxY */
+    maxY?: (number|null);
+}
+
+/** Represents a BoundingBox. */
+export class BoundingBox implements IBoundingBox {
+
+    /**
+     * Constructs a new BoundingBox.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IBoundingBox);
+
+    /** BoundingBox minX. */
+    public minX: number;
+
+    /** BoundingBox maxX. */
+    public maxX: number;
+
+    /** BoundingBox minY. */
+    public minY: number;
+
+    /** BoundingBox maxY. */
+    public maxY: number;
+
+    /**
+     * Creates a new BoundingBox instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns BoundingBox instance
+     */
+    public static create(properties?: IBoundingBox): BoundingBox;
+
+    /**
+     * Encodes the specified BoundingBox message. Does not implicitly {@link BoundingBox.verify|verify} messages.
+     * @param message BoundingBox message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IBoundingBox, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified BoundingBox message, length delimited. Does not implicitly {@link BoundingBox.verify|verify} messages.
+     * @param message BoundingBox message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IBoundingBox, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a BoundingBox message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns BoundingBox
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): BoundingBox;
+
+    /**
+     * Decodes a BoundingBox message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns BoundingBox
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): BoundingBox;
+
+    /**
+     * Verifies a BoundingBox message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a BoundingBox message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns BoundingBox
+     */
+    public static fromObject(object: { [k: string]: any }): BoundingBox;
+
+    /**
+     * Creates a plain object from a BoundingBox message. Also converts values to other types if specified.
+     * @param message BoundingBox
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: BoundingBox, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this BoundingBox to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a Geometry. */
+export interface IGeometry {
+
+    /** Geometry position */
+    position?: (IVector3|null);
+
+    /** Geometry indices */
+    indices?: (IVector3[]|null);
+}
+
+/** Represents a Geometry. */
+export class Geometry implements IGeometry {
+
+    /**
+     * Constructs a new Geometry.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IGeometry);
+
+    /** Geometry position. */
+    public position?: (IVector3|null);
+
+    /** Geometry indices. */
+    public indices: IVector3[];
+
+    /**
+     * Creates a new Geometry instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns Geometry instance
+     */
+    public static create(properties?: IGeometry): Geometry;
+
+    /**
+     * Encodes the specified Geometry message. Does not implicitly {@link Geometry.verify|verify} messages.
+     * @param message Geometry message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IGeometry, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified Geometry message, length delimited. Does not implicitly {@link Geometry.verify|verify} messages.
+     * @param message Geometry message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IGeometry, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a Geometry message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Geometry
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Geometry;
+
+    /**
+     * Decodes a Geometry message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns Geometry
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Geometry;
+
+    /**
+     * Verifies a Geometry message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a Geometry message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns Geometry
+     */
+    public static fromObject(object: { [k: string]: any }): Geometry;
+
+    /**
+     * Creates a plain object from a Geometry message. Also converts values to other types if specified.
+     * @param message Geometry
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: Geometry, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this Geometry to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
@@ -1395,16 +1599,19 @@ export interface IVehicle {
     id?: (string|null);
 
     /** Vehicle currentPosition */
-    currentPosition?: (IPosition|null);
+    currentPosition?: (IVector3|null);
 
     /** Vehicle targetPosition */
-    targetPosition?: (IPosition|null);
+    targetPosition?: (IVector3|null);
 
     /** Vehicle acceleration */
     acceleration?: (number|null);
 
     /** Vehicle speed */
     speed?: (number|null);
+
+    /** Vehicle spec */
+    spec?: (IVehicleSpec|null);
 }
 
 /** Represents a Vehicle. */
@@ -1420,16 +1627,19 @@ export class Vehicle implements IVehicle {
     public id: string;
 
     /** Vehicle currentPosition. */
-    public currentPosition?: (IPosition|null);
+    public currentPosition?: (IVector3|null);
 
     /** Vehicle targetPosition. */
-    public targetPosition?: (IPosition|null);
+    public targetPosition?: (IVector3|null);
 
     /** Vehicle acceleration. */
     public acceleration: number;
 
     /** Vehicle speed. */
     public speed: number;
+
+    /** Vehicle spec. */
+    public spec?: (IVehicleSpec|null);
 
     /**
      * Creates a new Vehicle instance using the specified properties.
@@ -1502,8 +1712,125 @@ export class Vehicle implements IVehicle {
     public toJSON(): { [k: string]: any };
 }
 
+/** Properties of a VehicleSpec. */
+export interface IVehicleSpec {
+
+    /** VehicleSpec width */
+    width?: (number|null);
+
+    /** VehicleSpec length */
+    length?: (number|null);
+
+    /** VehicleSpec height */
+    height?: (number|null);
+
+    /** VehicleSpec geometry */
+    geometry?: (IGeometry|null);
+}
+
+/** Represents a VehicleSpec. */
+export class VehicleSpec implements IVehicleSpec {
+
+    /**
+     * Constructs a new VehicleSpec.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IVehicleSpec);
+
+    /** VehicleSpec width. */
+    public width: number;
+
+    /** VehicleSpec length. */
+    public length: number;
+
+    /** VehicleSpec height. */
+    public height: number;
+
+    /** VehicleSpec geometry. */
+    public geometry?: (IGeometry|null);
+
+    /**
+     * Creates a new VehicleSpec instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns VehicleSpec instance
+     */
+    public static create(properties?: IVehicleSpec): VehicleSpec;
+
+    /**
+     * Encodes the specified VehicleSpec message. Does not implicitly {@link VehicleSpec.verify|verify} messages.
+     * @param message VehicleSpec message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IVehicleSpec, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified VehicleSpec message, length delimited. Does not implicitly {@link VehicleSpec.verify|verify} messages.
+     * @param message VehicleSpec message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IVehicleSpec, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a VehicleSpec message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns VehicleSpec
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): VehicleSpec;
+
+    /**
+     * Decodes a VehicleSpec message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns VehicleSpec
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): VehicleSpec;
+
+    /**
+     * Verifies a VehicleSpec message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a VehicleSpec message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns VehicleSpec
+     */
+    public static fromObject(object: { [k: string]: any }): VehicleSpec;
+
+    /**
+     * Creates a plain object from a VehicleSpec message. Also converts values to other types if specified.
+     * @param message VehicleSpec
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: VehicleSpec, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this VehicleSpec to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
 /** Properties of a Road. */
 export interface IRoad {
+
+    /** Road id */
+    id?: (string|null);
+
+    /** Road lanes */
+    lanes?: (ILane[]|null);
+
+    /** Road geometry */
+    geometry?: (IGeometry|null);
 }
 
 /** Represents a Road. */
@@ -1514,6 +1841,15 @@ export class Road implements IRoad {
      * @param [properties] Properties to set
      */
     constructor(properties?: IRoad);
+
+    /** Road id. */
+    public id: string;
+
+    /** Road lanes. */
+    public lanes: ILane[];
+
+    /** Road geometry. */
+    public geometry?: (IGeometry|null);
 
     /**
      * Creates a new Road instance using the specified properties.
@@ -1581,6 +1917,306 @@ export class Road implements IRoad {
 
     /**
      * Converts this Road to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a Lane. */
+export interface ILane {
+
+    /** Lane id */
+    id?: (string|null);
+
+    /** Lane geometry */
+    geometry?: (IGeometry|null);
+
+    /** Lane entryPoint */
+    entryPoint?: (IVector3|null);
+
+    /** Lane exitPoint */
+    exitPoint?: (IVector3|null);
+
+    /** Lane spawnPoint */
+    spawnPoint?: (ISpawnPoint|null);
+
+    /** Lane collectPoint */
+    collectPoint?: (ICollectPoint|null);
+}
+
+/** Represents a Lane. */
+export class Lane implements ILane {
+
+    /**
+     * Constructs a new Lane.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ILane);
+
+    /** Lane id. */
+    public id: string;
+
+    /** Lane geometry. */
+    public geometry?: (IGeometry|null);
+
+    /** Lane entryPoint. */
+    public entryPoint?: (IVector3|null);
+
+    /** Lane exitPoint. */
+    public exitPoint?: (IVector3|null);
+
+    /** Lane spawnPoint. */
+    public spawnPoint?: (ISpawnPoint|null);
+
+    /** Lane collectPoint. */
+    public collectPoint?: (ICollectPoint|null);
+
+    /**
+     * Creates a new Lane instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns Lane instance
+     */
+    public static create(properties?: ILane): Lane;
+
+    /**
+     * Encodes the specified Lane message. Does not implicitly {@link Lane.verify|verify} messages.
+     * @param message Lane message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ILane, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified Lane message, length delimited. Does not implicitly {@link Lane.verify|verify} messages.
+     * @param message Lane message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ILane, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a Lane message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns Lane
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Lane;
+
+    /**
+     * Decodes a Lane message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns Lane
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Lane;
+
+    /**
+     * Verifies a Lane message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a Lane message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns Lane
+     */
+    public static fromObject(object: { [k: string]: any }): Lane;
+
+    /**
+     * Creates a plain object from a Lane message. Also converts values to other types if specified.
+     * @param message Lane
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: Lane, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this Lane to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a SpawnPoint. */
+export interface ISpawnPoint {
+
+    /** SpawnPoint geometry */
+    geometry?: (IGeometry|null);
+}
+
+/** Represents a SpawnPoint. */
+export class SpawnPoint implements ISpawnPoint {
+
+    /**
+     * Constructs a new SpawnPoint.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ISpawnPoint);
+
+    /** SpawnPoint geometry. */
+    public geometry?: (IGeometry|null);
+
+    /**
+     * Creates a new SpawnPoint instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns SpawnPoint instance
+     */
+    public static create(properties?: ISpawnPoint): SpawnPoint;
+
+    /**
+     * Encodes the specified SpawnPoint message. Does not implicitly {@link SpawnPoint.verify|verify} messages.
+     * @param message SpawnPoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ISpawnPoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified SpawnPoint message, length delimited. Does not implicitly {@link SpawnPoint.verify|verify} messages.
+     * @param message SpawnPoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ISpawnPoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a SpawnPoint message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns SpawnPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): SpawnPoint;
+
+    /**
+     * Decodes a SpawnPoint message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns SpawnPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): SpawnPoint;
+
+    /**
+     * Verifies a SpawnPoint message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a SpawnPoint message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns SpawnPoint
+     */
+    public static fromObject(object: { [k: string]: any }): SpawnPoint;
+
+    /**
+     * Creates a plain object from a SpawnPoint message. Also converts values to other types if specified.
+     * @param message SpawnPoint
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: SpawnPoint, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this SpawnPoint to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a CollectPoint. */
+export interface ICollectPoint {
+
+    /** CollectPoint geometry */
+    geometry?: (IGeometry|null);
+}
+
+/** Represents a CollectPoint. */
+export class CollectPoint implements ICollectPoint {
+
+    /**
+     * Constructs a new CollectPoint.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: ICollectPoint);
+
+    /** CollectPoint geometry. */
+    public geometry?: (IGeometry|null);
+
+    /**
+     * Creates a new CollectPoint instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns CollectPoint instance
+     */
+    public static create(properties?: ICollectPoint): CollectPoint;
+
+    /**
+     * Encodes the specified CollectPoint message. Does not implicitly {@link CollectPoint.verify|verify} messages.
+     * @param message CollectPoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: ICollectPoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified CollectPoint message, length delimited. Does not implicitly {@link CollectPoint.verify|verify} messages.
+     * @param message CollectPoint message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: ICollectPoint, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a CollectPoint message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns CollectPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): CollectPoint;
+
+    /**
+     * Decodes a CollectPoint message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns CollectPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): CollectPoint;
+
+    /**
+     * Verifies a CollectPoint message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a CollectPoint message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns CollectPoint
+     */
+    public static fromObject(object: { [k: string]: any }): CollectPoint;
+
+    /**
+     * Creates a plain object from a CollectPoint message. Also converts values to other types if specified.
+     * @param message CollectPoint
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: CollectPoint, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this CollectPoint to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };

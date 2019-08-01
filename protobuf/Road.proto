@@ -11,5 +11,25 @@ option (scalapb.options) = {
 
 
 message Road{
+    string id = 1;
+    repeated Lane lanes = 2;
+    Geometry geometry = 3;
 
+}
+
+message Lane{
+    string id = 1;
+    Geometry geometry = 2;
+    Vector3 entryPoint = 3;
+    Vector3 exitPoint = 4;
+    SpawnPoint spawnPoint = 5;
+    CollectPoint collectPoint = 6;
+}
+
+message SpawnPoint{
+    Geometry geometry = 1;
+}
+
+message CollectPoint{
+    Geometry geometry = 1;
 }

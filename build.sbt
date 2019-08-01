@@ -17,28 +17,25 @@ lazy val frontend: Project = module("avs-gui")
 
 lazy val backend: Project = module("avs-backend")
   .settings(withCommons():_*)
-  .aggregate(simulation, server, model)
-
-lazy val model: Project = submodule("avs-backend", "model")
   .settings(withCommons(
     scalaPbSettings,
     PB.protoSources in Compile := Seq(
       root.base.getAbsoluteFile / "protobuf",
     ),
-    libraryDependencies ++= Dependencies.model
+    libraryDependencies ++= Dependencies.backend
   ):_ *
   )
 
 
-lazy val simulation: Project = submodule("avs-backend", "simulation")
-  .settings(withCommons():_*)
-  .dependsOn(model)
-
-lazy val server: Project = submodule("avs-backend", "server")
-  .settings(withCommons(
-    libraryDependencies ++= Dependencies.server,
-  ): _*
-  ).dependsOn(model, simulation)
+//lazy val simulation: Project = submodule("avs-backend", "simulation")
+//  .settings(withCommons():_*)
+//  .dependsOn(model)
+//
+//lazy val server: Project = submodule("avs-backend", "server")
+//  .settings(withCommons(
+//    libraryDependencies ++= Dependencies.server,
+//  ): _*
+//  ).dependsOn(model, simulation)
 
 def submodule(parent: String, moduleName: String): Project = Project(
   id = moduleName,

@@ -4,6 +4,7 @@ const webpack = require('webpack');
 module.exports = {
   mode: 'development',
   entry: './src/main.ts',
+  context: __dirname,
   devtool: 'inline-source-map',
   devServer: {
     contentBase: './dist',
@@ -30,8 +31,12 @@ module.exports = {
           }
         ]
    },
+   
     plugins: [
-        new webpack.HotModuleReplacementPlugin()
+        new webpack.HotModuleReplacementPlugin(),
+        new webpack.ProvidePlugin({
+          'earcut': 'earcut'
+      })
     ]
 };
 

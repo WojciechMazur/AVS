@@ -26,6 +26,7 @@
     "@babylonjs/inspector": "^4.0.3",
     "@babylonjs/loaders": "^4.0.3",
     "@babylonjs/materials": "^4.0.3",
+    "earcut": "^2.1.5",
     "protobufjs": "^6.8.8",
     "uuid": "^3.3.2",
     "websocket": "^1.0.28"

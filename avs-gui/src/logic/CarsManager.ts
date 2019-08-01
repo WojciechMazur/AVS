@@ -1,15 +1,14 @@
-import {Scene, Vector3} from "@babylonjs/core";
+import {Scene, Vector3, Vector2, PolygonMeshBuilder} from "@babylonjs/core";
 import {Car} from "../model/Car"
 import {IVehicle} from "../protobuff/protobuff"
 import {ISystemManager} from "./ISystemManager"
-
 import {WebSocketEntityClient} from "./WebSocketEntityClient"
 
 export class CarsManager extends ISystemManager{
-	private entities: Map<string, Car> = new Map()
+	private entities: Map<string, Car> = new Map([])
 	protected webSocketClient: WebSocketEntityClient
 	protected scene: Scene
-	
+	private vehiclePositionY:number = 0.8
 	constructor(scene: Scene, websocketClient: WebSocketEntityClient){
 		super()
 		this.scene = scene
@@ -17,18 +16,18 @@ export class CarsManager extends ISystemManager{
 		this.webSocketClient.setCarsManager(this)
 	}
 	
-	
-	
 	public add(vehicles: IVehicle[]){
 		vehicles.forEach(vehicle => {
 			if (vehicle.id != null && vehicle.currentPosition != null) {
 				let car = new Car(vehicle.id,
 					new Vector3(
 						<number>vehicle.currentPosition.x,
-						<number>vehicle.currentPosition.y,
+						this.vehiclePositionY,
 						<number>vehicle.currentPosition.z),
+					vehicle.spec!,
 					this.scene)
-				this.entities.set(vehicle.id, car)
+					this.entities.set(vehicle.id, car)
+					console.dir("Spawned vehicle with id " + vehicle.id)
 			}
 		})
 	}
@@ -40,8 +39,8 @@ export class CarsManager extends ISystemManager{
 			let position = vehicle.currentPosition
 	
 			if (entity != null && position != null) {
-				entity.mesh.lookAt(new Vector3(position.x!, position.y!, position.z!))
-				entity.mesh.position.set(position.x!, position.y!, position.z!)
+				entity.mesh.lookAt(new Vector3(position.x!, this.vehiclePositionY, position.z!))
+				entity.mesh.position.set(position.x!, this.vehiclePositionY, position.z!)
 			}
 	
 			this.entities.set(id, entity)
@@ -50,8 +49,10 @@ export class CarsManager extends ISystemManager{
 	
 	public remove(vehicleIds: string[]){
 		vehicleIds.forEach(id => {
-			let entity = <Car>this.entities.get(id)
-			entity.mesh.dispose()
+			let entity = this.entities.get(id)
+			if(entity !== undefined){   
+				entity!.mesh.dispose()
+			}
 			this.entities.delete(id)
 		})
 	}

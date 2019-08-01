@@ -7,26 +7,26 @@ const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.
 // Exported root namespace
 const $root = $protobuf.roots["default"] || ($protobuf.roots["default"] = {});
 
-export const Position = $root.Position = (() => {
+export const Vector3 = $root.Vector3 = (() => {
 
     /**
-     * Properties of a Position.
-     * @exports IPosition
-     * @interface IPosition
-     * @property {number|null} [x] Position x
-     * @property {number|null} [y] Position y
-     * @property {number|null} [z] Position z
+     * Properties of a Vector3.
+     * @exports IVector3
+     * @interface IVector3
+     * @property {number|null} [x] Vector3 x
+     * @property {number|null} [y] Vector3 y
+     * @property {number|null} [z] Vector3 z
      */
 
     /**
-     * Constructs a new Position.
-     * @exports Position
-     * @classdesc Represents a Position.
-     * @implements IPosition
+     * Constructs a new Vector3.
+     * @exports Vector3
+     * @classdesc Represents a Vector3.
+     * @implements IVector3
      * @constructor
-     * @param {IPosition=} [properties] Properties to set
+     * @param {IVector3=} [properties] Properties to set
      */
-    function Position(properties) {
+    function Vector3(properties) {
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -34,51 +34,51 @@ export const Position = $root.Position = (() => {
     }
 
     /**
-     * Position x.
+     * Vector3 x.
      * @member {number} x
-     * @memberof Position
+     * @memberof Vector3
      * @instance
      */
-    Position.prototype.x = 0;
+    Vector3.prototype.x = 0;
 
     /**
-     * Position y.
+     * Vector3 y.
      * @member {number} y
-     * @memberof Position
+     * @memberof Vector3
      * @instance
      */
-    Position.prototype.y = 0;
+    Vector3.prototype.y = 0;
 
     /**
-     * Position z.
+     * Vector3 z.
      * @member {number} z
-     * @memberof Position
+     * @memberof Vector3
      * @instance
      */
-    Position.prototype.z = 0;
+    Vector3.prototype.z = 0;
 
     /**
-     * Creates a new Position instance using the specified properties.
+     * Creates a new Vector3 instance using the specified properties.
      * @function create
-     * @memberof Position
+     * @memberof Vector3
      * @static
-     * @param {IPosition=} [properties] Properties to set
-     * @returns {Position} Position instance
+     * @param {IVector3=} [properties] Properties to set
+     * @returns {Vector3} Vector3 instance
      */
-    Position.create = function create(properties) {
-        return new Position(properties);
+    Vector3.create = function create(properties) {
+        return new Vector3(properties);
     };
 
     /**
-     * Encodes the specified Position message. Does not implicitly {@link Position.verify|verify} messages.
+     * Encodes the specified Vector3 message. Does not implicitly {@link Vector3.verify|verify} messages.
      * @function encode
-     * @memberof Position
+     * @memberof Vector3
      * @static
-     * @param {IPosition} message Position message or plain object to encode
+     * @param {IVector3} message Vector3 message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    Position.encode = function encode(message, writer) {
+    Vector3.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
         if (message.x != null && message.hasOwnProperty("x"))
@@ -91,33 +91,33 @@ export const Position = $root.Position = (() => {
     };
 
     /**
-     * Encodes the specified Position message, length delimited. Does not implicitly {@link Position.verify|verify} messages.
+     * Encodes the specified Vector3 message, length delimited. Does not implicitly {@link Vector3.verify|verify} messages.
      * @function encodeDelimited
-     * @memberof Position
+     * @memberof Vector3
      * @static
-     * @param {IPosition} message Position message or plain object to encode
+     * @param {IVector3} message Vector3 message or plain object to encode
      * @param {$protobuf.Writer} [writer] Writer to encode to
      * @returns {$protobuf.Writer} Writer
      */
-    Position.encodeDelimited = function encodeDelimited(message, writer) {
+    Vector3.encodeDelimited = function encodeDelimited(message, writer) {
         return this.encode(message, writer).ldelim();
     };
 
     /**
-     * Decodes a Position message from the specified reader or buffer.
+     * Decodes a Vector3 message from the specified reader or buffer.
      * @function decode
-     * @memberof Position
+     * @memberof Vector3
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
      * @param {number} [length] Message length if known beforehand
-     * @returns {Position} Position
+     * @returns {Vector3} Vector3
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Position.decode = function decode(reader, length) {
+    Vector3.decode = function decode(reader, length) {
         if (!(reader instanceof $Reader))
             reader = $Reader.create(reader);
-        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Position();
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Vector3();
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
@@ -139,30 +139,30 @@ export const Position = $root.Position = (() => {
     };
 
     /**
-     * Decodes a Position message from the specified reader or buffer, length delimited.
+     * Decodes a Vector3 message from the specified reader or buffer, length delimited.
      * @function decodeDelimited
-     * @memberof Position
+     * @memberof Vector3
      * @static
      * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @returns {Position} Position
+     * @returns {Vector3} Vector3
      * @throws {Error} If the payload is not a reader or valid buffer
      * @throws {$protobuf.util.ProtocolError} If required fields are missing
      */
-    Position.decodeDelimited = function decodeDelimited(reader) {
+    Vector3.decodeDelimited = function decodeDelimited(reader) {
         if (!(reader instanceof $Reader))
             reader = new $Reader(reader);
         return this.decode(reader, reader.uint32());
     };
 
     /**
-     * Verifies a Position message.
+     * Verifies a Vector3 message.
      * @function verify
-     * @memberof Position
+     * @memberof Vector3
      * @static
      * @param {Object.<string,*>} message Plain object to verify
      * @returns {string|null} `null` if valid, otherwise the reason why it is not
      */
-    Position.verify = function verify(message) {
+    Vector3.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
         if (message.x != null && message.hasOwnProperty("x"))
@@ -178,17 +178,17 @@ export const Position = $root.Position = (() => {
     };
 
     /**
-     * Creates a Position message from a plain object. Also converts values to their respective internal types.
+     * Creates a Vector3 message from a plain object. Also converts values to their respective internal types.
      * @function fromObject
-     * @memberof Position
+     * @memberof Vector3
      * @static
      * @param {Object.<string,*>} object Plain object
-     * @returns {Position} Position
+     * @returns {Vector3} Vector3
      */
-    Position.fromObject = function fromObject(object) {
-        if (object instanceof $root.Position)
+    Vector3.fromObject = function fromObject(object) {
+        if (object instanceof $root.Vector3)
             return object;
-        let message = new $root.Position();
+        let message = new $root.Vector3();
         if (object.x != null)
             message.x = Number(object.x);
         if (object.y != null)
@@ -199,15 +199,15 @@ export const Position = $root.Position = (() => {
     };
 
     /**
-     * Creates a plain object from a Position message. Also converts values to other types if specified.
+     * Creates a plain object from a Vector3 message. Also converts values to other types if specified.
      * @function toObject
-     * @memberof Position
+     * @memberof Vector3
      * @static
-     * @param {Position} message Position
+     * @param {Vector3} message Vector3
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    Position.toObject = function toObject(message, options) {
+    Vector3.toObject = function toObject(message, options) {
         if (!options)
             options = {};
         let object = {};
@@ -226,17 +226,507 @@ export const Position = $root.Position = (() => {
     };
 
     /**
-     * Converts this Position to JSON.
+     * Converts this Vector3 to JSON.
      * @function toJSON
-     * @memberof Position
+     * @memberof Vector3
      * @instance
      * @returns {Object.<string,*>} JSON object
      */
-    Position.prototype.toJSON = function toJSON() {
+    Vector3.prototype.toJSON = function toJSON() {
         return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
     };
 
-    return Position;
+    return Vector3;
+})();
+
+export const BoundingBox = $root.BoundingBox = (() => {
+
+    /**
+     * Properties of a BoundingBox.
+     * @exports IBoundingBox
+     * @interface IBoundingBox
+     * @property {number|null} [minX] BoundingBox minX
+     * @property {number|null} [maxX] BoundingBox maxX
+     * @property {number|null} [minY] BoundingBox minY
+     * @property {number|null} [maxY] BoundingBox maxY
+     */
+
+    /**
+     * Constructs a new BoundingBox.
+     * @exports BoundingBox
+     * @classdesc Represents a BoundingBox.
+     * @implements IBoundingBox
+     * @constructor
+     * @param {IBoundingBox=} [properties] Properties to set
+     */
+    function BoundingBox(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * BoundingBox minX.
+     * @member {number} minX
+     * @memberof BoundingBox
+     * @instance
+     */
+    BoundingBox.prototype.minX = 0;
+
+    /**
+     * BoundingBox maxX.
+     * @member {number} maxX
+     * @memberof BoundingBox
+     * @instance
+     */
+    BoundingBox.prototype.maxX = 0;
+
+    /**
+     * BoundingBox minY.
+     * @member {number} minY
+     * @memberof BoundingBox
+     * @instance
+     */
+    BoundingBox.prototype.minY = 0;
+
+    /**
+     * BoundingBox maxY.
+     * @member {number} maxY
+     * @memberof BoundingBox
+     * @instance
+     */
+    BoundingBox.prototype.maxY = 0;
+
+    /**
+     * Creates a new BoundingBox instance using the specified properties.
+     * @function create
+     * @memberof BoundingBox
+     * @static
+     * @param {IBoundingBox=} [properties] Properties to set
+     * @returns {BoundingBox} BoundingBox instance
+     */
+    BoundingBox.create = function create(properties) {
+        return new BoundingBox(properties);
+    };
+
+    /**
+     * Encodes the specified BoundingBox message. Does not implicitly {@link BoundingBox.verify|verify} messages.
+     * @function encode
+     * @memberof BoundingBox
+     * @static
+     * @param {IBoundingBox} message BoundingBox message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BoundingBox.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.minX != null && message.hasOwnProperty("minX"))
+            writer.uint32(/* id 1, wireType 5 =*/13).float(message.minX);
+        if (message.maxX != null && message.hasOwnProperty("maxX"))
+            writer.uint32(/* id 2, wireType 5 =*/21).float(message.maxX);
+        if (message.minY != null && message.hasOwnProperty("minY"))
+            writer.uint32(/* id 3, wireType 5 =*/29).float(message.minY);
+        if (message.maxY != null && message.hasOwnProperty("maxY"))
+            writer.uint32(/* id 4, wireType 5 =*/37).float(message.maxY);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified BoundingBox message, length delimited. Does not implicitly {@link BoundingBox.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof BoundingBox
+     * @static
+     * @param {IBoundingBox} message BoundingBox message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    BoundingBox.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a BoundingBox message from the specified reader or buffer.
+     * @function decode
+     * @memberof BoundingBox
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {BoundingBox} BoundingBox
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BoundingBox.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.BoundingBox();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.minX = reader.float();
+                break;
+            case 2:
+                message.maxX = reader.float();
+                break;
+            case 3:
+                message.minY = reader.float();
+                break;
+            case 4:
+                message.maxY = reader.float();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a BoundingBox message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof BoundingBox
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {BoundingBox} BoundingBox
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    BoundingBox.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a BoundingBox message.
+     * @function verify
+     * @memberof BoundingBox
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    BoundingBox.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.minX != null && message.hasOwnProperty("minX"))
+            if (typeof message.minX !== "number")
+                return "minX: number expected";
+        if (message.maxX != null && message.hasOwnProperty("maxX"))
+            if (typeof message.maxX !== "number")
+                return "maxX: number expected";
+        if (message.minY != null && message.hasOwnProperty("minY"))
+            if (typeof message.minY !== "number")
+                return "minY: number expected";
+        if (message.maxY != null && message.hasOwnProperty("maxY"))
+            if (typeof message.maxY !== "number")
+                return "maxY: number expected";
+        return null;
+    };
+
+    /**
+     * Creates a BoundingBox message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof BoundingBox
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {BoundingBox} BoundingBox
+     */
+    BoundingBox.fromObject = function fromObject(object) {
+        if (object instanceof $root.BoundingBox)
+            return object;
+        let message = new $root.BoundingBox();
+        if (object.minX != null)
+            message.minX = Number(object.minX);
+        if (object.maxX != null)
+            message.maxX = Number(object.maxX);
+        if (object.minY != null)
+            message.minY = Number(object.minY);
+        if (object.maxY != null)
+            message.maxY = Number(object.maxY);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a BoundingBox message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof BoundingBox
+     * @static
+     * @param {BoundingBox} message BoundingBox
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    BoundingBox.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.minX = 0;
+            object.maxX = 0;
+            object.minY = 0;
+            object.maxY = 0;
+        }
+        if (message.minX != null && message.hasOwnProperty("minX"))
+            object.minX = options.json && !isFinite(message.minX) ? String(message.minX) : message.minX;
+        if (message.maxX != null && message.hasOwnProperty("maxX"))
+            object.maxX = options.json && !isFinite(message.maxX) ? String(message.maxX) : message.maxX;
+        if (message.minY != null && message.hasOwnProperty("minY"))
+            object.minY = options.json && !isFinite(message.minY) ? String(message.minY) : message.minY;
+        if (message.maxY != null && message.hasOwnProperty("maxY"))
+            object.maxY = options.json && !isFinite(message.maxY) ? String(message.maxY) : message.maxY;
+        return object;
+    };
+
+    /**
+     * Converts this BoundingBox to JSON.
+     * @function toJSON
+     * @memberof BoundingBox
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    BoundingBox.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return BoundingBox;
+})();
+
+export const Geometry = $root.Geometry = (() => {
+
+    /**
+     * Properties of a Geometry.
+     * @exports IGeometry
+     * @interface IGeometry
+     * @property {IVector3|null} [position] Geometry position
+     * @property {Array.<IVector3>|null} [indices] Geometry indices
+     */
+
+    /**
+     * Constructs a new Geometry.
+     * @exports Geometry
+     * @classdesc Represents a Geometry.
+     * @implements IGeometry
+     * @constructor
+     * @param {IGeometry=} [properties] Properties to set
+     */
+    function Geometry(properties) {
+        this.indices = [];
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Geometry position.
+     * @member {IVector3|null|undefined} position
+     * @memberof Geometry
+     * @instance
+     */
+    Geometry.prototype.position = null;
+
+    /**
+     * Geometry indices.
+     * @member {Array.<IVector3>} indices
+     * @memberof Geometry
+     * @instance
+     */
+    Geometry.prototype.indices = $util.emptyArray;
+
+    /**
+     * Creates a new Geometry instance using the specified properties.
+     * @function create
+     * @memberof Geometry
+     * @static
+     * @param {IGeometry=} [properties] Properties to set
+     * @returns {Geometry} Geometry instance
+     */
+    Geometry.create = function create(properties) {
+        return new Geometry(properties);
+    };
+
+    /**
+     * Encodes the specified Geometry message. Does not implicitly {@link Geometry.verify|verify} messages.
+     * @function encode
+     * @memberof Geometry
+     * @static
+     * @param {IGeometry} message Geometry message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Geometry.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.position != null && message.hasOwnProperty("position"))
+            $root.Vector3.encode(message.position, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.indices != null && message.indices.length)
+            for (let i = 0; i < message.indices.length; ++i)
+                $root.Vector3.encode(message.indices[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified Geometry message, length delimited. Does not implicitly {@link Geometry.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof Geometry
+     * @static
+     * @param {IGeometry} message Geometry message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Geometry.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a Geometry message from the specified reader or buffer.
+     * @function decode
+     * @memberof Geometry
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {Geometry} Geometry
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Geometry.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Geometry();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.position = $root.Vector3.decode(reader, reader.uint32());
+                break;
+            case 2:
+                if (!(message.indices && message.indices.length))
+                    message.indices = [];
+                message.indices.push($root.Vector3.decode(reader, reader.uint32()));
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a Geometry message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof Geometry
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {Geometry} Geometry
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Geometry.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a Geometry message.
+     * @function verify
+     * @memberof Geometry
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    Geometry.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.position != null && message.hasOwnProperty("position")) {
+            let error = $root.Vector3.verify(message.position);
+            if (error)
+                return "position." + error;
+        }
+        if (message.indices != null && message.hasOwnProperty("indices")) {
+            if (!Array.isArray(message.indices))
+                return "indices: array expected";
+            for (let i = 0; i < message.indices.length; ++i) {
+                let error = $root.Vector3.verify(message.indices[i]);
+                if (error)
+                    return "indices." + error;
+            }
+        }
+        return null;
+    };
+
+    /**
+     * Creates a Geometry message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof Geometry
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {Geometry} Geometry
+     */
+    Geometry.fromObject = function fromObject(object) {
+        if (object instanceof $root.Geometry)
+            return object;
+        let message = new $root.Geometry();
+        if (object.position != null) {
+            if (typeof object.position !== "object")
+                throw TypeError(".Geometry.position: object expected");
+            message.position = $root.Vector3.fromObject(object.position);
+        }
+        if (object.indices) {
+            if (!Array.isArray(object.indices))
+                throw TypeError(".Geometry.indices: array expected");
+            message.indices = [];
+            for (let i = 0; i < object.indices.length; ++i) {
+                if (typeof object.indices[i] !== "object")
+                    throw TypeError(".Geometry.indices: object expected");
+                message.indices[i] = $root.Vector3.fromObject(object.indices[i]);
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a Geometry message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof Geometry
+     * @static
+     * @param {Geometry} message Geometry
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    Geometry.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.arrays || options.defaults)
+            object.indices = [];
+        if (options.defaults)
+            object.position = null;
+        if (message.position != null && message.hasOwnProperty("position"))
+            object.position = $root.Vector3.toObject(message.position, options);
+        if (message.indices && message.indices.length) {
+            object.indices = [];
+            for (let j = 0; j < message.indices.length; ++j)
+                object.indices[j] = $root.Vector3.toObject(message.indices[j], options);
+        }
+        return object;
+    };
+
+    /**
+     * Converts this Geometry to JSON.
+     * @function toJSON
+     * @memberof Geometry
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    Geometry.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return Geometry;
 })();
 
 export const Envelope = $root.Envelope = (() => {
@@ -3387,10 +3877,11 @@ export const Vehicle = $root.Vehicle = (() => {
      * @exports IVehicle
      * @interface IVehicle
      * @property {string|null} [id] Vehicle id
-     * @property {IPosition|null} [currentPosition] Vehicle currentPosition
-     * @property {IPosition|null} [targetPosition] Vehicle targetPosition
+     * @property {IVector3|null} [currentPosition] Vehicle currentPosition
+     * @property {IVector3|null} [targetPosition] Vehicle targetPosition
      * @property {number|null} [acceleration] Vehicle acceleration
      * @property {number|null} [speed] Vehicle speed
+     * @property {IVehicleSpec|null} [spec] Vehicle spec
      */
 
     /**
@@ -3418,7 +3909,7 @@ export const Vehicle = $root.Vehicle = (() => {
 
     /**
      * Vehicle currentPosition.
-     * @member {IPosition|null|undefined} currentPosition
+     * @member {IVector3|null|undefined} currentPosition
      * @memberof Vehicle
      * @instance
      */
@@ -3426,7 +3917,7 @@ export const Vehicle = $root.Vehicle = (() => {
 
     /**
      * Vehicle targetPosition.
-     * @member {IPosition|null|undefined} targetPosition
+     * @member {IVector3|null|undefined} targetPosition
      * @memberof Vehicle
      * @instance
      */
@@ -3447,6 +3938,14 @@ export const Vehicle = $root.Vehicle = (() => {
      * @instance
      */
     Vehicle.prototype.speed = 0;
+
+    /**
+     * Vehicle spec.
+     * @member {IVehicleSpec|null|undefined} spec
+     * @memberof Vehicle
+     * @instance
+     */
+    Vehicle.prototype.spec = null;
 
     /**
      * Creates a new Vehicle instance using the specified properties.
@@ -3475,13 +3974,15 @@ export const Vehicle = $root.Vehicle = (() => {
         if (message.id != null && message.hasOwnProperty("id"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
         if (message.currentPosition != null && message.hasOwnProperty("currentPosition"))
-            $root.Position.encode(message.currentPosition, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+            $root.Vector3.encode(message.currentPosition, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         if (message.targetPosition != null && message.hasOwnProperty("targetPosition"))
-            $root.Position.encode(message.targetPosition, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+            $root.Vector3.encode(message.targetPosition, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         if (message.acceleration != null && message.hasOwnProperty("acceleration"))
             writer.uint32(/* id 4, wireType 5 =*/37).float(message.acceleration);
         if (message.speed != null && message.hasOwnProperty("speed"))
             writer.uint32(/* id 5, wireType 5 =*/45).float(message.speed);
+        if (message.spec != null && message.hasOwnProperty("spec"))
+            $root.VehicleSpec.encode(message.spec, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
         return writer;
     };
 
@@ -3520,16 +4021,19 @@ export const Vehicle = $root.Vehicle = (() => {
                 message.id = reader.string();
                 break;
             case 2:
-                message.currentPosition = $root.Position.decode(reader, reader.uint32());
+                message.currentPosition = $root.Vector3.decode(reader, reader.uint32());
                 break;
             case 3:
-                message.targetPosition = $root.Position.decode(reader, reader.uint32());
+                message.targetPosition = $root.Vector3.decode(reader, reader.uint32());
                 break;
             case 4:
                 message.acceleration = reader.float();
                 break;
             case 5:
                 message.speed = reader.float();
+                break;
+            case 6:
+                message.spec = $root.VehicleSpec.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -3570,12 +4074,12 @@ export const Vehicle = $root.Vehicle = (() => {
             if (!$util.isString(message.id))
                 return "id: string expected";
         if (message.currentPosition != null && message.hasOwnProperty("currentPosition")) {
-            let error = $root.Position.verify(message.currentPosition);
+            let error = $root.Vector3.verify(message.currentPosition);
             if (error)
                 return "currentPosition." + error;
         }
         if (message.targetPosition != null && message.hasOwnProperty("targetPosition")) {
-            let error = $root.Position.verify(message.targetPosition);
+            let error = $root.Vector3.verify(message.targetPosition);
             if (error)
                 return "targetPosition." + error;
         }
@@ -3585,6 +4089,11 @@ export const Vehicle = $root.Vehicle = (() => {
         if (message.speed != null && message.hasOwnProperty("speed"))
             if (typeof message.speed !== "number")
                 return "speed: number expected";
+        if (message.spec != null && message.hasOwnProperty("spec")) {
+            let error = $root.VehicleSpec.verify(message.spec);
+            if (error)
+                return "spec." + error;
+        }
         return null;
     };
 
@@ -3605,17 +4114,22 @@ export const Vehicle = $root.Vehicle = (() => {
         if (object.currentPosition != null) {
             if (typeof object.currentPosition !== "object")
                 throw TypeError(".Vehicle.currentPosition: object expected");
-            message.currentPosition = $root.Position.fromObject(object.currentPosition);
+            message.currentPosition = $root.Vector3.fromObject(object.currentPosition);
         }
         if (object.targetPosition != null) {
             if (typeof object.targetPosition !== "object")
                 throw TypeError(".Vehicle.targetPosition: object expected");
-            message.targetPosition = $root.Position.fromObject(object.targetPosition);
+            message.targetPosition = $root.Vector3.fromObject(object.targetPosition);
         }
         if (object.acceleration != null)
             message.acceleration = Number(object.acceleration);
         if (object.speed != null)
             message.speed = Number(object.speed);
+        if (object.spec != null) {
+            if (typeof object.spec !== "object")
+                throw TypeError(".Vehicle.spec: object expected");
+            message.spec = $root.VehicleSpec.fromObject(object.spec);
+        }
         return message;
     };
 
@@ -3638,17 +4152,20 @@ export const Vehicle = $root.Vehicle = (() => {
             object.targetPosition = null;
             object.acceleration = 0;
             object.speed = 0;
+            object.spec = null;
         }
         if (message.id != null && message.hasOwnProperty("id"))
             object.id = message.id;
         if (message.currentPosition != null && message.hasOwnProperty("currentPosition"))
-            object.currentPosition = $root.Position.toObject(message.currentPosition, options);
+            object.currentPosition = $root.Vector3.toObject(message.currentPosition, options);
         if (message.targetPosition != null && message.hasOwnProperty("targetPosition"))
-            object.targetPosition = $root.Position.toObject(message.targetPosition, options);
+            object.targetPosition = $root.Vector3.toObject(message.targetPosition, options);
         if (message.acceleration != null && message.hasOwnProperty("acceleration"))
             object.acceleration = options.json && !isFinite(message.acceleration) ? String(message.acceleration) : message.acceleration;
         if (message.speed != null && message.hasOwnProperty("speed"))
             object.speed = options.json && !isFinite(message.speed) ? String(message.speed) : message.speed;
+        if (message.spec != null && message.hasOwnProperty("spec"))
+            object.spec = $root.VehicleSpec.toObject(message.spec, options);
         return object;
     };
 
@@ -3666,12 +4183,274 @@ export const Vehicle = $root.Vehicle = (() => {
     return Vehicle;
 })();
 
+export const VehicleSpec = $root.VehicleSpec = (() => {
+
+    /**
+     * Properties of a VehicleSpec.
+     * @exports IVehicleSpec
+     * @interface IVehicleSpec
+     * @property {number|null} [width] VehicleSpec width
+     * @property {number|null} [length] VehicleSpec length
+     * @property {number|null} [height] VehicleSpec height
+     * @property {IGeometry|null} [geometry] VehicleSpec geometry
+     */
+
+    /**
+     * Constructs a new VehicleSpec.
+     * @exports VehicleSpec
+     * @classdesc Represents a VehicleSpec.
+     * @implements IVehicleSpec
+     * @constructor
+     * @param {IVehicleSpec=} [properties] Properties to set
+     */
+    function VehicleSpec(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * VehicleSpec width.
+     * @member {number} width
+     * @memberof VehicleSpec
+     * @instance
+     */
+    VehicleSpec.prototype.width = 0;
+
+    /**
+     * VehicleSpec length.
+     * @member {number} length
+     * @memberof VehicleSpec
+     * @instance
+     */
+    VehicleSpec.prototype.length = 0;
+
+    /**
+     * VehicleSpec height.
+     * @member {number} height
+     * @memberof VehicleSpec
+     * @instance
+     */
+    VehicleSpec.prototype.height = 0;
+
+    /**
+     * VehicleSpec geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof VehicleSpec
+     * @instance
+     */
+    VehicleSpec.prototype.geometry = null;
+
+    /**
+     * Creates a new VehicleSpec instance using the specified properties.
+     * @function create
+     * @memberof VehicleSpec
+     * @static
+     * @param {IVehicleSpec=} [properties] Properties to set
+     * @returns {VehicleSpec} VehicleSpec instance
+     */
+    VehicleSpec.create = function create(properties) {
+        return new VehicleSpec(properties);
+    };
+
+    /**
+     * Encodes the specified VehicleSpec message. Does not implicitly {@link VehicleSpec.verify|verify} messages.
+     * @function encode
+     * @memberof VehicleSpec
+     * @static
+     * @param {IVehicleSpec} message VehicleSpec message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    VehicleSpec.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.width != null && message.hasOwnProperty("width"))
+            writer.uint32(/* id 1, wireType 5 =*/13).float(message.width);
+        if (message.length != null && message.hasOwnProperty("length"))
+            writer.uint32(/* id 2, wireType 5 =*/21).float(message.length);
+        if (message.height != null && message.hasOwnProperty("height"))
+            writer.uint32(/* id 3, wireType 5 =*/29).float(message.height);
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified VehicleSpec message, length delimited. Does not implicitly {@link VehicleSpec.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof VehicleSpec
+     * @static
+     * @param {IVehicleSpec} message VehicleSpec message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    VehicleSpec.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a VehicleSpec message from the specified reader or buffer.
+     * @function decode
+     * @memberof VehicleSpec
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {VehicleSpec} VehicleSpec
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    VehicleSpec.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.VehicleSpec();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.width = reader.float();
+                break;
+            case 2:
+                message.length = reader.float();
+                break;
+            case 3:
+                message.height = reader.float();
+                break;
+            case 4:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a VehicleSpec message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof VehicleSpec
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {VehicleSpec} VehicleSpec
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    VehicleSpec.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a VehicleSpec message.
+     * @function verify
+     * @memberof VehicleSpec
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    VehicleSpec.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.width != null && message.hasOwnProperty("width"))
+            if (typeof message.width !== "number")
+                return "width: number expected";
+        if (message.length != null && message.hasOwnProperty("length"))
+            if (typeof message.length !== "number")
+                return "length: number expected";
+        if (message.height != null && message.hasOwnProperty("height"))
+            if (typeof message.height !== "number")
+                return "height: number expected";
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a VehicleSpec message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof VehicleSpec
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {VehicleSpec} VehicleSpec
+     */
+    VehicleSpec.fromObject = function fromObject(object) {
+        if (object instanceof $root.VehicleSpec)
+            return object;
+        let message = new $root.VehicleSpec();
+        if (object.width != null)
+            message.width = Number(object.width);
+        if (object.length != null)
+            message.length = Number(object.length);
+        if (object.height != null)
+            message.height = Number(object.height);
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".VehicleSpec.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a VehicleSpec message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof VehicleSpec
+     * @static
+     * @param {VehicleSpec} message VehicleSpec
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    VehicleSpec.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.width = 0;
+            object.length = 0;
+            object.height = 0;
+            object.geometry = null;
+        }
+        if (message.width != null && message.hasOwnProperty("width"))
+            object.width = options.json && !isFinite(message.width) ? String(message.width) : message.width;
+        if (message.length != null && message.hasOwnProperty("length"))
+            object.length = options.json && !isFinite(message.length) ? String(message.length) : message.length;
+        if (message.height != null && message.hasOwnProperty("height"))
+            object.height = options.json && !isFinite(message.height) ? String(message.height) : message.height;
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        return object;
+    };
+
+    /**
+     * Converts this VehicleSpec to JSON.
+     * @function toJSON
+     * @memberof VehicleSpec
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    VehicleSpec.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return VehicleSpec;
+})();
+
 export const Road = $root.Road = (() => {
 
     /**
      * Properties of a Road.
      * @exports IRoad
      * @interface IRoad
+     * @property {string|null} [id] Road id
+     * @property {Array.<ILane>|null} [lanes] Road lanes
+     * @property {IGeometry|null} [geometry] Road geometry
      */
 
     /**
@@ -3683,11 +4462,36 @@ export const Road = $root.Road = (() => {
      * @param {IRoad=} [properties] Properties to set
      */
     function Road(properties) {
+        this.lanes = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
+
+    /**
+     * Road id.
+     * @member {string} id
+     * @memberof Road
+     * @instance
+     */
+    Road.prototype.id = "";
+
+    /**
+     * Road lanes.
+     * @member {Array.<ILane>} lanes
+     * @memberof Road
+     * @instance
+     */
+    Road.prototype.lanes = $util.emptyArray;
+
+    /**
+     * Road geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof Road
+     * @instance
+     */
+    Road.prototype.geometry = null;
 
     /**
      * Creates a new Road instance using the specified properties.
@@ -3713,6 +4517,13 @@ export const Road = $root.Road = (() => {
     Road.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
+        if (message.id != null && message.hasOwnProperty("id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+        if (message.lanes != null && message.lanes.length)
+            for (let i = 0; i < message.lanes.length; ++i)
+                $root.Lane.encode(message.lanes[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
         return writer;
     };
 
@@ -3747,6 +4558,17 @@ export const Road = $root.Road = (() => {
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
+            case 1:
+                message.id = reader.string();
+                break;
+            case 2:
+                if (!(message.lanes && message.lanes.length))
+                    message.lanes = [];
+                message.lanes.push($root.Lane.decode(reader, reader.uint32()));
+                break;
+            case 3:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -3782,6 +4604,23 @@ export const Road = $root.Road = (() => {
     Road.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        if (message.id != null && message.hasOwnProperty("id"))
+            if (!$util.isString(message.id))
+                return "id: string expected";
+        if (message.lanes != null && message.hasOwnProperty("lanes")) {
+            if (!Array.isArray(message.lanes))
+                return "lanes: array expected";
+            for (let i = 0; i < message.lanes.length; ++i) {
+                let error = $root.Lane.verify(message.lanes[i]);
+                if (error)
+                    return "lanes." + error;
+            }
+        }
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
         return null;
     };
 
@@ -3796,7 +4635,25 @@ export const Road = $root.Road = (() => {
     Road.fromObject = function fromObject(object) {
         if (object instanceof $root.Road)
             return object;
-        return new $root.Road();
+        let message = new $root.Road();
+        if (object.id != null)
+            message.id = String(object.id);
+        if (object.lanes) {
+            if (!Array.isArray(object.lanes))
+                throw TypeError(".Road.lanes: array expected");
+            message.lanes = [];
+            for (let i = 0; i < object.lanes.length; ++i) {
+                if (typeof object.lanes[i] !== "object")
+                    throw TypeError(".Road.lanes: object expected");
+                message.lanes[i] = $root.Lane.fromObject(object.lanes[i]);
+            }
+        }
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".Road.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        return message;
     };
 
     /**
@@ -3808,8 +4665,26 @@ export const Road = $root.Road = (() => {
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    Road.toObject = function toObject() {
-        return {};
+    Road.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.arrays || options.defaults)
+            object.lanes = [];
+        if (options.defaults) {
+            object.id = "";
+            object.geometry = null;
+        }
+        if (message.id != null && message.hasOwnProperty("id"))
+            object.id = message.id;
+        if (message.lanes && message.lanes.length) {
+            object.lanes = [];
+            for (let j = 0; j < message.lanes.length; ++j)
+                object.lanes[j] = $root.Lane.toObject(message.lanes[j], options);
+        }
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        return object;
     };
 
     /**
@@ -3824,6 +4699,713 @@ export const Road = $root.Road = (() => {
     };
 
     return Road;
+})();
+
+export const Lane = $root.Lane = (() => {
+
+    /**
+     * Properties of a Lane.
+     * @exports ILane
+     * @interface ILane
+     * @property {string|null} [id] Lane id
+     * @property {IGeometry|null} [geometry] Lane geometry
+     * @property {IVector3|null} [entryPoint] Lane entryPoint
+     * @property {IVector3|null} [exitPoint] Lane exitPoint
+     * @property {ISpawnPoint|null} [spawnPoint] Lane spawnPoint
+     * @property {ICollectPoint|null} [collectPoint] Lane collectPoint
+     */
+
+    /**
+     * Constructs a new Lane.
+     * @exports Lane
+     * @classdesc Represents a Lane.
+     * @implements ILane
+     * @constructor
+     * @param {ILane=} [properties] Properties to set
+     */
+    function Lane(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * Lane id.
+     * @member {string} id
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.id = "";
+
+    /**
+     * Lane geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.geometry = null;
+
+    /**
+     * Lane entryPoint.
+     * @member {IVector3|null|undefined} entryPoint
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.entryPoint = null;
+
+    /**
+     * Lane exitPoint.
+     * @member {IVector3|null|undefined} exitPoint
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.exitPoint = null;
+
+    /**
+     * Lane spawnPoint.
+     * @member {ISpawnPoint|null|undefined} spawnPoint
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.spawnPoint = null;
+
+    /**
+     * Lane collectPoint.
+     * @member {ICollectPoint|null|undefined} collectPoint
+     * @memberof Lane
+     * @instance
+     */
+    Lane.prototype.collectPoint = null;
+
+    /**
+     * Creates a new Lane instance using the specified properties.
+     * @function create
+     * @memberof Lane
+     * @static
+     * @param {ILane=} [properties] Properties to set
+     * @returns {Lane} Lane instance
+     */
+    Lane.create = function create(properties) {
+        return new Lane(properties);
+    };
+
+    /**
+     * Encodes the specified Lane message. Does not implicitly {@link Lane.verify|verify} messages.
+     * @function encode
+     * @memberof Lane
+     * @static
+     * @param {ILane} message Lane message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Lane.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.id != null && message.hasOwnProperty("id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        if (message.entryPoint != null && message.hasOwnProperty("entryPoint"))
+            $root.Vector3.encode(message.entryPoint, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.exitPoint != null && message.hasOwnProperty("exitPoint"))
+            $root.Vector3.encode(message.exitPoint, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+        if (message.spawnPoint != null && message.hasOwnProperty("spawnPoint"))
+            $root.SpawnPoint.encode(message.spawnPoint, writer.uint32(/* id 5, wireType 2 =*/42).fork()).ldelim();
+        if (message.collectPoint != null && message.hasOwnProperty("collectPoint"))
+            $root.CollectPoint.encode(message.collectPoint, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified Lane message, length delimited. Does not implicitly {@link Lane.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof Lane
+     * @static
+     * @param {ILane} message Lane message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    Lane.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a Lane message from the specified reader or buffer.
+     * @function decode
+     * @memberof Lane
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {Lane} Lane
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Lane.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Lane();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.id = reader.string();
+                break;
+            case 2:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
+            case 3:
+                message.entryPoint = $root.Vector3.decode(reader, reader.uint32());
+                break;
+            case 4:
+                message.exitPoint = $root.Vector3.decode(reader, reader.uint32());
+                break;
+            case 5:
+                message.spawnPoint = $root.SpawnPoint.decode(reader, reader.uint32());
+                break;
+            case 6:
+                message.collectPoint = $root.CollectPoint.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a Lane message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof Lane
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {Lane} Lane
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    Lane.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a Lane message.
+     * @function verify
+     * @memberof Lane
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    Lane.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.id != null && message.hasOwnProperty("id"))
+            if (!$util.isString(message.id))
+                return "id: string expected";
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
+        if (message.entryPoint != null && message.hasOwnProperty("entryPoint")) {
+            let error = $root.Vector3.verify(message.entryPoint);
+            if (error)
+                return "entryPoint." + error;
+        }
+        if (message.exitPoint != null && message.hasOwnProperty("exitPoint")) {
+            let error = $root.Vector3.verify(message.exitPoint);
+            if (error)
+                return "exitPoint." + error;
+        }
+        if (message.spawnPoint != null && message.hasOwnProperty("spawnPoint")) {
+            let error = $root.SpawnPoint.verify(message.spawnPoint);
+            if (error)
+                return "spawnPoint." + error;
+        }
+        if (message.collectPoint != null && message.hasOwnProperty("collectPoint")) {
+            let error = $root.CollectPoint.verify(message.collectPoint);
+            if (error)
+                return "collectPoint." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a Lane message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof Lane
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {Lane} Lane
+     */
+    Lane.fromObject = function fromObject(object) {
+        if (object instanceof $root.Lane)
+            return object;
+        let message = new $root.Lane();
+        if (object.id != null)
+            message.id = String(object.id);
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".Lane.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        if (object.entryPoint != null) {
+            if (typeof object.entryPoint !== "object")
+                throw TypeError(".Lane.entryPoint: object expected");
+            message.entryPoint = $root.Vector3.fromObject(object.entryPoint);
+        }
+        if (object.exitPoint != null) {
+            if (typeof object.exitPoint !== "object")
+                throw TypeError(".Lane.exitPoint: object expected");
+            message.exitPoint = $root.Vector3.fromObject(object.exitPoint);
+        }
+        if (object.spawnPoint != null) {
+            if (typeof object.spawnPoint !== "object")
+                throw TypeError(".Lane.spawnPoint: object expected");
+            message.spawnPoint = $root.SpawnPoint.fromObject(object.spawnPoint);
+        }
+        if (object.collectPoint != null) {
+            if (typeof object.collectPoint !== "object")
+                throw TypeError(".Lane.collectPoint: object expected");
+            message.collectPoint = $root.CollectPoint.fromObject(object.collectPoint);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a Lane message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof Lane
+     * @static
+     * @param {Lane} message Lane
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    Lane.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults) {
+            object.id = "";
+            object.geometry = null;
+            object.entryPoint = null;
+            object.exitPoint = null;
+            object.spawnPoint = null;
+            object.collectPoint = null;
+        }
+        if (message.id != null && message.hasOwnProperty("id"))
+            object.id = message.id;
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        if (message.entryPoint != null && message.hasOwnProperty("entryPoint"))
+            object.entryPoint = $root.Vector3.toObject(message.entryPoint, options);
+        if (message.exitPoint != null && message.hasOwnProperty("exitPoint"))
+            object.exitPoint = $root.Vector3.toObject(message.exitPoint, options);
+        if (message.spawnPoint != null && message.hasOwnProperty("spawnPoint"))
+            object.spawnPoint = $root.SpawnPoint.toObject(message.spawnPoint, options);
+        if (message.collectPoint != null && message.hasOwnProperty("collectPoint"))
+            object.collectPoint = $root.CollectPoint.toObject(message.collectPoint, options);
+        return object;
+    };
+
+    /**
+     * Converts this Lane to JSON.
+     * @function toJSON
+     * @memberof Lane
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    Lane.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return Lane;
+})();
+
+export const SpawnPoint = $root.SpawnPoint = (() => {
+
+    /**
+     * Properties of a SpawnPoint.
+     * @exports ISpawnPoint
+     * @interface ISpawnPoint
+     * @property {IGeometry|null} [geometry] SpawnPoint geometry
+     */
+
+    /**
+     * Constructs a new SpawnPoint.
+     * @exports SpawnPoint
+     * @classdesc Represents a SpawnPoint.
+     * @implements ISpawnPoint
+     * @constructor
+     * @param {ISpawnPoint=} [properties] Properties to set
+     */
+    function SpawnPoint(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * SpawnPoint geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof SpawnPoint
+     * @instance
+     */
+    SpawnPoint.prototype.geometry = null;
+
+    /**
+     * Creates a new SpawnPoint instance using the specified properties.
+     * @function create
+     * @memberof SpawnPoint
+     * @static
+     * @param {ISpawnPoint=} [properties] Properties to set
+     * @returns {SpawnPoint} SpawnPoint instance
+     */
+    SpawnPoint.create = function create(properties) {
+        return new SpawnPoint(properties);
+    };
+
+    /**
+     * Encodes the specified SpawnPoint message. Does not implicitly {@link SpawnPoint.verify|verify} messages.
+     * @function encode
+     * @memberof SpawnPoint
+     * @static
+     * @param {ISpawnPoint} message SpawnPoint message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    SpawnPoint.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified SpawnPoint message, length delimited. Does not implicitly {@link SpawnPoint.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof SpawnPoint
+     * @static
+     * @param {ISpawnPoint} message SpawnPoint message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    SpawnPoint.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a SpawnPoint message from the specified reader or buffer.
+     * @function decode
+     * @memberof SpawnPoint
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {SpawnPoint} SpawnPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    SpawnPoint.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.SpawnPoint();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a SpawnPoint message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof SpawnPoint
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {SpawnPoint} SpawnPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    SpawnPoint.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a SpawnPoint message.
+     * @function verify
+     * @memberof SpawnPoint
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    SpawnPoint.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a SpawnPoint message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof SpawnPoint
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {SpawnPoint} SpawnPoint
+     */
+    SpawnPoint.fromObject = function fromObject(object) {
+        if (object instanceof $root.SpawnPoint)
+            return object;
+        let message = new $root.SpawnPoint();
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".SpawnPoint.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a SpawnPoint message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof SpawnPoint
+     * @static
+     * @param {SpawnPoint} message SpawnPoint
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    SpawnPoint.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.geometry = null;
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        return object;
+    };
+
+    /**
+     * Converts this SpawnPoint to JSON.
+     * @function toJSON
+     * @memberof SpawnPoint
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    SpawnPoint.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return SpawnPoint;
+})();
+
+export const CollectPoint = $root.CollectPoint = (() => {
+
+    /**
+     * Properties of a CollectPoint.
+     * @exports ICollectPoint
+     * @interface ICollectPoint
+     * @property {IGeometry|null} [geometry] CollectPoint geometry
+     */
+
+    /**
+     * Constructs a new CollectPoint.
+     * @exports CollectPoint
+     * @classdesc Represents a CollectPoint.
+     * @implements ICollectPoint
+     * @constructor
+     * @param {ICollectPoint=} [properties] Properties to set
+     */
+    function CollectPoint(properties) {
+        if (properties)
+            for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * CollectPoint geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof CollectPoint
+     * @instance
+     */
+    CollectPoint.prototype.geometry = null;
+
+    /**
+     * Creates a new CollectPoint instance using the specified properties.
+     * @function create
+     * @memberof CollectPoint
+     * @static
+     * @param {ICollectPoint=} [properties] Properties to set
+     * @returns {CollectPoint} CollectPoint instance
+     */
+    CollectPoint.create = function create(properties) {
+        return new CollectPoint(properties);
+    };
+
+    /**
+     * Encodes the specified CollectPoint message. Does not implicitly {@link CollectPoint.verify|verify} messages.
+     * @function encode
+     * @memberof CollectPoint
+     * @static
+     * @param {ICollectPoint} message CollectPoint message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    CollectPoint.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        return writer;
+    };
+
+    /**
+     * Encodes the specified CollectPoint message, length delimited. Does not implicitly {@link CollectPoint.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof CollectPoint
+     * @static
+     * @param {ICollectPoint} message CollectPoint message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    CollectPoint.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a CollectPoint message from the specified reader or buffer.
+     * @function decode
+     * @memberof CollectPoint
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {CollectPoint} CollectPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    CollectPoint.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        let end = length === undefined ? reader.len : reader.pos + length, message = new $root.CollectPoint();
+        while (reader.pos < end) {
+            let tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a CollectPoint message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof CollectPoint
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {CollectPoint} CollectPoint
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    CollectPoint.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a CollectPoint message.
+     * @function verify
+     * @memberof CollectPoint
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    CollectPoint.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
+        return null;
+    };
+
+    /**
+     * Creates a CollectPoint message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof CollectPoint
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {CollectPoint} CollectPoint
+     */
+    CollectPoint.fromObject = function fromObject(object) {
+        if (object instanceof $root.CollectPoint)
+            return object;
+        let message = new $root.CollectPoint();
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".CollectPoint.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a CollectPoint message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof CollectPoint
+     * @static
+     * @param {CollectPoint} message CollectPoint
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    CollectPoint.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.defaults)
+            object.geometry = null;
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        return object;
+    };
+
+    /**
+     * Converts this CollectPoint to JSON.
+     * @function toJSON
+     * @memberof CollectPoint
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    CollectPoint.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return CollectPoint;
 })();
 
 export const Intersection = $root.Intersection = (() => {

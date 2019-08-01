@@ -16,6 +16,13 @@ message Vehicle{
     Vector3 targetPosition = 3;
     float acceleration = 4;
     float speed = 5;
+    VehicleSpec spec = 6;
 
 }
 
+message VehicleSpec{
+    float width = 1;
+    float length = 2;
+    float height = 3;
+    Geometry geometry = 4;
+}
