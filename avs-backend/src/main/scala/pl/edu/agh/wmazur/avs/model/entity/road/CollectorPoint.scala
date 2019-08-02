@@ -16,7 +16,7 @@ case class CollectorPoint(lane: Lane) {
 
     lane
       .getGeometryFraction(1 - maxVehicleLength.meters / lane.length.meters, 1)
-      .buffer(0.00001)
+      .buffer(0.000001)
   }
 
   def shouldBeRemoved(position: Point, area: Shape): Boolean = {

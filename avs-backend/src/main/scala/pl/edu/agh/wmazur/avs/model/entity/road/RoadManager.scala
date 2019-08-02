@@ -27,7 +27,8 @@ class RoadManager(
     s"road-spawner-${road.id}"
   )
   val roadCollectorWorker: ActorRef[RoadCollectorWorker.Protocol] = context
-    .spawn(RoadCollectorWorker.init(context.self), s"road-collector-${road.id}")
+    .spawn(RoadCollectorWorker.init(context.self, road.lanes),
+           s"road-collector-${road.id}")
 
   context.system.receptionist ! Receptionist.register(EntityRefsGroup.road,
                                                       context.self)

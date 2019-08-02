@@ -1,11 +1,11 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import org.locationtech.spatial4j.shape.{Point, Shape}
+import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.Agent
+import pl.edu.agh.wmazur.avs.model.entity.road
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadCollectorWorker.{
-  PositionReading,
+  LaneCollectResult,
   Protocol,
   TryCollect
 }
@@ -14,34 +14,27 @@ import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
 
-class RoadCollectorWorker(val context: ActorContext[Protocol],
-                          roadManagerRef: ActorRef[RoadManager.Protocol])
+class RoadCollectorWorker(
+    val context: ActorContext[Protocol],
+    roadManagerRef: ActorRef[RoadManager.Protocol],
+    laneWorkers: Map[Lane, ActorRef[LaneCollectorWorker.Protocol]])
     extends Agent[Protocol] {
   override protected val initialBehaviour: Behavior[Protocol] = idle
-  def adapterForLane(lane: Lane): ActorRef[AutonomousDriver.PositionReading] =
-    context.messageAdapter[AutonomousDriver.PositionReading] {
-      case AutonomousDriver.PositionReading(driverRef, position, area) =>
-        PositionReading(driverRef, lane, position, area)
-    }
 
   lazy val idle: Behaviors.Receive[Protocol] = Behaviors.receiveMessagePartial {
-    case TryCollect(replyTo, entityManagerRef, vehiclesAtLanes) =>
-      val drivers = for {
+    case TryCollect(replyTo, _, vehiclesAtLanes) =>
+      val laneWorkersFiltered = for {
         (lane, drivers) <- vehiclesAtLanes.filterKeys(
           _.collectorPoint.isDefined)
-        adapter = adapterForLane(lane)
-        ref <- drivers
-      } yield {
-        ref ! AutonomousDriver.GetPositionReading(adapter)
-        ref
-      }
+        laneWorker = laneWorkers(lane)
+        _ = laneWorker ! LaneCollectorWorker.Protocol.TryCollect(drivers)
+      } yield laneWorker
 
-      getReadings(replyTo, entityManagerRef, drivers.toSet, Set.empty)
+      getReadings(replyTo, laneWorkersFiltered.toSet, Set.empty)
   }
 
   def getReadings(replyTo: ActorRef[VehiclesCollectorStage.Protocol],
-                  entityManagerRef: ActorRef[EntityManager.Protocol],
-                  awaiting: Set[ActorRef[AutonomousDriver.Protocol]],
+                  awaiting: Set[ActorRef[LaneCollectorWorker.Protocol]],
                   markedToDeletion: Set[ActorRef[AutonomousDriver.Protocol]])
     : Behavior[Protocol] = {
     if (awaiting.isEmpty) {
@@ -50,34 +43,39 @@ class RoadCollectorWorker(val context: ActorContext[Protocol],
       idle
     } else {
       Behaviors.receiveMessagePartial {
-        case PositionReading(ref, lane, position, area) =>
-          val collectorPoint = lane.collectorPoint.get
-          val markedVehicles =
-            if (collectorPoint.shouldBeRemoved(position, area)) {
-              markedToDeletion + ref
-            } else {
-              markedToDeletion
-            }
-          getReadings(replyTo, entityManagerRef, awaiting - ref, markedVehicles)
+        case LaneCollectResult(lane, laneMarkedForDeletion) =>
+          getReadings(replyTo,
+                      awaiting - lane,
+                      markedToDeletion ++ laneMarkedForDeletion)
       }
     }
   }
 
 }
 object RoadCollectorWorker {
-  def init(roadManagerRef: ActorRef[RoadManager.Protocol]): Behavior[Protocol] =
+  def init(roadManagerRef: ActorRef[RoadManager.Protocol],
+           lanes: List[Lane]): Behavior[Protocol] =
     Behaviors.setup { ctx =>
-      new RoadCollectorWorker(ctx, roadManagerRef)
+      val lanesCollectors =
+        for {
+          lane <- lanes
+          laneCollector = ctx.spawn(LaneCollectorWorker.init(lane, ctx.self),
+                                    s"lane-collector-${lane.id}")
+        } yield lane -> laneCollector
+
+      new RoadCollectorWorker(ctx, roadManagerRef, lanesCollectors.toMap)
     }
+
   sealed trait Protocol extends SimulationProtocol
-  case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
-                             lane: Lane,
-                             position: Point,
-                             area: Shape)
-      extends Protocol
   case class TryCollect(
       replyTo: ActorRef[VehiclesCollectorStage.Protocol],
       entityManagerRef: ActorRef[EntityManager.Protocol],
       vehiclesAtLanes: Map[Lane, Set[ActorRef[AutonomousDriver.Protocol]]])
       extends Protocol
+
+  case class LaneCollectResult(
+      lane: ActorRef[LaneCollectorWorker.Protocol],
+      markedForDeletion: Set[ActorRef[AutonomousDriver.Protocol]])
+      extends Protocol
+
 }
