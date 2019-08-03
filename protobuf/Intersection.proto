@@ -11,5 +11,8 @@ option (scalapb.options) = {
 
 
 message Intersection{
-
+    string id = 1;
+    Geometry geometry = 2;
+    repeated Vector3 entryPoints = 3;
+    repeated Vector3 exitPoints = 4;
 }

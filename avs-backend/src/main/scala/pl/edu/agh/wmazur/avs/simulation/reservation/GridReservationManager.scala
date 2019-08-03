@@ -10,13 +10,13 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   CrashTestDriver,
   VehicleDriver
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, Vehicle}
-import pl.edu.agh.wmazur.avs.protocol.IntersectionManagerProtocol.ReservationConfirmed.AccelerationEvent
 import pl.edu.agh.wmazur.avs.simulation.map.micro.{Tile, TilesGrid}
 import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.{
   ManagerConfig,
@@ -242,11 +242,9 @@ object GridReservationManager {
   case class ManagerConfig(timeStep: FiniteDuration,
                            granularity: Float,
                            enableEdgeTimeBuffer: Boolean = true)(
-      _timeBuffer: FiniteDuration = timeStep,
       _internalTimeBuffer: FiniteDuration = timeStep,
       _edgeTimeBuffer: FiniteDuration = timeStep,
   ) {
-    val timeBuffer: FiniteDuration = _timeBuffer.min(timeStep)
     val internalTimeBuffer: FiniteDuration = _internalTimeBuffer.min(timeStep)
     val edgeTimeBuffer: FiniteDuration = _edgeTimeBuffer.min(timeStep)
     val timeStepMillis: Timestamp = timeStep.toMillis

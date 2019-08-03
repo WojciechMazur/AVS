@@ -1,29 +1,30 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
 import akka.actor.typed.ActorRef
-import akka.actor.typed.receptionist.Receptionist
-import org.locationtech.jts.geom.{Geometry, LineString}
+import org.locationtech.jts.geom.{Geometry, LineString, Polygon}
+import org.locationtech.jts.operation.union.CascadedPolygonUnion
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext
 import org.locationtech.spatial4j.shape.{Point, Shape}
-import pl.edu.agh.wmazur.avs.{Dimension, Main}
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.EntitySettings
-import pl.edu.agh.wmazur.avs.model.entity.intersection.RoadIntersection.IntersectionAreaSegments
-import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, RoadManager}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousRoadIntersection.IntersectionAreaSegments
+import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle.Vin
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
-case class RoadIntersection(
+case class AutonomousRoadIntersection(
     id: Vin,
     roads: Iterable[Road],
-    manager: ActorRef[RoadManager.Protocol]
+    manager: ActorRef[AutonomousIntersectionManager.Protocol]
 ) extends Intersection {
   import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
   import scala.collection.breakOut
 
   val lanes: Iterable[Lane] = roads.flatMap(_.lanes)
-  private val iaSegments: RoadIntersection.IntersectionAreaSegments =
+  private val iaSegments: AutonomousRoadIntersection.IntersectionAreaSegments =
     extractAreaSegments(roads)
-  lazy val centroid: Point = RoadIntersection.shapeFactory
+  lazy val centroid: Point = AutonomousRoadIntersection.shapeFactory
     .makeShapeFromGeometry(iaSegments.geometry.get.getCentroid)
     .asInstanceOf[Point]
 
@@ -53,15 +54,8 @@ case class RoadIntersection(
 //  override def intersectionManager: IntersectionManager = ???
 
   override lazy val area: Shape =
-    RoadIntersection.shapeFactory.makeShapeFromGeometry {
-      iaSegments.geometry.get.union {
-        shapeFactory.getGeometryFrom {
-          PolygonFactory(
-            wayPoints,
-            centroid
-          )
-        }
-      }
+    AutonomousRoadIntersection.shapeFactory.makeShapeFromGeometry {
+      iaSegments.geometry.get
     }
 
   override lazy val position: Point = centroid
@@ -74,10 +68,14 @@ case class RoadIntersection(
           case ((collectedRoads, intersectionGeometry), pair @ (lr, rr))
               if !collectedRoads.contains((rr, lr)) =>
 //                !lr.oppositeRoad.contains(rr) =>
+
             val lrGeometry =
-              RoadIntersection.shapeFactory.getGeometryFrom(lr.area)
+              AutonomousRoadIntersection.shapeFactory
+                .getGeometryFrom(lr.area)
+
             val rrGeometry =
-              RoadIntersection.shapeFactory.getGeometryFrom(rr.area)
+              AutonomousRoadIntersection.shapeFactory
+                .getGeometryFrom(rr.area)
 
             val roadsIntersection = lrGeometry.intersection(rrGeometry)
 
@@ -93,49 +91,33 @@ case class RoadIntersection(
 
   private def extractIntersectionPointDistances(
       geometrySegments: Iterable[LineString],
-      roads: Iterable[Road]) = {
-    geometrySegments
-      .flatMap { segment =>
-        roads
-          .flatMap(_.lanes)
-          .map { lane =>
-            lane -> lane
-              .intersectionPoints(segment)
-              .map(lane.normalizedDistanceAlongLane)
-          }
-          .filter {
-            case (_, distances) => distances.nonEmpty
-          }
-      }
-      .foldLeft(
-        (
-          Map.empty[Lane, Double],
-          Map.empty[Lane, Double]
-        )
-      ) {
-        case ((minDistances, maxDistances), (lane, distances)) =>
-          val newMinDistance = if (minDistances.contains(lane)) {
-            (minDistances(lane) :: distances).min
-          } else {
-            distances.min
-          }
-          val newMaxDistance = if (maxDistances.contains(lane)) {
-            (maxDistances(lane) :: distances).max
-          } else {
-            distances.max
-          }
+      roads: Iterable[Road]): (Map[Lane, Angle], Map[Lane, Angle]) = {
 
-          val updatedMinDistances: Map[Lane, Double] =
-            minDistances.updated(lane, newMinDistance)
-          val updatedMaxDistances: Map[Lane, Double] =
-            maxDistances.updated(lane, newMaxDistance)
-
-          (updatedMinDistances, updatedMaxDistances)
+    val distances: Map[Lane, Iterable[Angle]] = {
+      for {
+        road <- roads
+        lane <- road.lanes
+        distances = for {
+          segment <- geometrySegments
+          point <- lane.centerIntersectionPoint(segment)
+        } yield lane.normalizedDistanceAlongLane(point)
+      } yield lane -> distances
+    }.toMap
+      .filter {
+        case (_, values) => values.nonEmpty
       }
+
+    val minDistances: Map[Lane, Double] =
+      distances.mapValues(_.min)
+    val maxDistances: Map[Lane, Double] =
+      distances.mapValues(_.max)
+
+    (minDistances, maxDistances)
   }
 
-  override type Self = RoadIntersection
-  def entitySettings: EntitySettings[RoadIntersection] = RoadIntersection
+  override type Self = AutonomousRoadIntersection
+  def entitySettings: EntitySettings[AutonomousRoadIntersection] =
+    AutonomousRoadIntersection
 
   private def extractAreaSegments(
       roads: Iterable[Road]): IntersectionAreaSegments = {
@@ -148,12 +130,14 @@ case class RoadIntersection(
       .toList
 
     val intersectionShape =
-      RoadIntersection.shapeFactory.makeShapeFromGeometry(intersectionGeometry)
+      AutonomousRoadIntersection.shapeFactory.makeShapeFromGeometry(
+        intersectionGeometry)
     val (minDistanceFromLanes, maxDistanceFromLanes) =
       extractIntersectionPointDistances(geometrySegments, roads)
     val intersectingLanes = minDistanceFromLanes.keySet
 
-    intersectingLanes.foldLeft(IntersectionAreaSegments()) {
+    intersectingLanes.foldLeft(
+      IntersectionAreaSegments(geometry = Some(intersectionGeometry))) {
       case (IntersectionAreaSegments(geometry,
                                      inletPoints,
                                      outletPoints,
@@ -161,12 +145,12 @@ case class RoadIntersection(
                                      outletHeadings),
             lane) =>
         //TODO czy na pewno powinno być zależne od długości pasa?
-        val expansionOffset = RoadIntersection.expansionDistance / lane.length
+        val expansionOffset = AutonomousRoadIntersection.expansionDistance.meters / lane.length.meters
         val (entryFraction, newEntryPoints, newEntryHeadings) =
           if (intersectionShape.relate(lane.entryPoint).intersects()) {
             (0d, inletPoints, inletHeadings)
           } else {
-            val fraction = (minDistanceFromLanes(lane) - expansionOffset).meters max 0d
+            val fraction = (minDistanceFromLanes(lane) - expansionOffset) max 0d
             (
               fraction,
               inletPoints + (lane -> lane.pointAtNormalizedDistance(fraction)),
@@ -178,7 +162,7 @@ case class RoadIntersection(
           if (intersectionShape.relate(lane.exitPoint).intersects()) {
             (1d, outletPoints, outletHeadings)
           } else {
-            val fraction = (maxDistanceFromLanes(lane) - expansionOffset).meters min 1d
+            val fraction = (maxDistanceFromLanes(lane) + expansionOffset) min 1d
             (
               fraction,
               outletPoints + (lane -> lane.pointAtNormalizedDistance(fraction)),
@@ -189,9 +173,10 @@ case class RoadIntersection(
         val geometryFragment =
           lane.getGeometryFraction(entryFraction, exitFraction)
         //TODO check if really needed
-        val filledGeometryFragment = geometryFragment.union {
-          geometryFragment.symDifference(geometryFragment)
-        }
+        val filledGeometryFragment = geometryFragment
+//          .union {
+//          geometryFragment.symDifference(geometryFragment)
+//        }
         val newGeometry = geometry match {
           case Some(geo) => geo.union(filledGeometryFragment)
           case _         => filledGeometryFragment
@@ -203,13 +188,13 @@ case class RoadIntersection(
                                  newEntryHeadings,
                                  newExitHeadings)
     }
-
   }
 }
 
-object RoadIntersection extends EntitySettings[RoadIntersection] {
+object AutonomousRoadIntersection
+    extends EntitySettings[AutonomousRoadIntersection] {
   //Offset for additional space at intersection, e.q crosswalks
-  val expansionDistance: Dimension = 4.0
+  val expansionDistance: Dimension = 2.0.fromMeters
   private val shapeFactory = SpatialUtils.shapeFactory
 
 //  def apply(roads: Iterable[Road]): RoadIntersection =

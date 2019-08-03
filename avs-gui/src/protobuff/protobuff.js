@@ -500,7 +500,7 @@ export const Geometry = $root.Geometry = (() => {
      * @exports IGeometry
      * @interface IGeometry
      * @property {IVector3|null} [position] Geometry position
-     * @property {Array.<IVector3>|null} [indices] Geometry indices
+     * @property {Array.<Geometry.IShape>|null} [shapes] Geometry shapes
      */
 
     /**
@@ -512,7 +512,7 @@ export const Geometry = $root.Geometry = (() => {
      * @param {IGeometry=} [properties] Properties to set
      */
     function Geometry(properties) {
-        this.indices = [];
+        this.shapes = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -528,12 +528,12 @@ export const Geometry = $root.Geometry = (() => {
     Geometry.prototype.position = null;
 
     /**
-     * Geometry indices.
-     * @member {Array.<IVector3>} indices
+     * Geometry shapes.
+     * @member {Array.<Geometry.IShape>} shapes
      * @memberof Geometry
      * @instance
      */
-    Geometry.prototype.indices = $util.emptyArray;
+    Geometry.prototype.shapes = $util.emptyArray;
 
     /**
      * Creates a new Geometry instance using the specified properties.
@@ -561,9 +561,9 @@ export const Geometry = $root.Geometry = (() => {
             writer = $Writer.create();
         if (message.position != null && message.hasOwnProperty("position"))
             $root.Vector3.encode(message.position, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        if (message.indices != null && message.indices.length)
-            for (let i = 0; i < message.indices.length; ++i)
-                $root.Vector3.encode(message.indices[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        if (message.shapes != null && message.shapes.length)
+            for (let i = 0; i < message.shapes.length; ++i)
+                $root.Geometry.Shape.encode(message.shapes[i], writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
     };
 
@@ -602,9 +602,9 @@ export const Geometry = $root.Geometry = (() => {
                 message.position = $root.Vector3.decode(reader, reader.uint32());
                 break;
             case 2:
-                if (!(message.indices && message.indices.length))
-                    message.indices = [];
-                message.indices.push($root.Vector3.decode(reader, reader.uint32()));
+                if (!(message.shapes && message.shapes.length))
+                    message.shapes = [];
+                message.shapes.push($root.Geometry.Shape.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -646,13 +646,13 @@ export const Geometry = $root.Geometry = (() => {
             if (error)
                 return "position." + error;
         }
-        if (message.indices != null && message.hasOwnProperty("indices")) {
-            if (!Array.isArray(message.indices))
-                return "indices: array expected";
-            for (let i = 0; i < message.indices.length; ++i) {
-                let error = $root.Vector3.verify(message.indices[i]);
+        if (message.shapes != null && message.hasOwnProperty("shapes")) {
+            if (!Array.isArray(message.shapes))
+                return "shapes: array expected";
+            for (let i = 0; i < message.shapes.length; ++i) {
+                let error = $root.Geometry.Shape.verify(message.shapes[i]);
                 if (error)
-                    return "indices." + error;
+                    return "shapes." + error;
             }
         }
         return null;
@@ -675,14 +675,14 @@ export const Geometry = $root.Geometry = (() => {
                 throw TypeError(".Geometry.position: object expected");
             message.position = $root.Vector3.fromObject(object.position);
         }
-        if (object.indices) {
-            if (!Array.isArray(object.indices))
-                throw TypeError(".Geometry.indices: array expected");
-            message.indices = [];
-            for (let i = 0; i < object.indices.length; ++i) {
-                if (typeof object.indices[i] !== "object")
-                    throw TypeError(".Geometry.indices: object expected");
-                message.indices[i] = $root.Vector3.fromObject(object.indices[i]);
+        if (object.shapes) {
+            if (!Array.isArray(object.shapes))
+                throw TypeError(".Geometry.shapes: array expected");
+            message.shapes = [];
+            for (let i = 0; i < object.shapes.length; ++i) {
+                if (typeof object.shapes[i] !== "object")
+                    throw TypeError(".Geometry.shapes: object expected");
+                message.shapes[i] = $root.Geometry.Shape.fromObject(object.shapes[i]);
             }
         }
         return message;
@@ -702,15 +702,15 @@ export const Geometry = $root.Geometry = (() => {
             options = {};
         let object = {};
         if (options.arrays || options.defaults)
-            object.indices = [];
+            object.shapes = [];
         if (options.defaults)
             object.position = null;
         if (message.position != null && message.hasOwnProperty("position"))
             object.position = $root.Vector3.toObject(message.position, options);
-        if (message.indices && message.indices.length) {
-            object.indices = [];
-            for (let j = 0; j < message.indices.length; ++j)
-                object.indices[j] = $root.Vector3.toObject(message.indices[j], options);
+        if (message.shapes && message.shapes.length) {
+            object.shapes = [];
+            for (let j = 0; j < message.shapes.length; ++j)
+                object.shapes[j] = $root.Geometry.Shape.toObject(message.shapes[j], options);
         }
         return object;
     };
@@ -725,6 +725,214 @@ export const Geometry = $root.Geometry = (() => {
     Geometry.prototype.toJSON = function toJSON() {
         return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
     };
+
+    Geometry.Shape = (function() {
+
+        /**
+         * Properties of a Shape.
+         * @memberof Geometry
+         * @interface IShape
+         * @property {Array.<IVector3>|null} [indices] Shape indices
+         */
+
+        /**
+         * Constructs a new Shape.
+         * @memberof Geometry
+         * @classdesc Represents a Shape.
+         * @implements IShape
+         * @constructor
+         * @param {Geometry.IShape=} [properties] Properties to set
+         */
+        function Shape(properties) {
+            this.indices = [];
+            if (properties)
+                for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                    if (properties[keys[i]] != null)
+                        this[keys[i]] = properties[keys[i]];
+        }
+
+        /**
+         * Shape indices.
+         * @member {Array.<IVector3>} indices
+         * @memberof Geometry.Shape
+         * @instance
+         */
+        Shape.prototype.indices = $util.emptyArray;
+
+        /**
+         * Creates a new Shape instance using the specified properties.
+         * @function create
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Geometry.IShape=} [properties] Properties to set
+         * @returns {Geometry.Shape} Shape instance
+         */
+        Shape.create = function create(properties) {
+            return new Shape(properties);
+        };
+
+        /**
+         * Encodes the specified Shape message. Does not implicitly {@link Geometry.Shape.verify|verify} messages.
+         * @function encode
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Geometry.IShape} message Shape message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        Shape.encode = function encode(message, writer) {
+            if (!writer)
+                writer = $Writer.create();
+            if (message.indices != null && message.indices.length)
+                for (let i = 0; i < message.indices.length; ++i)
+                    $root.Vector3.encode(message.indices[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+            return writer;
+        };
+
+        /**
+         * Encodes the specified Shape message, length delimited. Does not implicitly {@link Geometry.Shape.verify|verify} messages.
+         * @function encodeDelimited
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Geometry.IShape} message Shape message or plain object to encode
+         * @param {$protobuf.Writer} [writer] Writer to encode to
+         * @returns {$protobuf.Writer} Writer
+         */
+        Shape.encodeDelimited = function encodeDelimited(message, writer) {
+            return this.encode(message, writer).ldelim();
+        };
+
+        /**
+         * Decodes a Shape message from the specified reader or buffer.
+         * @function decode
+         * @memberof Geometry.Shape
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @param {number} [length] Message length if known beforehand
+         * @returns {Geometry.Shape} Shape
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        Shape.decode = function decode(reader, length) {
+            if (!(reader instanceof $Reader))
+                reader = $Reader.create(reader);
+            let end = length === undefined ? reader.len : reader.pos + length, message = new $root.Geometry.Shape();
+            while (reader.pos < end) {
+                let tag = reader.uint32();
+                switch (tag >>> 3) {
+                case 1:
+                    if (!(message.indices && message.indices.length))
+                        message.indices = [];
+                    message.indices.push($root.Vector3.decode(reader, reader.uint32()));
+                    break;
+                default:
+                    reader.skipType(tag & 7);
+                    break;
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Decodes a Shape message from the specified reader or buffer, length delimited.
+         * @function decodeDelimited
+         * @memberof Geometry.Shape
+         * @static
+         * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+         * @returns {Geometry.Shape} Shape
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        Shape.decodeDelimited = function decodeDelimited(reader) {
+            if (!(reader instanceof $Reader))
+                reader = new $Reader(reader);
+            return this.decode(reader, reader.uint32());
+        };
+
+        /**
+         * Verifies a Shape message.
+         * @function verify
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Object.<string,*>} message Plain object to verify
+         * @returns {string|null} `null` if valid, otherwise the reason why it is not
+         */
+        Shape.verify = function verify(message) {
+            if (typeof message !== "object" || message === null)
+                return "object expected";
+            if (message.indices != null && message.hasOwnProperty("indices")) {
+                if (!Array.isArray(message.indices))
+                    return "indices: array expected";
+                for (let i = 0; i < message.indices.length; ++i) {
+                    let error = $root.Vector3.verify(message.indices[i]);
+                    if (error)
+                        return "indices." + error;
+                }
+            }
+            return null;
+        };
+
+        /**
+         * Creates a Shape message from a plain object. Also converts values to their respective internal types.
+         * @function fromObject
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Object.<string,*>} object Plain object
+         * @returns {Geometry.Shape} Shape
+         */
+        Shape.fromObject = function fromObject(object) {
+            if (object instanceof $root.Geometry.Shape)
+                return object;
+            let message = new $root.Geometry.Shape();
+            if (object.indices) {
+                if (!Array.isArray(object.indices))
+                    throw TypeError(".Geometry.Shape.indices: array expected");
+                message.indices = [];
+                for (let i = 0; i < object.indices.length; ++i) {
+                    if (typeof object.indices[i] !== "object")
+                        throw TypeError(".Geometry.Shape.indices: object expected");
+                    message.indices[i] = $root.Vector3.fromObject(object.indices[i]);
+                }
+            }
+            return message;
+        };
+
+        /**
+         * Creates a plain object from a Shape message. Also converts values to other types if specified.
+         * @function toObject
+         * @memberof Geometry.Shape
+         * @static
+         * @param {Geometry.Shape} message Shape
+         * @param {$protobuf.IConversionOptions} [options] Conversion options
+         * @returns {Object.<string,*>} Plain object
+         */
+        Shape.toObject = function toObject(message, options) {
+            if (!options)
+                options = {};
+            let object = {};
+            if (options.arrays || options.defaults)
+                object.indices = [];
+            if (message.indices && message.indices.length) {
+                object.indices = [];
+                for (let j = 0; j < message.indices.length; ++j)
+                    object.indices[j] = $root.Vector3.toObject(message.indices[j], options);
+            }
+            return object;
+        };
+
+        /**
+         * Converts this Shape to JSON.
+         * @function toJSON
+         * @memberof Geometry.Shape
+         * @instance
+         * @returns {Object.<string,*>} JSON object
+         */
+        Shape.prototype.toJSON = function toJSON() {
+            return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+        };
+
+        return Shape;
+    })();
 
     return Geometry;
 })();
@@ -5414,6 +5622,10 @@ export const Intersection = $root.Intersection = (() => {
      * Properties of an Intersection.
      * @exports IIntersection
      * @interface IIntersection
+     * @property {string|null} [id] Intersection id
+     * @property {IGeometry|null} [geometry] Intersection geometry
+     * @property {Array.<IVector3>|null} [entryPoints] Intersection entryPoints
+     * @property {Array.<IVector3>|null} [exitPoints] Intersection exitPoints
      */
 
     /**
@@ -5425,11 +5637,45 @@ export const Intersection = $root.Intersection = (() => {
      * @param {IIntersection=} [properties] Properties to set
      */
     function Intersection(properties) {
+        this.entryPoints = [];
+        this.exitPoints = [];
         if (properties)
             for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
                     this[keys[i]] = properties[keys[i]];
     }
+
+    /**
+     * Intersection id.
+     * @member {string} id
+     * @memberof Intersection
+     * @instance
+     */
+    Intersection.prototype.id = "";
+
+    /**
+     * Intersection geometry.
+     * @member {IGeometry|null|undefined} geometry
+     * @memberof Intersection
+     * @instance
+     */
+    Intersection.prototype.geometry = null;
+
+    /**
+     * Intersection entryPoints.
+     * @member {Array.<IVector3>} entryPoints
+     * @memberof Intersection
+     * @instance
+     */
+    Intersection.prototype.entryPoints = $util.emptyArray;
+
+    /**
+     * Intersection exitPoints.
+     * @member {Array.<IVector3>} exitPoints
+     * @memberof Intersection
+     * @instance
+     */
+    Intersection.prototype.exitPoints = $util.emptyArray;
 
     /**
      * Creates a new Intersection instance using the specified properties.
@@ -5455,6 +5701,16 @@ export const Intersection = $root.Intersection = (() => {
     Intersection.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
+        if (message.id != null && message.hasOwnProperty("id"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            $root.Geometry.encode(message.geometry, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
+        if (message.entryPoints != null && message.entryPoints.length)
+            for (let i = 0; i < message.entryPoints.length; ++i)
+                $root.Vector3.encode(message.entryPoints[i], writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.exitPoints != null && message.exitPoints.length)
+            for (let i = 0; i < message.exitPoints.length; ++i)
+                $root.Vector3.encode(message.exitPoints[i], writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
         return writer;
     };
 
@@ -5489,6 +5745,22 @@ export const Intersection = $root.Intersection = (() => {
         while (reader.pos < end) {
             let tag = reader.uint32();
             switch (tag >>> 3) {
+            case 1:
+                message.id = reader.string();
+                break;
+            case 2:
+                message.geometry = $root.Geometry.decode(reader, reader.uint32());
+                break;
+            case 3:
+                if (!(message.entryPoints && message.entryPoints.length))
+                    message.entryPoints = [];
+                message.entryPoints.push($root.Vector3.decode(reader, reader.uint32()));
+                break;
+            case 4:
+                if (!(message.exitPoints && message.exitPoints.length))
+                    message.exitPoints = [];
+                message.exitPoints.push($root.Vector3.decode(reader, reader.uint32()));
+                break;
             default:
                 reader.skipType(tag & 7);
                 break;
@@ -5524,6 +5796,32 @@ export const Intersection = $root.Intersection = (() => {
     Intersection.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
+        if (message.id != null && message.hasOwnProperty("id"))
+            if (!$util.isString(message.id))
+                return "id: string expected";
+        if (message.geometry != null && message.hasOwnProperty("geometry")) {
+            let error = $root.Geometry.verify(message.geometry);
+            if (error)
+                return "geometry." + error;
+        }
+        if (message.entryPoints != null && message.hasOwnProperty("entryPoints")) {
+            if (!Array.isArray(message.entryPoints))
+                return "entryPoints: array expected";
+            for (let i = 0; i < message.entryPoints.length; ++i) {
+                let error = $root.Vector3.verify(message.entryPoints[i]);
+                if (error)
+                    return "entryPoints." + error;
+            }
+        }
+        if (message.exitPoints != null && message.hasOwnProperty("exitPoints")) {
+            if (!Array.isArray(message.exitPoints))
+                return "exitPoints: array expected";
+            for (let i = 0; i < message.exitPoints.length; ++i) {
+                let error = $root.Vector3.verify(message.exitPoints[i]);
+                if (error)
+                    return "exitPoints." + error;
+            }
+        }
         return null;
     };
 
@@ -5538,7 +5836,35 @@ export const Intersection = $root.Intersection = (() => {
     Intersection.fromObject = function fromObject(object) {
         if (object instanceof $root.Intersection)
             return object;
-        return new $root.Intersection();
+        let message = new $root.Intersection();
+        if (object.id != null)
+            message.id = String(object.id);
+        if (object.geometry != null) {
+            if (typeof object.geometry !== "object")
+                throw TypeError(".Intersection.geometry: object expected");
+            message.geometry = $root.Geometry.fromObject(object.geometry);
+        }
+        if (object.entryPoints) {
+            if (!Array.isArray(object.entryPoints))
+                throw TypeError(".Intersection.entryPoints: array expected");
+            message.entryPoints = [];
+            for (let i = 0; i < object.entryPoints.length; ++i) {
+                if (typeof object.entryPoints[i] !== "object")
+                    throw TypeError(".Intersection.entryPoints: object expected");
+                message.entryPoints[i] = $root.Vector3.fromObject(object.entryPoints[i]);
+            }
+        }
+        if (object.exitPoints) {
+            if (!Array.isArray(object.exitPoints))
+                throw TypeError(".Intersection.exitPoints: array expected");
+            message.exitPoints = [];
+            for (let i = 0; i < object.exitPoints.length; ++i) {
+                if (typeof object.exitPoints[i] !== "object")
+                    throw TypeError(".Intersection.exitPoints: object expected");
+                message.exitPoints[i] = $root.Vector3.fromObject(object.exitPoints[i]);
+            }
+        }
+        return message;
     };
 
     /**
@@ -5550,8 +5876,33 @@ export const Intersection = $root.Intersection = (() => {
      * @param {$protobuf.IConversionOptions} [options] Conversion options
      * @returns {Object.<string,*>} Plain object
      */
-    Intersection.toObject = function toObject() {
-        return {};
+    Intersection.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        let object = {};
+        if (options.arrays || options.defaults) {
+            object.entryPoints = [];
+            object.exitPoints = [];
+        }
+        if (options.defaults) {
+            object.id = "";
+            object.geometry = null;
+        }
+        if (message.id != null && message.hasOwnProperty("id"))
+            object.id = message.id;
+        if (message.geometry != null && message.hasOwnProperty("geometry"))
+            object.geometry = $root.Geometry.toObject(message.geometry, options);
+        if (message.entryPoints && message.entryPoints.length) {
+            object.entryPoints = [];
+            for (let j = 0; j < message.entryPoints.length; ++j)
+                object.entryPoints[j] = $root.Vector3.toObject(message.entryPoints[j], options);
+        }
+        if (message.exitPoints && message.exitPoints.length) {
+            object.exitPoints = [];
+            for (let j = 0; j < message.exitPoints.length; ++j)
+                object.exitPoints[j] = $root.Vector3.toObject(message.exitPoints[j], options);
+        }
+        return object;
     };
 
     /**

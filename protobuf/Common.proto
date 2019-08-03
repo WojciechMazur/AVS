@@ -23,6 +23,9 @@ message BoundingBox{
 
 message Geometry{
     Vector3 position = 1;
-    repeated Vector3 indices = 2;
+    repeated Shape shapes = 2;
 
+    message Shape{
+        repeated Vector3 indices = 1;
+    }
 }

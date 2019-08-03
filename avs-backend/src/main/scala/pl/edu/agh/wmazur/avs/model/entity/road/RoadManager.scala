@@ -7,6 +7,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
+import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.{
   SimulationStateGatherer,
@@ -112,17 +113,18 @@ object RoadManager {
     lazy val leavedLanes: Set[Lane] = previousLanes.diff(lanes)
   }
 
-  def apply(road: Road): Behavior[Protocol] = Behaviors.setup { ctx =>
-    new RoadManager(ctx, road)
-  }
-
-  def apply(optId: Option[Road#Id],
-            lanes: List[Lane],
-            oppositeRoadRef: Option[ActorRef[RoadManager.Protocol]])
-    : Behavior[Protocol] =
+  def init(
+      optId: Option[Road#Id],
+      lanes: List[Lane],
+      oppositeRoadRef: Option[ActorRef[RoadManager.Protocol]],
+      replyTo: Option[ActorRef[EntityManager.SpawnResult[Road, Protocol]]] =
+        None): Behavior[Protocol] =
     Behaviors.setup { ctx =>
       val road = Road(optId, lanes, ctx.self)
+      replyTo.foreach(_ ! SpawnResult(road, ctx.self))
+
       new RoadManager(ctx, road, oppositeRoadRef)
+
     }
 
 }

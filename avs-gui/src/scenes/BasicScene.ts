@@ -3,6 +3,7 @@ import {IsometricCamera} from "../camera/IsometricCamera"
 import {CarsManager} from "../logic/CarsManager"
 import {WebSocketEntityClient} from "../logic/WebSocketEntityClient"
 import { RoadsManager } from "../logic/RoadsManager";
+import { IntersectionsManager } from "../logic/IntersectionsManager";
 
 export class BasicScene {
 	public camera: ArcRotateCamera
@@ -10,8 +11,10 @@ export class BasicScene {
 	
 	private readonly _engine: Engine
 	private _scene: Scene
+
 	private carsManager: CarsManager
 	private roadsManager: RoadsManager
+	private intersectionsManager: IntersectionsManager
 	private websocketClient: WebSocketEntityClient
 	
 	constructor(canvas: HTMLCanvasElement, engine: Engine){
@@ -21,11 +24,11 @@ export class BasicScene {
 		this.websocketClient = new WebSocketEntityClient()
 		this.carsManager	= new CarsManager(this._scene, this.websocketClient)
 		this.roadsManager = new RoadsManager(this._scene, this.websocketClient)
+		this.intersectionsManager = new IntersectionsManager(this._scene, this.websocketClient)
 
 		this.camera = new IsometricCamera("camera",30, Vector3.Zero(), this._scene)
 		this.camera.attachControl(canvas, true, false)
 		this._scene.activeCamera=this.camera
-		
 		
 		this.light = new PointLight("pointLight", new Vector3(20,20,20), this._scene)
 		this.light.parent = this.camera
@@ -33,13 +36,6 @@ export class BasicScene {
 		this.light.diffuse = new Color3(1,1,1)
 		this.light.intensity = 0.4
 		
-		
-	// 	for(let x=0; x<100; x++){
-	// 		for(let y=0; y<100; y++){
-	// 			let car = new Car("car_" + x + "_" + y, new Vector3(x*5, 0, y*5), this._scene)
-	// 			this.carsManager.add(car)
-	// 		}
-	// 	}
 	}
 	
 	public runRenderLoop(): void {

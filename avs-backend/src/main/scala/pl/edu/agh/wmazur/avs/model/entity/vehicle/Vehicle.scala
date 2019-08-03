@@ -32,7 +32,7 @@ trait Vehicle extends Entity with DeltaOps[Vehicle] {
     val p2 = p1.moveRotate(spec.length, heading + Math.PI)
     val p4 = p3.moveRotate(spec.length, heading - Math.PI)
 
-    p1 :: p2 :: p3 :: p4 :: Nil
+    p3 :: p1 :: p2 :: p4 :: Nil
   }
 
   override def isUpdatedBy(old: Vehicle): Boolean = {

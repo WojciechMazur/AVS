@@ -3,12 +3,13 @@ package pl.edu.agh.wmazur.avs.simulation
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.util.Timeout
 import pl.edu.agh.wmazur.avs
-import pl.edu.agh.wmazur.avs.model.entity.road.{
-  DirectedLane,
-  LaneSpec,
-  RoadManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.{
+  Intersection,
+  IntersectionManager
 }
+import pl.edu.agh.wmazur.avs.model.entity.road.{Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
 import pl.edu.agh.wmazur.avs.model.state.SimulationState
@@ -16,9 +17,14 @@ import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol.Ack
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.AdapterProtocol.{
   DriversListing,
+  IntersectionsListing,
   RoadsListing
 }
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol
+import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol.RecoveryResult.{
+  RecoveryFailed,
+  RecoveryFinished
+}
 import pl.edu.agh.wmazur.avs.simulation.stage.{
   DriversMovementStage,
   SimulationStateGatherer,
@@ -27,8 +33,8 @@ import pl.edu.agh.wmazur.avs.simulation.stage.{
 }
 import pl.edu.agh.wmazur.avs.{EntityRefsGroup, Services}
 
-import scala.concurrent.duration._
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{Duration, FiniteDuration, _}
+import scala.util.Success
 
 class SimulationManager(context: ActorContext[Protocol],
                         workers: SimulationStageWorkers)
@@ -41,6 +47,9 @@ class SimulationManager(context: ActorContext[Protocol],
 
   private var cachedSimulationState: SimulationState = SimulationState.empty
   private var cachedRoadsRefs = Set.empty[ActorRef[RoadManager.Protocol]]
+  private var cachedIntersectionRefs =
+    Set.empty[ActorRef[IntersectionManager.Protocol]]
+
   private var cachedDriversRefs = Set.empty[ActorRef[AutonomousDriver.Protocol]]
 
   private val idle = withDefaultBehavior(ActorBehaviors.waitingForTick)
@@ -103,6 +112,10 @@ class SimulationManager(context: ActorContext[Protocol],
         case DriversListing(driverRefs) =>
           cachedDriversRefs = driverRefs
           Behaviors.same
+        case IntersectionsListing(intersections) =>
+          cachedIntersectionRefs = intersections
+          Behaviors.same
+
         case other =>
           context.log.warning("Unhandled message {} in {}",
                               other,
@@ -113,6 +126,33 @@ class SimulationManager(context: ActorContext[Protocol],
 
   object OnBehaviorsSwitch {
     import ActorBehaviors._
+
+    def recoverState: Behaviors.Receive[Protocol] = {
+      val recoveryAgent = context.spawn(
+        StateRecoveryAgent.init(workers.entityManager),
+        "state-recovery-agent")
+      implicit val timeout: Timeout = 60.seconds
+
+      context.ask(recoveryAgent)(StateRecoveryAgent.StartRecovery) {
+        case Success(RecoveryFinished(roads, intersection)) =>
+          RecoveryFinished(roads, intersection)
+        case util.Failure(exception) => RecoveryFailed(exception)
+      }
+
+      Behaviors.receiveMessagePartial {
+        case RecoveryFinished(roads, intersections) =>
+          cachedRoadsRefs ++= roads.values
+          cachedIntersectionRefs ++= intersections.values
+
+          context.log.info("Recovery finished")
+          idle
+        case RecoveryFailed(err) =>
+          context.log.error("Recovery failed: {}", err)
+          err.printStackTrace()
+          Behaviors.stopped
+      }
+    }
+
     def collectVehicleToDeletion(): Behavior[Protocol] = {
       workers.vehiclesCollector ! VehiclesCollectorStage.TryCollect(
         context.self,
@@ -137,6 +177,7 @@ class SimulationManager(context: ActorContext[Protocol],
         context.self,
         cachedRoadsRefs,
         cachedDriversRefs,
+        cachedIntersectionRefs,
         currentTime,
         lastTickDelta,
       )
@@ -196,7 +237,7 @@ class SimulationManager(context: ActorContext[Protocol],
   override def onMessage(msg: Protocol): Behavior[Protocol] = {
     context.log.debug("Initial behaviour waitingForTick")
     context.self ! msg
-    idle
+    withDefaultBehavior(OnBehaviorsSwitch.recoverState)
   }
 }
 
@@ -230,8 +271,6 @@ object SimulationManager {
       enityGroupKey,
       AdapterProtocol.listingAdapter(ctx)
     )
-
-    recoverState(simulationWorkers.get.entityManager)
     new SimulationManager(ctx, simulationWorkers.get)
   }
 
@@ -262,6 +301,16 @@ object SimulationManager {
         markedVehicles: Set[ActorRef[AutonomousDriver.Protocol]]
     ) extends Protocol
 
+    sealed trait RecoveryResult extends Protocol
+    object RecoveryResult {
+      case class RecoveryFinished(
+          roads: Map[Road, ActorRef[RoadManager.Protocol]],
+          intersections: Map[Intersection,
+                             ActorRef[IntersectionManager.Protocol]]
+      ) extends RecoveryResult
+      case class RecoveryFailed(throwable: Throwable) extends RecoveryResult
+    }
+
     object StateUpdate {
       def empty: StateUpdate = StateUpdate(SimulationState.empty)
     }
@@ -272,55 +321,18 @@ object SimulationManager {
       context.messageAdapter[Receptionist.Listing] {
         case EntityRefsGroup.road.Listing(refs)   => RoadsListing(refs)
         case EntityRefsGroup.driver.Listing(refs) => DriversListing(refs)
+        case EntityRefsGroup.intersection.Listing(refs) =>
+          IntersectionsListing(refs)
       }
     }
+
     case class DriversListing(drivers: Set[ActorRef[AutonomousDriver.Protocol]])
         extends Protocol
     case class RoadsListing(roads: Set[ActorRef[RoadManager.Protocol]])
         extends Protocol
-  }
-  private def recoverState(
-      entityManagerRef: ActorRef[EntityManager.Protocol]): Unit = {
-    import avs.Dimension
-    val laneSpec = new LaneSpec(30, 2.5)
-    val lane11 =
-      DirectedLane.simple(spec = laneSpec,
-                          offStartX = -250.0.fromMeters,
-                          length = 500.0.fromMeters)
-
-    val lane12 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 10),
-      offStartX = -250.0.fromMeters,
-      offStartY = laneSpec.width + 0.5.fromMeters,
-      length = 500.0.fromMeters)
-
-    val lane13 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 10),
-      offStartX = -250.0.fromMeters,
-      offStartY = 2 * laneSpec.width + 2 * 0.5.fromMeters,
-      length = 500.0.fromMeters,
-    )
-    val lane21 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -100.0.fromMeters,
-                                     length = 200.0.fromMeters,
-                                     heading = Math.PI / 2)
-
-    val lane22 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -100d,
-                                     offStartX = laneSpec.width + 0.5,
-                                     length = 250.0,
-                                     heading = Math.PI / 2)
-
-    val lane23 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -100d,
-                                     offStartX = 2 * laneSpec.width + 2 * 0.5,
-                                     length = 300.0,
-                                     heading = Math.PI / 2)
-
-    entityManagerRef ! EntityManager.SpawnProtocol.SpawnRoad(
-      lanes = lane11 :: lane12 :: lane13 :: Nil)
-    entityManagerRef ! EntityManager.SpawnProtocol.SpawnRoad(
-      lanes = lane21 :: lane22 :: lane23 :: Nil)
+    case class IntersectionsListing(
+        intersections: Set[ActorRef[IntersectionManager.Protocol]])
+        extends Protocol
   }
 
 }

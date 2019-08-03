@@ -8,14 +8,19 @@ import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.{
   Context,
   PositionReading,
   Protocol,
+  Spawned,
   Terminated,
   TrySpawn
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadSpawnerWorker.NotSpawned
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
+  AutonomousDriver,
+  VehicleDriver
+}
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
+import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 
 class LaneSpawnerWorker(val context: ActorContext[Protocol],
@@ -23,6 +28,14 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
     extends Agent[Protocol] {
   val spawnPoint: Option[SpawnPoint] = spawnerContext.lane.spawnPoint
   var nextSpawnTime: Timestamp = 0L
+
+  val spawnResultAdapter
+    : ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]] =
+    context.messageAdapter[
+      EntityManager.SpawnResult[Vehicle, VehicleDriver.Protocol]] {
+      case SpawnResult(entity, ref) => Spawned(ref, entity.id)
+
+    }
 
   override protected val initialBehaviour: Behavior[Protocol] = idle
 
@@ -74,7 +87,7 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
     if (spawnPoint.canSpawn(readings)) {
       val spec = spawnPoint.getRandomSpec
       entityManagerRef ! EntityManager.SpawnProtocol
-        .SpawnBasicVehicle(replyTo = context.self,
+        .SpawnBasicVehicle(replyTo = Some(spawnResultAdapter),
                            spec = spec,
                            position = lane.entryPoint,
                            heading = lane.heading,

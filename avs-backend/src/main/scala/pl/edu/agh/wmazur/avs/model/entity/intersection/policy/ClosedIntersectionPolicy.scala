@@ -1,27 +1,33 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection.policy
 
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import pl.edu.agh.wmazur.avs.model.entity.intersection.Vehicle2IntersectionManager
-import pl.edu.agh.wmazur.avs.protocol.IntersectionManagerProtocol.ReservationRejected
-import pl.edu.agh.wmazur.avs.protocol.{
-  IntersectionManagerProtocol,
-  DriverProtocol
+import pl.edu.agh.wmazur.avs.model.entity.intersection.{
+  AutonomousIntersectionManager,
+  IntersectionManager
 }
-import pl.edu.agh.wmazur.avs.protocol.DriverProtocol.IntersectionCrossingRequest
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected
 
 trait ClosedIntersectionPolicy {
-  self: Vehicle2IntersectionManager =>
+  self: AutonomousIntersectionManager with IntersectionConnectivity =>
 
-  val closedIntersection: Behavior[DriverProtocol] =
-    Behaviors.receiveMessage {
-      case req @ IntersectionCrossingRequest(_, _, _, _, timestamp, replyTo) =>
-        replyTo ! IntersectionManagerProtocol.ReservationRejected(
-          requestId = req.id,
-          nextAllowedCommunicationTimestamp = timestamp,
-          reason = ReservationRejected.Reason.NoClearPath,
-        )
+  lazy val closedIntersection: Behavior[IntersectionManager.Protocol] =
+    Behaviors
+      .receiveMessagePartial[IntersectionManager.Protocol] {
+        case req @ IntersectionCrossingRequest(_,
+                                               _,
+                                               _,
+                                               _,
+                                               timestamp,
+                                               replyTo) =>
+          replyTo ! ReservationRejected(
+            requestId = req.id,
+            nextAllowedCommunicationTimestamp = timestamp,
+            reason = ReservationRejected.Reason.NoClearPath,
+          )
 
-        Behaviors.same
-    }
+          Behaviors.same
+      }
+      .orElse(basicConnectivity)
 }

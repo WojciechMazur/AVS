@@ -215,8 +215,8 @@ export interface IGeometry {
     /** Geometry position */
     position?: (IVector3|null);
 
-    /** Geometry indices */
-    indices?: (IVector3[]|null);
+    /** Geometry shapes */
+    shapes?: (Geometry.IShape[]|null);
 }
 
 /** Represents a Geometry. */
@@ -231,8 +231,8 @@ export class Geometry implements IGeometry {
     /** Geometry position. */
     public position?: (IVector3|null);
 
-    /** Geometry indices. */
-    public indices: IVector3[];
+    /** Geometry shapes. */
+    public shapes: Geometry.IShape[];
 
     /**
      * Creates a new Geometry instance using the specified properties.
@@ -303,6 +303,99 @@ export class Geometry implements IGeometry {
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
+}
+
+export namespace Geometry {
+
+    /** Properties of a Shape. */
+    interface IShape {
+
+        /** Shape indices */
+        indices?: (IVector3[]|null);
+    }
+
+    /** Represents a Shape. */
+    class Shape implements IShape {
+
+        /**
+         * Constructs a new Shape.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: Geometry.IShape);
+
+        /** Shape indices. */
+        public indices: IVector3[];
+
+        /**
+         * Creates a new Shape instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns Shape instance
+         */
+        public static create(properties?: Geometry.IShape): Geometry.Shape;
+
+        /**
+         * Encodes the specified Shape message. Does not implicitly {@link Geometry.Shape.verify|verify} messages.
+         * @param message Shape message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: Geometry.IShape, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified Shape message, length delimited. Does not implicitly {@link Geometry.Shape.verify|verify} messages.
+         * @param message Shape message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: Geometry.IShape, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a Shape message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns Shape
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): Geometry.Shape;
+
+        /**
+         * Decodes a Shape message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns Shape
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): Geometry.Shape;
+
+        /**
+         * Verifies a Shape message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a Shape message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns Shape
+         */
+        public static fromObject(object: { [k: string]: any }): Geometry.Shape;
+
+        /**
+         * Creates a plain object from a Shape message. Also converts values to other types if specified.
+         * @param message Shape
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: Geometry.Shape, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this Shape to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+    }
 }
 
 /** Properties of an Envelope. */
@@ -2224,6 +2317,18 @@ export class CollectPoint implements ICollectPoint {
 
 /** Properties of an Intersection. */
 export interface IIntersection {
+
+    /** Intersection id */
+    id?: (string|null);
+
+    /** Intersection geometry */
+    geometry?: (IGeometry|null);
+
+    /** Intersection entryPoints */
+    entryPoints?: (IVector3[]|null);
+
+    /** Intersection exitPoints */
+    exitPoints?: (IVector3[]|null);
 }
 
 /** Represents an Intersection. */
@@ -2234,6 +2339,18 @@ export class Intersection implements IIntersection {
      * @param [properties] Properties to set
      */
     constructor(properties?: IIntersection);
+
+    /** Intersection id. */
+    public id: string;
+
+    /** Intersection geometry. */
+    public geometry?: (IGeometry|null);
+
+    /** Intersection entryPoints. */
+    public entryPoints: IVector3[];
+
+    /** Intersection exitPoints. */
+    public exitPoints: IVector3[];
 
     /**
      * Creates a new Intersection instance using the specified properties.

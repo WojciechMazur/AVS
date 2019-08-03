@@ -9,12 +9,14 @@ object TickSource {
   val maxFrames = 60
   val timeScale = 1.0f
   val tickInterval: TickDelta = 1.second / maxFrames
+  val timeStep: FiniteDuration =
+    (tickInterval * timeScale).asInstanceOf[FiniteDuration]
 
   println(s"TickInterval: $tickInterval")
 
   val source: Source[TickDelta, Cancellable] = Source
     .tick(initialDelay = Duration.Zero,
           interval = tickInterval,
-          tick = (tickInterval * timeScale).asInstanceOf[FiniteDuration])
+          tick = timeStep)
 //    .batch(Long.MaxValue, identity)(_ + _)
 }

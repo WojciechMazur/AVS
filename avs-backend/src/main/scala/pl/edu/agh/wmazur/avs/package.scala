@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur
 import akka.actor.typed.receptionist.ServiceKey
 import org.locationtech.spatial4j.distance.DistanceUtils
 import pl.edu.agh.wmazur.avs.http.management.WebsocketManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
@@ -26,6 +27,9 @@ package object avs {
     val road: ServiceKey[RoadManager.Protocol] = ServiceKey("roads-group")
     val driver: ServiceKey[AutonomousDriver.Protocol] = ServiceKey(
       "drivers-group")
+    val intersection: ServiceKey[IntersectionManager.Protocol] = ServiceKey(
+      "intersections-group"
+    )
   }
 
   implicit class Dimension(val meters: Double)

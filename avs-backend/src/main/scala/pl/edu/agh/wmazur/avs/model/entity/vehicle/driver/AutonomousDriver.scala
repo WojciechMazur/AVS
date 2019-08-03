@@ -15,7 +15,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   Vehicle,
   VehicleSpec
 }
-import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
+import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.simulation.TickSource.TickDelta
 import pl.edu.agh.wmazur.avs.simulation.stage.{
   DriversMovementStage,
@@ -103,7 +103,7 @@ class AutonomousDriver(val context: ActorContext[Protocol],
 }
 
 object AutonomousDriver {
-  sealed trait Protocol extends SimulationProtocol
+  sealed trait Protocol extends VehicleDriver.Protocol
   case class GetPositionReading(replyTo: ActorRef[PositionReading])
       extends Protocol
   case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
@@ -117,18 +117,22 @@ object AutonomousDriver {
                           tickDelta: TickDelta)
       extends Protocol
 
-  def apply(id: Vehicle#Id,
-            spec: VehicleSpec,
-            position: Point,
-            heading: Angle,
-            velocity: Velocity,
-            lane: Lane): Behavior[Protocol] = {
+  def init(
+      id: Vehicle#Id,
+      spec: VehicleSpec,
+      position: Point,
+      heading: Angle,
+      velocity: Velocity,
+      lane: Lane,
+      replyTo: Option[ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]]] =
+        None): Behavior[Protocol] = {
     Behaviors.setup { ctx =>
       val vehicle = BasicVehicle(driverRef = ctx.self,
                                  spec = spec,
                                  position = position,
                                  heading = heading,
                                  velocity = velocity)
+      replyTo.foreach(_ ! SpawnResult(vehicle, ctx.self.unsafeUpcast))
       new AutonomousDriver(context = ctx, spawnLane = lane, vehicle = vehicle)
     }
   }

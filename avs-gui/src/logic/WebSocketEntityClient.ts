@@ -3,6 +3,7 @@ import {w3cwebsocket as WebSocket} from "websocket"
 import {Envelope, StateUpdate} from "../protobuff/protobuff"
 import {CarsManager} from "./CarsManager"
 import { RoadsManager } from "./RoadsManager";
+import { IntersectionsManager } from "./IntersectionsManager";
 
 const uuidv4 = require('uuid/v4');
 
@@ -11,6 +12,7 @@ export class WebSocketEntityClient{
 	private connectionId: string = uuidv4()
 	private carsManager: Nullable<CarsManager> = null
 	private roadsManager: Nullable<RoadsManager> = null
+	private intersectionsManager: Nullable<IntersectionsManager> = null
 	
 	public setCarsManager(manager: CarsManager){
 		this.carsManager = manager
@@ -20,6 +22,11 @@ export class WebSocketEntityClient{
 	public setRoadsManager(manager: RoadsManager){
 		this.roadsManager = manager
 		console.log("Roads manager ready")
+	}
+	
+	public setIntersectionsManager(manager: IntersectionsManager){
+		this.intersectionsManager = manager
+		console.log("Intersections manager ready")
 	}
 	
 	constructor() {
@@ -38,10 +45,16 @@ export class WebSocketEntityClient{
 					console.log("Full update")
 				}
 				this.roadsManager!.add(update.created!.roads!)
+				this.intersectionsManager!.add(update.created!.intersections!)
 				this.carsManager!.add(update.created!.vehicles!)
 
 				if(update.updateType! == StateUpdate.UpdateType.Delta){
-					//Todo roads update / removal
+					this.roadsManager!.update(update.updated!.roads!)
+					this.roadsManager!.remove(update.deleted!.roads!)
+
+					this.intersectionsManager!.update(update.updated!.intersections!)
+					this.intersectionsManager!.remove(update.deleted!.intersections!)
+
 					this.carsManager!.update(update.updated!.vehicles!)
 					this.carsManager!.remove(update.deleted!.vehicles!)
 				}

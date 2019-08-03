@@ -4,7 +4,7 @@ import mikera.vectorz.Vector2
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.util.LineStringExtracter
-import org.locationtech.jts.geom.{Coordinate, LineString}
+import org.locationtech.jts.geom.{Coordinate, LineString, LinearRing}
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.context.jts.{
   JtsSpatialContext,
@@ -101,7 +101,9 @@ object SpatialUtils {
   }
 
   object LineGeometryFactory {
-    def apply(start: Point, second: Point, tail: Point*): LineString = {
+    def apply(start: Point,
+              second: Point,
+              tail: Seq[Point] = Seq.empty): LineString = {
       val coords: Array[Coordinate] = (start :: second :: Nil ++ tail)
         .map { point =>
           new Coordinate(point.getX, point.getY)
@@ -131,12 +133,13 @@ object SpatialUtils {
     def apply(points: Iterable[Point], centroid: Point): Shape = {
       val pointsSorted = SpatialUtils.pointsSorted(points, centroid)
 
-      (pointsSorted :+ pointsSorted.head)
+      (pointsSorted ++ (pointsSorted.head :: Nil))
         .foldLeft(shapeFactory.polygon()) {
           case (polygon, point) => polygon.pointXY(point.x, point.y)
         }
         .build()
     }
+
   }
 
   def closestDistance(lineString: LineString, point: Point): Double = {
@@ -201,16 +204,20 @@ object SpatialUtils {
   }
 
   def lineStringsIntersection(ls1: LineString, ls2: LineString): Option[Point] =
-    linesIntersection(
-      ls1.getStartPoint.getX,
-      ls1.getStartPoint.getY,
-      ls1.getEndPoint.getX,
-      ls1.getEndPoint.getY,
-      ls2.getStartPoint.getX,
-      ls2.getStartPoint.getY,
-      ls2.getEndPoint.getX,
-      ls2.getEndPoint.getY
-    )
+    if (ls1.intersects(ls2)) {
+      linesIntersection(
+        ls1.getStartPoint.getX,
+        ls1.getStartPoint.getY,
+        ls1.getEndPoint.getX,
+        ls1.getEndPoint.getY,
+        ls2.getStartPoint.getX,
+        ls2.getStartPoint.getY,
+        ls2.getEndPoint.getX,
+        ls2.getEndPoint.getY
+      )
+    } else {
+      None
+    }
 
   def linesIntersection(x1: Double,
                         y1: Double,

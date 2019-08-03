@@ -23,7 +23,8 @@ case class DirectedLane(id: Lane#Id,
     .of(line.getEndPoint.getX - line.getStartPoint.getX,
         line.getEndPoint.getY - line.getStartPoint.getY)
 
-  lazy val squaredLaneLength: Dimension = laneVector.dotProduct(laneVector)
+  lazy val squaredLaneLength: Dimension =
+    laneVector.dotProduct(laneVector).fromGeoDegrees
   lazy val length
     : Dimension = line.getStartPoint.distance(line.getEndPoint) * DistanceUtils.DEG_TO_KM * 1000
 
@@ -41,8 +42,8 @@ case class DirectedLane(id: Lane#Id,
       points = List(
         startPoint.move(xDiff, yDiff),
         endPoint.move(xDiff, yDiff),
-        startPoint.move(-xDiff, -yDiff),
-        endPoint.move(-xDiff, -yDiff)
+        endPoint.move(-xDiff, -yDiff),
+        startPoint.move(-xDiff, -yDiff)
       ),
       centroid = position
     )
@@ -92,19 +93,23 @@ case class DirectedLane(id: Lane#Id,
            s"GeometryFraction must be normalized, given value $start")
     assert(end >= 0.0 && end <= 1.0,
            s"GeometryFraction must be normalized, given value $end")
+    if (start == end) {
+      getGeometryFraction(start - 0.0000001, end + 0.0000001)
+    } else {
 
-    val p1 = pointAtNormalizedDistance(start)
-    val p2 = pointAtNormalizedDistance(end)
-    shapeFactory.getGeometryFrom {
-      PolygonFactory(
-        List(
-          PointUtils(p1).move(xDiff, yDiff),
-          PointUtils(p2).move(xDiff, yDiff),
-          PointUtils(p1).move(-xDiff, -yDiff),
-          PointUtils(p2).move(-xDiff, -yDiff),
-        ),
-        Point2.middlePoint(p1, p2)
-      )
+      val p1 = pointAtNormalizedDistance(start)
+      val p2 = pointAtNormalizedDistance(end)
+      shapeFactory.getGeometryFrom {
+        PolygonFactory(
+          List(
+            PointUtils(p2).move(xDiff, yDiff),
+            PointUtils(p1).move(xDiff, yDiff),
+            PointUtils(p1).move(-xDiff, -yDiff),
+            PointUtils(p2).move(-xDiff, -yDiff),
+          ),
+          Point2.middlePoint(p1, p2)
+        )
+      }
     }
   }
 

@@ -10,9 +10,9 @@ export class Car extends Entity{
 		this.mesh.position = position
 		this.mesh.scaling.set(spec.width!, spec.height!, spec.length!)
 		
-		let indices = spec!.geometry!.indices!.map(vec3 => {
-            return new Vector2(vec3.x!, vec3.z!)
-		})
+		// let indices = spec!.geometry!.shapes![0].indices!.map(vec3 => {
+        //     return new Vector2(vec3.x!, vec3.z!)
+		// })
 
 		this.name = name
 		let material = new GridMaterial("material_" + name, scene)

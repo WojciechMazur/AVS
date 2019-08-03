@@ -2,7 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.road
 
 import akka.actor.typed.ActorRef
 import com.softwaremill.quicklens._
-import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.{Geometry, MultiPolygon}
 import org.locationtech.spatial4j.shape._
 import pl.edu.agh.wmazur.avs.model.entity.utils.{
   DeltaOps,
@@ -20,11 +20,15 @@ case class Road(id: Road#Id,
 
   override lazy val area: Shape = {
     val shapeFactory = SpatialUtils.shapeFactory
+
     val geometry: Geometry = lanes
       .map(lane => shapeFactory.getGeometryFrom(lane.area))
-      .reduce(_.union(_))
+      .reduce(_.union(_)) match {
+      case multiPolygon: MultiPolygon =>
+        multiPolygon.convexHull()
+      case geo => geo
+    }
     shapeFactory.makeShape(geometry)
-
   }
   override lazy val position: Point = area.getCenter
 
@@ -49,7 +53,7 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
                 lane
                   .modify(_.spec)
                   .using(_.copy(rightNeighbourLane = right))
-                //using becouse of lazy val evauluation
+                //using because of lazy val evaluation
               )
             case _ => throw new RuntimeException("Unknown type of lane")
           }
