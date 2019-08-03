@@ -13,9 +13,10 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeD
 trait VelocityReachingMovement
     extends AcceleratingMovement
     with SteeringMovement {
+  self: Vehicle =>
   def targetVelocity: Velocity
 
-  override protected def checkBounds(): VelocityReachingMovement = {
+  override protected def checkBounds(): self.type = {
     val boundedTargetVelocity = MathUtils.withConstraint(this.targetVelocity,
                                                          spec.minVelocity,
                                                          spec.maxVelocity)
@@ -25,7 +26,7 @@ trait VelocityReachingMovement
       case a if a < 0.0  => spec.minVelocity
     }
 
-    val self = super.checkBounds().asInstanceOf[VelocityReachingMovement]
+    val self = super.checkBounds()
 
     if (this.targetVelocity != targetVelocity) {
       self.withTargetVelocity(targetVelocity)
@@ -35,7 +36,7 @@ trait VelocityReachingMovement
   }
 
   private def moveWithAcceleration(accelerationDelta: Acceleration,
-                                   tickDelta: TimeDeltaSeconds) = {
+                                   tickDelta: TimeDeltaSeconds): self.type = {
     this
       .withVelocity(velocity + accelerationDelta / 2)
       .moveWithConstantVelocity(tickDelta)
@@ -45,7 +46,7 @@ trait VelocityReachingMovement
   private def moveWithPartialAcceleration(
       targetVelocityDelta: Velocity,
       timeDelta: TimeDeltaSeconds,
-      accelerationDuration: TimeDeltaSeconds) = {
+      accelerationDuration: TimeDeltaSeconds): self.type = {
     this
       .withVelocity(velocity + targetVelocityDelta / 2)
       .moveWithConstantVelocity(accelerationDuration)
@@ -54,7 +55,7 @@ trait VelocityReachingMovement
       .moveWithConstantVelocity(timeDelta - accelerationDuration)
   }
 
-  private def moveWhenAccelerating(tickDelta: TimeDeltaSeconds) = {
+  private def moveWhenAccelerating(tickDelta: TimeDeltaSeconds): self.type = {
     velocity match {
       case v if v >= targetVelocity =>
         moveWithConstantVelocity(tickDelta)
@@ -73,7 +74,7 @@ trait VelocityReachingMovement
     }
   }
 
-  private def moveWhenDeaccelerating(tickDelta: TimeDeltaSeconds) = {
+  private def moveWhenDeaccelerating(tickDelta: TimeDeltaSeconds): self.type = {
     velocity match {
       case v if v <= targetVelocity =>
         moveWithConstantVelocity(tickDelta)
@@ -92,17 +93,17 @@ trait VelocityReachingMovement
     }
   }
 
-  override def move(tickDelta: TimeDeltaSeconds): VehicleMovement =
+  override def move(tickDelta: TimeDeltaSeconds): self.type =
     acceleration match {
       case acc if acc.isZero => moveWithConstantVelocity(tickDelta)
       case acc if acc > 0    => moveWhenAccelerating(tickDelta)
       case _                 => moveWhenDeaccelerating(tickDelta)
     }
 
-  def withSteadyVelocity: VelocityReachingMovement =
+  def withSteadyVelocity: self.type =
     this.withTargetVelocity(velocity).withAcceleration(0)
 
-  def stop: VelocityReachingMovement = {
+  def stop: self.type = {
     val acceleration = velocity match {
       case v if v > 0.0 => spec.maxDeceleration
       case v if v < 0.0 => spec.maxAcceleration
@@ -111,13 +112,12 @@ trait VelocityReachingMovement
     this.withTargetVelocity(0).withAcceleration(acceleration)
   }
 
-  def maxAccelerationAndTargetVelocity: VelocityReachingMovement =
+  def maxAccelerationAndTargetVelocity: self.type =
     this
       .withAcceleration(spec.maxAcceleration)
       .withTargetVelocity(spec.maxVelocity)
 
-  def maxAccelerationWithTargetVelocity(
-      targetVelocity: Velocity): VelocityReachingMovement = {
+  def maxAccelerationWithTargetVelocity(targetVelocity: Velocity): self.type = {
     val acceleration = velocity match {
       case v if v > targetVelocity => spec.maxDeceleration
       case v if v < targetVelocity => spec.maxAcceleration
@@ -129,8 +129,7 @@ trait VelocityReachingMovement
       .withAcceleration(acceleration)
   }
 
-  def maxVelocityWithAcceleration(
-      acceleration: Acceleration): VelocityReachingMovement = {
+  def maxVelocityWithAcceleration(acceleration: Acceleration): self.type = {
     val targetVelocity = acceleration match {
       case a if a.isZero => velocity
       case a if a > 0    => spec.maxVelocity
@@ -141,13 +140,11 @@ trait VelocityReachingMovement
       .withAcceleration(acceleration)
   }
 
-  def withTargetVelocity(targetVelocity: Velocity): VelocityReachingMovement
+  def withTargetVelocity(targetVelocity: Velocity): self.type
 
-  override def withAcceleration(
-      acceleration: Acceleration): VelocityReachingMovement
-  override def withVelocity(velocity: Velocity): VelocityReachingMovement
-  override def withSteeringAngle(steeringAngle: Angle): VelocityReachingMovement
-  override def withHeading(heading: Angle): VelocityReachingMovement
-
-  override def withPosition(position: Point): VelocityReachingMovement
+  override def withAcceleration(acceleration: Acceleration): self.type
+  override def withVelocity(velocity: Velocity): self.type
+  override def withSteeringAngle(steeringAngle: Angle): self.type
+  override def withHeading(heading: Angle): self.type
+  override def withPosition(position: Point): self.type
 }

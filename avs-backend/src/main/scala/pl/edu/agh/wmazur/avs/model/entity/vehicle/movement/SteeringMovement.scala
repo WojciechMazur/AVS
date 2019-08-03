@@ -6,10 +6,13 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{
   Point2,
   PointUtils
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDeltaSeconds
+
 trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
-  def moveWithConstantVelocity(tickDelta: TimeDeltaSeconds): VehicleMovement = {
+  self: Vehicle =>
+  def moveWithConstantVelocity(tickDelta: TimeDeltaSeconds): self.type = {
     if (steeringAngle.abs < VehicleMovement.steeringAngleThreshold) {
       moveStraight(tickDelta)
     } else {
@@ -17,12 +20,12 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
     }
   }
 
-  private def moveStraight(timeDelta: TimeDeltaSeconds): VehicleMovement = {
+  private def moveStraight(timeDelta: TimeDeltaSeconds): self.type = {
     val newPosition = position.moveRotate(velocity * timeDelta, heading)
     withPosition(newPosition)
   }
 
-  private def moveByArc(timeDelta: TimeDeltaSeconds): VehicleMovement = {
+  private def moveByArc(timeDelta: TimeDeltaSeconds): self.type = {
     val rotationRate = velocity * Math.tan(
       steeringAngle / spec.wheelBase.meters)
     val finalHeading: Angle = MathUtils.boundedAngle {
@@ -45,7 +48,7 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
       .withHeading(heading)
   }
 
-  def moveWheelsTowardPoint(point: Point): VehicleMovement = {
+  def moveWheelsTowardPoint(point: Point): self.type = {
     val angle = {
       import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
       val pointBetweenFrontWheels =

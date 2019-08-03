@@ -30,7 +30,7 @@ object MathUtils {
       roundDouble(double, multiply)
     }
 
-    def isZero: Boolean = double <= 0.00000001
+    def isZero: Boolean = double <= 0.00000001 && double >= -0.00000001
 
     def roundFloat: Float = double2Float(double)
   }

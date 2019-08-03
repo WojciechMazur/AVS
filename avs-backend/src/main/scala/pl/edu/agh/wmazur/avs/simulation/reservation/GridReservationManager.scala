@@ -182,7 +182,7 @@ case class GridReservationManager(config: ManagerConfig,
   private def createTestVehicle(vehicle: Vehicle,
                                 arrivalVelocity: Velocity,
                                 maxVelocity: Velocity,
-                                arrivalLane: Lane): Vehicle = {
+                                arrivalLane: Lane): BasicVehicle = {
     vehicle match {
       case v: BasicVehicle =>
         v.withPosition(intersection.entryPoints(arrivalLane))

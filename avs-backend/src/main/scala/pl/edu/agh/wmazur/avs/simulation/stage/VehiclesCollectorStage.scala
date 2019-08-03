@@ -4,7 +4,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage._
@@ -40,7 +40,7 @@ class VehiclesCollectorStage(val context: ActorContext[Protocol])
   def waitForResults(
       replyTo: ActorRef[SimulationManager.Protocol],
       awaiting: Set[ActorRef[RoadManager.Protocol]],
-      markedToDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
+      markedToDeletion: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]]
   ): Behavior[Protocol] = {
     {
       def finalize: Behavior[Protocol] = {
@@ -81,7 +81,7 @@ object VehiclesCollectorStage {
 
   case class MarkedToDeletion(
       roadManager: ActorRef[RoadManager.Protocol],
-      refs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
+      refs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]])
       extends Protocol
 
   case class EntityManagerListing(refs: Set[ActorRef[EntityManager.Protocol]])

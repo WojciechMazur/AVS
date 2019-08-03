@@ -1,15 +1,15 @@
-package pl.edu.agh.wmazur.avs.model.entity.road
+package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.Agent
-import pl.edu.agh.wmazur.avs.model.entity.road
-import pl.edu.agh.wmazur.avs.model.entity.road.RoadCollectorWorker.{
+import pl.edu.agh.wmazur.avs.model.entity.road.workers.RoadCollectorWorker.{
   LaneCollectResult,
   Protocol,
   TryCollect
 }
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, RoadManager}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
@@ -36,7 +36,7 @@ class RoadCollectorWorker(
   def getReadings(
       replyTo: ActorRef[VehiclesCollectorStage.Protocol],
       awaiting: Set[ActorRef[LaneCollectorWorker.Protocol]],
-      markedToDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
+      markedToDeletion: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]])
     : Behavior[Protocol] = {
     if (awaiting.isEmpty) {
       replyTo ! VehiclesCollectorStage.MarkedToDeletion(roadManagerRef,
@@ -72,12 +72,12 @@ object RoadCollectorWorker {
       replyTo: ActorRef[VehiclesCollectorStage.Protocol],
       entityManagerRef: ActorRef[EntityManager.Protocol],
       vehiclesAtLanes: Map[Lane,
-                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]])
+                           Set[ActorRef[AutonomousVehicleDriver.Protocol]]])
       extends Protocol
 
   case class LaneCollectResult(
       lane: ActorRef[LaneCollectorWorker.Protocol],
-      markedForDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
+      markedForDeletion: Set[ActorRef[AutonomousVehicleDriver.Protocol]])
       extends Protocol
 
 }

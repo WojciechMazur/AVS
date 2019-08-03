@@ -1,9 +1,10 @@
-package pl.edu.agh.wmazur.avs.model.entity.road
+package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesSpawnerStage
@@ -57,13 +58,13 @@ object RoadSpawnerWorker {
   private def waitForLaneSpawners(
       context: Context,
       awaiting: Set[Lane],
-      spawned: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
-    : Behavior[Protocol] = {
+      spawned: Map[ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
+                   Vehicle#Id]): Behavior[Protocol] = {
     if (awaiting.isEmpty) {
       context.mainSpawnerRef.get ! RoadSpawnResult(context.roadRef, spawned)
       idle(context)
     } else {
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case SpawnedAtLane(lane, driverRef, vehicle) =>
           waitForLaneSpawners(context,
                               awaiting - lane,
@@ -74,19 +75,21 @@ object RoadSpawnerWorker {
     }
   }
 
+  // format: off
   sealed trait Protocol
   case class TrySpawn(
       replyTo: ActorRef[VehiclesSpawnerStage.Protocol],
       entityManagerRef: ActorRef[EntityManager.Protocol],
-      vehiclesAtLanes: Map[Lane,
-                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]],
+      vehiclesAtLanes: Map[Lane,Set[ActorRef[AutonomousVehicleDriver.Protocol]]],
       currentTime: Timestamp)
       extends Protocol
+
   sealed trait LaneSpawnResult extends Protocol
   case class SpawnedAtLane(
       lane: Lane,
-      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      driverRef: ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
       vehicleId: Vehicle#Id)
       extends LaneSpawnResult
   case class NotSpawned(lane: Lane) extends LaneSpawnResult
+  // format: on
 }

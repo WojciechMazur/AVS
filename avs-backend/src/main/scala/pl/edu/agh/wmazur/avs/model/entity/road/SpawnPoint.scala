@@ -1,7 +1,7 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
 import org.locationtech.spatial4j.shape.Shape
-import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.PositionReading
+import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneSpawnerWorker.PositionReading
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec
 
@@ -14,7 +14,7 @@ case class SpawnPoint(lane: Lane) {
       VehicleSpec.Predefined.values.map(_.length).maxBy(_.meters)
     lane
       .getGeometryFraction(0, maxVehicleLength.meters * 2 / lane.length.meters)
-      .buffer(0.0000001)
+      .buffer(0.000001)
   }
 
   def getRandomSpec: VehicleSpec = {
@@ -26,13 +26,21 @@ case class SpawnPoint(lane: Lane) {
     }
   }
   def canSpawn(readings: Set[PositionReading]): Boolean = {
-    ! {
+    def areaIntersects =
       readings
         .exists(
           _.area
+            .getBuffered(0.000001, SpatialUtils.shapeFactory.getSpatialContext)
             .relate(spawnArea)
             .intersects())
-    }
+
+    def pointIntersects =
+      readings.exists(
+        _.position
+          .getBuffered(0.000001, SpatialUtils.shapeFactory.getSpatialContext)
+          .relate(spawnArea)
+          .intersects())
+    ! { pointIntersects || areaIntersects }
   }
 }
 

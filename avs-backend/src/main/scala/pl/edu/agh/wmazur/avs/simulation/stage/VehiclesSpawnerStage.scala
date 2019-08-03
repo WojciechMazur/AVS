@@ -6,7 +6,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.{Services, Tick}
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol.SpawnResult
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
@@ -20,7 +20,8 @@ object VehiclesSpawnerStage {
       extends Protocol
   case class RoadSpawnResult(
       roadRef: ActorRef[RoadManager.Protocol],
-      spawned: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
+      spawned: Map[ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
+                   Vehicle#Id])
       extends Protocol
   case class NotSpawned(roadRef: ActorRef[RoadManager.Protocol])
       extends Protocol
@@ -68,13 +69,13 @@ object VehiclesSpawnerStage {
       entityManagerRef: ActorRef[EntityManager.Protocol],
       replyTo: ActorRef[SimulationManager.Protocol.SpawnResult],
       awaiting: Set[ActorRef[RoadManager.Protocol]],
-      results: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
-    : Behaviors.Receive[Protocol] = {
+      results: Map[ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
+                   Vehicle#Id]): Behaviors.Receive[Protocol] = {
 
     def checkIfReady(
         awaiting: Set[ActorRef[RoadManager.Protocol]],
-        results: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
-      : Behavior[Protocol] = {
+        results: Map[ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
+                     Vehicle#Id]): Behavior[Protocol] = {
       if (awaiting.isEmpty) {
         replyTo ! SpawnResult(results)
         idle(entityManagerRef)

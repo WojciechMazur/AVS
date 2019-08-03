@@ -1697,6 +1697,9 @@ export interface IVehicle {
     /** Vehicle targetPosition */
     targetPosition?: (IVector3|null);
 
+    /** Vehicle heading */
+    heading?: (number|null);
+
     /** Vehicle acceleration */
     acceleration?: (number|null);
 
@@ -1724,6 +1727,9 @@ export class Vehicle implements IVehicle {
 
     /** Vehicle targetPosition. */
     public targetPosition?: (IVector3|null);
+
+    /** Vehicle heading. */
+    public heading: number;
 
     /** Vehicle acceleration. */
     public acceleration: number;

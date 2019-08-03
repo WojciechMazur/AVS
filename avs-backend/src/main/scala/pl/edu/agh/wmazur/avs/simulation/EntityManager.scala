@@ -13,7 +13,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
-  AutonomousDriver,
+  AutonomousVehicleDriver,
   VehicleDriver
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
@@ -40,13 +40,13 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
                                            velocity,
                                            lane) =>
         val vehicleId = Vehicle.nextId
-        context.spawn(AutonomousDriver.init(id = vehicleId,
-                                            spec,
-                                            position,
-                                            heading,
-                                            velocity,
-                                            lane = lane,
-                                            replyTo = replyTo),
+        context.spawn(AutonomousVehicleDriver.init(id = vehicleId,
+                                                   spec,
+                                                   position,
+                                                   heading,
+                                                   velocity,
+                                                   lane = lane,
+                                                   replyTo = replyTo),
                       s"autonomous-driver-$vehicleId")
         Behaviors.same
 
@@ -134,7 +134,7 @@ object EntityManager {
     case class EntityTerminated[T](entityRef: ActorRef[T]) extends Protocol
     case class CollectDrivers(
         replyTo: Option[ActorRef[VehiclesCollectorStage.Protocol]] = None,
-        driversRef: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
+        driversRef: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]]
     ) extends CollectProtocol
 
   }

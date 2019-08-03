@@ -2,9 +2,14 @@ package pl.edu.agh.wmazur.avs.model.entity.road
 
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager._
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.road.workers.{
+  RoadCollectorWorker,
+  RoadSpawnerWorker,
+  RoadVehiclesCoordinator
+}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
@@ -14,14 +19,15 @@ import pl.edu.agh.wmazur.avs.simulation.stage.{
   VehiclesCollectorStage,
   VehiclesSpawnerStage
 }
-import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup, Tick}
+import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
 
 import scala.collection.mutable
 
 class RoadManager(
     val context: ActorContext[Protocol],
     val road: Road,
-    var oppositeRoadManager: Option[ActorRef[RoadManager.Protocol]] = None)
+    var oppositeRoadManager: Option[ActorRef[RoadManager.Protocol]] = None,
+    val vehiclesCoordinator: ActorRef[RoadVehiclesCoordinator.Protocol])
     extends Agent[Protocol] {
   val roadSpawnerWorker: ActorRef[RoadSpawnerWorker.Protocol] = context.spawn(
     RoadSpawnerWorker.init(context.self, road.lanes),
@@ -35,13 +41,13 @@ class RoadManager(
                                                       context.self)
 
   val vehiclesAtLanes
-    : mutable.Map[Lane, Set[ActorRef[AutonomousDriver.ExtendedProtocol]]] =
+    : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
     road.lanes
-      .map(_ -> Set.empty[ActorRef[AutonomousDriver.ExtendedProtocol]])(
+      .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])(
         collection.breakOut)
 
   override protected val initialBehaviour: Behavior[Protocol] =
-    Behaviors.receiveMessage {
+    Behaviors.receiveMessagePartial {
       case TrySpawn(replyTo, entityManagerRef, currentTime) =>
         roadSpawnerWorker ! RoadSpawnerWorker.TrySpawn(replyTo,
                                                        entityManagerRef,
@@ -88,6 +94,7 @@ class RoadManager(
 }
 
 object RoadManager {
+  // format: off
   sealed trait Protocol extends SimulationProtocol
   case class TrySpawn(replyTo: ActorRef[VehiclesSpawnerStage.Protocol],
                       entityManagerRef: ActorRef[EntityManager.Protocol],
@@ -111,19 +118,22 @@ object RoadManager {
 
   case class GetLanesOccupation(replyTo: ActorRef[LanesOccupation])
       extends Protocol
+
+  case class FindPrecedingVehicle(replyTo: ActorRef[AutonomousVehicleDriver.Protocol]) extends Protocol
+
   case class LanesOccupation(
       roadManagerRef: ActorRef[RoadManager.Protocol],
-      vehiclesAtLanes: Map[Lane,
-                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]])
+      vehiclesAtLanes: Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]])
 
   case class VehicleLanesOccupation(
-      driver: ActorRef[AutonomousDriver.ExtendedProtocol],
+      driver: ActorRef[AutonomousVehicleDriver.Protocol],
       lanes: Set[Lane],
       previousLanes: Set[Lane] = Set.empty)
       extends Protocol {
     lazy val enteredLanes: Set[Lane] = lanes.diff(previousLanes)
     lazy val leavedLanes: Set[Lane] = previousLanes.diff(lanes)
   }
+  // format: on
 
   def init(
       optId: Option[Road#Id],
@@ -135,7 +145,10 @@ object RoadManager {
       val road = Road(optId, lanes, ctx.self)
       replyTo.foreach(_ ! SpawnResult(road, ctx.self))
 
-      new RoadManager(ctx, road, oppositeRoadRef)
+      val coordinator =
+        ctx.spawn(RoadVehiclesCoordinator.init, "road-coordinator")
+
+      new RoadManager(ctx, road, oppositeRoadRef, coordinator)
 
     }
 

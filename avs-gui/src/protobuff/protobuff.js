@@ -4087,6 +4087,7 @@ export const Vehicle = $root.Vehicle = (() => {
      * @property {string|null} [id] Vehicle id
      * @property {IVector3|null} [currentPosition] Vehicle currentPosition
      * @property {IVector3|null} [targetPosition] Vehicle targetPosition
+     * @property {number|null} [heading] Vehicle heading
      * @property {number|null} [acceleration] Vehicle acceleration
      * @property {number|null} [speed] Vehicle speed
      * @property {IVehicleSpec|null} [spec] Vehicle spec
@@ -4130,6 +4131,14 @@ export const Vehicle = $root.Vehicle = (() => {
      * @instance
      */
     Vehicle.prototype.targetPosition = null;
+
+    /**
+     * Vehicle heading.
+     * @member {number} heading
+     * @memberof Vehicle
+     * @instance
+     */
+    Vehicle.prototype.heading = 0;
 
     /**
      * Vehicle acceleration.
@@ -4185,12 +4194,14 @@ export const Vehicle = $root.Vehicle = (() => {
             $root.Vector3.encode(message.currentPosition, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         if (message.targetPosition != null && message.hasOwnProperty("targetPosition"))
             $root.Vector3.encode(message.targetPosition, writer.uint32(/* id 3, wireType 2 =*/26).fork()).ldelim();
+        if (message.heading != null && message.hasOwnProperty("heading"))
+            writer.uint32(/* id 4, wireType 5 =*/37).float(message.heading);
         if (message.acceleration != null && message.hasOwnProperty("acceleration"))
-            writer.uint32(/* id 4, wireType 5 =*/37).float(message.acceleration);
+            writer.uint32(/* id 5, wireType 5 =*/45).float(message.acceleration);
         if (message.speed != null && message.hasOwnProperty("speed"))
-            writer.uint32(/* id 5, wireType 5 =*/45).float(message.speed);
+            writer.uint32(/* id 6, wireType 5 =*/53).float(message.speed);
         if (message.spec != null && message.hasOwnProperty("spec"))
-            $root.VehicleSpec.encode(message.spec, writer.uint32(/* id 6, wireType 2 =*/50).fork()).ldelim();
+            $root.VehicleSpec.encode(message.spec, writer.uint32(/* id 7, wireType 2 =*/58).fork()).ldelim();
         return writer;
     };
 
@@ -4235,12 +4246,15 @@ export const Vehicle = $root.Vehicle = (() => {
                 message.targetPosition = $root.Vector3.decode(reader, reader.uint32());
                 break;
             case 4:
-                message.acceleration = reader.float();
+                message.heading = reader.float();
                 break;
             case 5:
-                message.speed = reader.float();
+                message.acceleration = reader.float();
                 break;
             case 6:
+                message.speed = reader.float();
+                break;
+            case 7:
                 message.spec = $root.VehicleSpec.decode(reader, reader.uint32());
                 break;
             default:
@@ -4291,6 +4305,9 @@ export const Vehicle = $root.Vehicle = (() => {
             if (error)
                 return "targetPosition." + error;
         }
+        if (message.heading != null && message.hasOwnProperty("heading"))
+            if (typeof message.heading !== "number")
+                return "heading: number expected";
         if (message.acceleration != null && message.hasOwnProperty("acceleration"))
             if (typeof message.acceleration !== "number")
                 return "acceleration: number expected";
@@ -4329,6 +4346,8 @@ export const Vehicle = $root.Vehicle = (() => {
                 throw TypeError(".Vehicle.targetPosition: object expected");
             message.targetPosition = $root.Vector3.fromObject(object.targetPosition);
         }
+        if (object.heading != null)
+            message.heading = Number(object.heading);
         if (object.acceleration != null)
             message.acceleration = Number(object.acceleration);
         if (object.speed != null)
@@ -4358,6 +4377,7 @@ export const Vehicle = $root.Vehicle = (() => {
             object.id = "";
             object.currentPosition = null;
             object.targetPosition = null;
+            object.heading = 0;
             object.acceleration = 0;
             object.speed = 0;
             object.spec = null;
@@ -4368,6 +4388,8 @@ export const Vehicle = $root.Vehicle = (() => {
             object.currentPosition = $root.Vector3.toObject(message.currentPosition, options);
         if (message.targetPosition != null && message.hasOwnProperty("targetPosition"))
             object.targetPosition = $root.Vector3.toObject(message.targetPosition, options);
+        if (message.heading != null && message.hasOwnProperty("heading"))
+            object.heading = options.json && !isFinite(message.heading) ? String(message.heading) : message.heading;
         if (message.acceleration != null && message.hasOwnProperty("acceleration"))
             object.acceleration = options.json && !isFinite(message.acceleration) ? String(message.acceleration) : message.acceleration;
         if (message.speed != null && message.hasOwnProperty("speed"))

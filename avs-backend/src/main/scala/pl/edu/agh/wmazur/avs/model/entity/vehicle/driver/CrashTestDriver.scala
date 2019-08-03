@@ -4,14 +4,17 @@ import java.util.concurrent.TimeUnit
 
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.SteeringMovement
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  BasicVehicle,
+  Vehicle,
+  driver
+}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
-case class CrashTestDriver(vehicle: Vehicle,
+case class CrashTestDriver(var vehicle: BasicVehicle,
                            var currentLane: Lane,
                            destinationLane: Lane)
     extends VehicleDriver {
@@ -52,13 +55,7 @@ case class CrashTestDriver(vehicle: Vehicle,
       } else {
         currentLane.leadPointOf(vehicle.position, leadDistance)
       }
-      val updatedVehicle = vehicle match {
-        case v: Vehicle with SteeringMovement =>
-          v.moveWheelsTowardPoint(destinationPoint).asInstanceOf[Vehicle]
-        case _ =>
-          throw new UnsupportedOperationException(
-            "Unable to steer vehicle without SteeringMovement ")
-      }
+      val updatedVehicle = vehicle.moveWheelsTowardPoint(destinationPoint)
       copy(vehicle = updatedVehicle)
     }
 
@@ -73,8 +70,11 @@ case class CrashTestDriver(vehicle: Vehicle,
     CrashTestDriver.traversingLaneChangeLeadTime.toUnit(TimeUnit.SECONDS) * vehicle.velocity
   }
 
-  override protected def withVehicle(vehicle: Vehicle): VehicleDriver =
-    copy(vehicle = vehicle)
+  override protected def withVehicle(vehicle: Vehicle): this.type =
+    vehicle match {
+      case basicVehicle: BasicVehicle =>
+        copy(vehicle = basicVehicle).asInstanceOf[this.type]
+    }
 }
 
 object CrashTestDriver {

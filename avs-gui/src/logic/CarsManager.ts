@@ -20,11 +20,7 @@ export class CarsManager extends ISystemManager{
 		vehicles.forEach(vehicle => {
 			if (vehicle.id != null && vehicle.currentPosition != null) {
 				let car = new Car(vehicle.id,
-					new Vector3(
-						<number>vehicle.currentPosition.x,
-						this.vehiclePositionY,
-						<number>vehicle.currentPosition.z),
-					vehicle.spec!,
+					vehicle, 
 					this.scene)
 					this.entities.set(vehicle.id, car)
 					console.dir("Spawned vehicle with id " + vehicle.id)
@@ -39,8 +35,9 @@ export class CarsManager extends ISystemManager{
 			let position = vehicle.currentPosition
 	
 			if (entity != null && position != null) {
-				entity.mesh.lookAt(new Vector3(position.x!, this.vehiclePositionY, position.z!))
+				// entity.mesh.lookAt(new Vector3(position.x!, this.vehiclePositionY, position.z!))
 				entity.mesh.position.set(position.x!, this.vehiclePositionY, position.z!)
+				entity.rotate(vehicle.heading! + Math.PI / 2)
 			}
 	
 			this.entities.set(id, entity)

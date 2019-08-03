@@ -15,6 +15,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait VehicleMovement {
+  self: Vehicle =>
   def position: Point
   def heading: Angle
   def velocity: Velocity
@@ -24,15 +25,15 @@ sealed trait VehicleMovement {
 
   val positionVector: Vector2 = position
 
-  def move(tickDelta: TimeDeltaSeconds): VehicleMovement
+  def move(tickDelta: TimeDeltaSeconds): self.type
 
-  def withAcceleration(acceleration: Acceleration): VehicleMovement
-  def withVelocity(velocity: Velocity): VehicleMovement
-  def withSteeringAngle(steeringAngle: Angle): VehicleMovement
-  def withHeading(heading: Angle): VehicleMovement
-  def withPosition(position: Point): VehicleMovement
+  def withAcceleration(acceleration: Acceleration): self.type
+  def withVelocity(velocity: Velocity): self.type
+  def withSteeringAngle(steeringAngle: Angle): self.type
+  def withHeading(heading: Angle): self.type
+  def withPosition(position: Point): self.type
 
-  protected def checkBounds(): VehicleMovement = {
+  protected def checkBounds(): self.type = {
     val velocity = MathUtils.withConstraint(this.velocity,
                                             spec.minVelocity,
                                             spec.maxVelocity)
@@ -59,10 +60,12 @@ object VehicleMovement {
   val steeringAngleThreshold: Angle = 0.0001f
 
   trait UniformVehicleMovement extends VehicleMovement {
-    def moveWithConstantVelocity(timeDelta: TimeDeltaSeconds): VehicleMovement
+    self: Vehicle =>
+    def moveWithConstantVelocity(timeDelta: TimeDeltaSeconds): self.type
   }
   trait VariableVehicleMovement extends VehicleMovement {
-    def moveWithAcceleration(timeDelta: TimeDeltaSeconds): VehicleMovement
+    self: Vehicle =>
+    def moveWithAcceleration(timeDelta: TimeDeltaSeconds): self.type
   }
 
 }

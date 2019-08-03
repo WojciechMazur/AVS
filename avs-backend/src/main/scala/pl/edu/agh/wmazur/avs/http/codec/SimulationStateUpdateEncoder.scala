@@ -95,6 +95,7 @@ object SimulationStateUpdateEncoder
           ProtoVector3
             .of(coords.x.toFloat, 0f, coords.y.toFloat))
       },
+      heading = vehicle.heading.toFloat,
       speed = vehicle.velocity.floatValue(),
       acceleration = vehicle.acceleration.floatValue(),
       spec = Some(spec)

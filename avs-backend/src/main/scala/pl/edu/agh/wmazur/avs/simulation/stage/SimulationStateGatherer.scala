@@ -10,7 +10,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.state.SimulationState
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol.StateUpdate
@@ -22,18 +22,18 @@ object SimulationStateGatherer {
   case class GetCurrentState(
       replyTo: ActorRef[SimulationManager.Protocol],
       roadRefs: Set[ActorRef[RoadManager.Protocol]],
-      driverRefs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
+      driverRefs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]],
       intersectionRefs: Set[ActorRef[IntersectionManager.Protocol]],
       currentTime: Long,
       tickDelta: FiniteDuration)
       extends Protocol
 
   case class DriverDetailedReading(
-      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      driverRef: ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
       vehicle: Vehicle,
   ) extends Protocol
   case class DriverNotExists(
-      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol])
+      driverRef: ActorRef[AutonomousVehicleDriver.ExtendedProtocol])
       extends Protocol
 
   case class RoadDetailedReading(roadRef: ActorRef[RoadManager.Protocol],
@@ -70,14 +70,15 @@ object SimulationStateGatherer {
       context: ActorContext[SimulationStateGatherer.Protocol],
       roadRefs: Set[ActorRef[RoadManager.Protocol]],
       intersectionRefs: Set[ActorRef[IntersectionManager.Protocol]],
-      driverRefs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]): Unit = {
+      driverRefs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]])
+    : Unit = {
     for {
       request <- Some(RoadManager.GetDetailedReadings(context.self))
       roadRef <- roadRefs
     } roadRef ! request
 
     for {
-      request <- Some(AutonomousDriver.GetDetailedReadings(context.self))
+      request <- Some(AutonomousVehicleDriver.GetDetailedReadings(context.self))
       driverRef <- driverRefs
       _ = context.watchWith(driverRef, DriverNotExists(driverRef))
     } driverRef ! request
@@ -92,7 +93,7 @@ object SimulationStateGatherer {
       replyTo: ActorRef[SimulationManager.Protocol],
       roadRefs: Set[ActorRef[RoadManager.Protocol]],
       intersectionRefs: Set[ActorRef[IntersectionManager.Protocol]],
-      driverRefs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
+      driverRefs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]],
       state: SimulationState = SimulationState.empty): Behavior[Protocol] = {
     val finished = roadRefs.isEmpty && driverRefs.isEmpty && intersectionRefs.isEmpty
 

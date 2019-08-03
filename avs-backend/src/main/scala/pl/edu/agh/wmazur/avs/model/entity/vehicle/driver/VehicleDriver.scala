@@ -2,13 +2,15 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import akka.actor.typed.ActorRef
 import mikera.vectorz.Vector2
-import org.locationtech.spatial4j.distance.{DistanceCalculator, DistanceUtils}
-import org.locationtech.spatial4j.shape.{Point, Shape}
+import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  BasicVehicle,
+  Vehicle,
+  VehicleDriverGauges
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationProfile
 import pl.edu.agh.wmazur.avs.protocol.{Response, SimulationProtocol}
@@ -21,19 +23,32 @@ import scala.concurrent.duration.FiniteDuration
   * Responsible for controlling vehicle and communication with intersection managers
   */
 trait VehicleDriver {
-  def vehicle: Vehicle
+  var vehicle: BasicVehicle
   var currentLane: Lane
+
+  var driverGauges: VehicleDriverGauges = VehicleDriverGauges.empty
   def occupiedLanes: mutable.Set[Lane]
 
-//  def spawnPoint: Option[SpawnPoint]
   def destination: Option[Road]
+
   def prepareToMove(): VehicleDriver = {
+    updateGauges()
+  }
+
+  def updateGauges(): this.type = {
+    driverGauges = VehicleDriverGauges(
+      distanceToCarInFront = None,
+      distanceToNextIntersection = nextIntersectionPosition.map(distanceToPoint),
+      distanceToPrevIntersection =
+        previousIntersectionPosition.map(distanceToPoint)
+    )
     this
   }
+
   final def updateVehicle(fn: Vehicle => Vehicle): VehicleDriver = {
     withVehicle(fn(vehicle))
   }
-  protected def withVehicle(vehicle: Vehicle): VehicleDriver
+  protected def withVehicle(vehicle: Vehicle): this.type
 
   var nextIntersectionManager: Option[ActorRef[IntersectionManager.Protocol]] =
     None
@@ -43,16 +58,11 @@ trait VehicleDriver {
   var nextIntersectionPosition: Option[Point] = None
   var previousIntersectionPosition: Option[Point] = None
 
-  def distanceToPoint(point: Point) = {
+  def distanceToPoint(point: Point): Dimension = {
     val here = Vector2.of(vehicle.position.getX, vehicle.position.getY)
     val there = Vector2.of(point.getX, point.getY)
     here.distance(there).fromGeoDegrees
   }
-
-  def distanceToNextIntersection: Option[Dimension] =
-    nextIntersectionPosition.map(distanceToPoint)
-  def distanceToPrevIntersection: Option[Dimension] =
-    previousIntersectionPosition.map(distanceToPoint)
 
   protected def setCurrentLane(lane: Lane): Lane = {
     currentLane = lane

@@ -1,10 +1,10 @@
-package pl.edu.agh.wmazur.avs.model.entity.road
+package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Agent
-import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.{
+import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneSpawnerWorker.{
   Context,
   PositionReading,
   Protocol,
@@ -12,11 +12,12 @@ import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.{
   Terminated,
   TrySpawn
 }
-import pl.edu.agh.wmazur.avs.model.entity.road.RoadSpawnerWorker.NotSpawned
+import pl.edu.agh.wmazur.avs.model.entity.road.workers.RoadSpawnerWorker.NotSpawned
+import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, SpawnPoint}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
-  AutonomousDriver,
+  AutonomousVehicleDriver,
   VehicleDriver
 }
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
@@ -40,20 +41,20 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
 
   override protected val initialBehaviour: Behavior[Protocol] = idle
 
-  lazy val idle: Behaviors.Receive[Protocol] = Behaviors.receiveMessage {
+  lazy val idle: Behaviors.Receive[Protocol] = Behaviors.receiveMessagePartial {
     case TrySpawn(drivers, entityManagerRef, currentTime) =>
       if (spawnPoint.isDefined && nextSpawnTime <= currentTime) {
         drivers.foreach { ref =>
 //          context.watchWith(ref, Terminated(ref))
           val adapter =
-            context.messageAdapter[AutonomousDriver.PositionReading] {
-              case AutonomousDriver.PositionReading(driverRef,
-                                                    position,
-                                                    heading,
-                                                    area) =>
+            context.messageAdapter[AutonomousVehicleDriver.PositionReading] {
+              case AutonomousVehicleDriver.PositionReading(driverRef,
+                                                           position,
+                                                           heading,
+                                                           area) =>
                 PositionReading(driverRef, position, heading, area)
             }
-          ref ! AutonomousDriver.GetPositionReading(adapter)
+          ref ! AutonomousVehicleDriver.GetPositionReading(adapter)
         }
         getReadings(entityManagerRef, drivers, Set.empty)
       } else {
@@ -64,7 +65,7 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
 
   private def getReadings(
       entityManagerRef: ActorRef[EntityManager.Protocol],
-      awaiting: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
+      awaiting: Set[ActorRef[AutonomousVehicleDriver.Protocol]],
       readings: Set[PositionReading]): Behavior[Protocol] = {
 
     if (awaiting.isEmpty) {
@@ -126,19 +127,19 @@ object LaneSpawnerWorker {
     }
 
   sealed trait Protocol extends SimulationProtocol
-  case class TrySpawn(drivers: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
+  case class TrySpawn(drivers: Set[ActorRef[AutonomousVehicleDriver.Protocol]],
                       entityManagerRef: ActorRef[EntityManager.Protocol],
                       currentTime: Timestamp)
       extends Protocol
   case class PositionReading(
-      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
       position: Point,
       heading: Angle,
       area: Shape)
       extends Protocol
-  case class Spawned(driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+  case class Spawned(driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
                      id: Vehicle#Id)
       extends Protocol
-  case class Terminated(ref: ActorRef[AutonomousDriver.ExtendedProtocol])
+  case class Terminated(ref: ActorRef[AutonomousVehicleDriver.Protocol])
       extends Protocol
 }

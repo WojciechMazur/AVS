@@ -5,7 +5,7 @@ import org.locationtech.spatial4j.distance.DistanceUtils
 import pl.edu.agh.wmazur.avs.http.management.WebsocketManager
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
 
 package object avs {
@@ -25,8 +25,8 @@ package object avs {
 
   object EntityRefsGroup {
     val road: ServiceKey[RoadManager.Protocol] = ServiceKey("roads-group")
-    val driver: ServiceKey[AutonomousDriver.ExtendedProtocol] = ServiceKey(
-      "drivers-group")
+    val driver: ServiceKey[AutonomousVehicleDriver.ExtendedProtocol] =
+      ServiceKey("drivers-group")
     val intersection: ServiceKey[IntersectionManager.Protocol] = ServiceKey(
       "intersections-group"
     )

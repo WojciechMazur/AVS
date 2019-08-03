@@ -11,7 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.{Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.state.SimulationState
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol.Ack
@@ -51,7 +51,7 @@ class SimulationManager(context: ActorContext[Protocol],
     Set.empty[ActorRef[IntersectionManager.Protocol]]
 
   private var cachedDriversRefs =
-    Set.empty[ActorRef[AutonomousDriver.ExtendedProtocol]]
+    Set.empty[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]]
 
   private val idle = withDefaultBehavior(ActorBehaviors.waitingForTick)
 
@@ -296,11 +296,11 @@ object SimulationManager {
     case class StateUpdate(state: SimulationState) extends Protocol
 
     case class SpawnResult(
-        spawnedVehicles: Map[ActorRef[AutonomousDriver.ExtendedProtocol],
+        spawnedVehicles: Map[ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
                              Vehicle#Id])
         extends Protocol
     case class CollectResult(
-        markedVehicles: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
+        markedVehicles: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]]
     ) extends Protocol
 
     sealed trait RecoveryResult extends Protocol
@@ -329,7 +329,7 @@ object SimulationManager {
     }
 
     case class DriversListing(
-        drivers: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
+        drivers: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]])
         extends Protocol
     case class RoadsListing(roads: Set[ActorRef[RoadManager.Protocol]])
         extends Protocol

@@ -14,9 +14,10 @@ message Vehicle{
     string id = 1;
     Vector3 currentPosition = 2;
     Vector3 targetPosition = 3;
-    float acceleration = 4;
-    float speed = 5;
-    VehicleSpec spec = 6;
+    float heading = 4;
+    float acceleration = 5;
+    float speed = 6;
+    VehicleSpec spec = 7;
 
 }
 
