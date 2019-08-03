@@ -35,9 +35,9 @@ class RoadManager(
                                                       context.self)
 
   val vehiclesAtLanes
-    : mutable.Map[Lane, Set[ActorRef[AutonomousDriver.Protocol]]] =
+    : mutable.Map[Lane, Set[ActorRef[AutonomousDriver.ExtendedProtocol]]] =
     road.lanes
-      .map(_ -> Set.empty[ActorRef[AutonomousDriver.Protocol]])(
+      .map(_ -> Set.empty[ActorRef[AutonomousDriver.ExtendedProtocol]])(
         collection.breakOut)
 
   override protected val initialBehaviour: Behavior[Protocol] =
@@ -78,6 +78,10 @@ class RoadManager(
           enteredLane <- vlo.enteredLanes
           lastState = vehiclesAtLanes.getOrElse(enteredLane, Set.empty)
         } vehiclesAtLanes.update(enteredLane, lastState + driver)
+        Behaviors.same
+
+      case GetLanesOccupation(replyTo) =>
+        replyTo ! LanesOccupation(context.self, vehiclesAtLanes.toMap)
 
         Behaviors.same
     }
@@ -105,9 +109,17 @@ object RoadManager {
       replyTo: ActorRef[SimulationStateGatherer.Protocol])
       extends Protocol
 
-  case class VehicleLanesOccupation(driver: ActorRef[AutonomousDriver.Protocol],
-                                    lanes: Set[Lane],
-                                    previousLanes: Set[Lane] = Set.empty)
+  case class GetLanesOccupation(replyTo: ActorRef[LanesOccupation])
+      extends Protocol
+  case class LanesOccupation(
+      roadManagerRef: ActorRef[RoadManager.Protocol],
+      vehiclesAtLanes: Map[Lane,
+                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]])
+
+  case class VehicleLanesOccupation(
+      driver: ActorRef[AutonomousDriver.ExtendedProtocol],
+      lanes: Set[Lane],
+      previousLanes: Set[Lane] = Set.empty)
       extends Protocol {
     lazy val enteredLanes: Set[Lane] = lanes.diff(previousLanes)
     lazy val leavedLanes: Set[Lane] = previousLanes.diff(lanes)

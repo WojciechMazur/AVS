@@ -134,7 +134,7 @@ object EntityManager {
     case class EntityTerminated[T](entityRef: ActorRef[T]) extends Protocol
     case class CollectDrivers(
         replyTo: Option[ActorRef[VehiclesCollectorStage.Protocol]] = None,
-        driversRef: Set[ActorRef[AutonomousDriver.Protocol]]
+        driversRef: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
     ) extends CollectProtocol
 
   }

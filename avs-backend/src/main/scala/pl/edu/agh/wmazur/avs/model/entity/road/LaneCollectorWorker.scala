@@ -20,7 +20,7 @@ class LaneCollectorWorker(
   val collectorPoint: Option[CollectorPoint] = lane.collectorPoint
   val adapter: ActorRef[AutonomousDriver.PositionReading] =
     context.messageAdapter[AutonomousDriver.PositionReading] {
-      case AutonomousDriver.PositionReading(driverRef, position, area) =>
+      case AutonomousDriver.PositionReading(driverRef, position, _, area) =>
         PositionReading(driverRef, position, area)
     }
 
@@ -39,8 +39,9 @@ class LaneCollectorWorker(
       }
   }
 
-  def getReadings(awaiting: Set[ActorRef[AutonomousDriver.Protocol]],
-                  markedToDeletion: Set[ActorRef[AutonomousDriver.Protocol]])
+  def getReadings(
+      awaiting: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
+      markedToDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
     : Behavior[Protocol] = {
     if (awaiting.isEmpty) {
       roadCollectorWorker ! RoadCollectorWorker.LaneCollectResult(
@@ -76,12 +77,13 @@ object LaneCollectorWorker {
 
   object Protocol {
     case class TryCollect(
-        vehiclesAtLane: Set[ActorRef[AutonomousDriver.Protocol]])
+        vehiclesAtLane: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
         extends Protocol
 
-    case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
-                               position: Point,
-                               area: Shape)
+    case class PositionReading(
+        driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+        position: Point,
+        area: Shape)
         extends Protocol
 
   }

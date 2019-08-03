@@ -1,8 +1,13 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
+import akka.actor.typed.ActorRef
+import mikera.vectorz.Vector2
+import org.locationtech.spatial4j.distance.{DistanceCalculator, DistanceUtils}
+import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationProfile
@@ -30,11 +35,24 @@ trait VehicleDriver {
   }
   protected def withVehicle(vehicle: Vehicle): VehicleDriver
 
-  def nextIntersectionManager: Option[IntersectionManager]
-  def prevIntersectionManager: Option[IntersectionManager]
+  var nextIntersectionManager: Option[ActorRef[IntersectionManager.Protocol]] =
+    None
+  var prevIntersectionManager: Option[ActorRef[IntersectionManager.Protocol]] =
+    None
 
-  def distanceToNextIntersection: Option[Dimension]
-  def distanceToPrevIntersection: Option[Dimension]
+  var nextIntersectionPosition: Option[Point] = None
+  var previousIntersectionPosition: Option[Point] = None
+
+  def distanceToPoint(point: Point) = {
+    val here = Vector2.of(vehicle.position.getX, vehicle.position.getY)
+    val there = Vector2.of(point.getX, point.getY)
+    here.distance(there).fromGeoDegrees
+  }
+
+  def distanceToNextIntersection: Option[Dimension] =
+    nextIntersectionPosition.map(distanceToPoint)
+  def distanceToPrevIntersection: Option[Dimension] =
+    previousIntersectionPosition.map(distanceToPoint)
 
   protected def setCurrentLane(lane: Lane): Lane = {
     currentLane = lane
@@ -86,6 +104,10 @@ object VehicleDriver {
       }
     }
 
+    final case class IntersectionManagerInRange(
+        ref: ActorRef[IntersectionManager.Protocol],
+        position: Point)
+        extends Protocol
   }
 
 }

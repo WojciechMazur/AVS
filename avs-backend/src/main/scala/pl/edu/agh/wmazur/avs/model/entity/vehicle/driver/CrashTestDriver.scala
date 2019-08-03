@@ -3,7 +3,6 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 import java.util.concurrent.TimeUnit
 
 import pl.edu.agh.wmazur.avs.Dimension
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.SteeringMovement
@@ -18,10 +17,6 @@ case class CrashTestDriver(vehicle: Vehicle,
     extends VehicleDriver {
 
   override val destination: Option[Road] = None
-  override val nextIntersectionManager: Option[IntersectionManager] = None
-  override val prevIntersectionManager: Option[IntersectionManager] = None
-  override val distanceToNextIntersection: Option[Dimension] = None
-  override val distanceToPrevIntersection: Option[Dimension] = None
 
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set(currentLane)
 

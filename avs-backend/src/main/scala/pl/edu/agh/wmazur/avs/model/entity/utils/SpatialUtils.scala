@@ -15,6 +15,7 @@ import org.locationtech.spatial4j.shape.impl.PointImpl
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
 import scala.collection.{breakOut, immutable}

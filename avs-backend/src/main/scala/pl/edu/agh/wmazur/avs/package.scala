@@ -25,7 +25,7 @@ package object avs {
 
   object EntityRefsGroup {
     val road: ServiceKey[RoadManager.Protocol] = ServiceKey("roads-group")
-    val driver: ServiceKey[AutonomousDriver.Protocol] = ServiceKey(
+    val driver: ServiceKey[AutonomousDriver.ExtendedProtocol] = ServiceKey(
       "drivers-group")
     val intersection: ServiceKey[IntersectionManager.Protocol] = ServiceKey(
       "intersections-group"

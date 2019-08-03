@@ -50,7 +50,8 @@ class SimulationManager(context: ActorContext[Protocol],
   private var cachedIntersectionRefs =
     Set.empty[ActorRef[IntersectionManager.Protocol]]
 
-  private var cachedDriversRefs = Set.empty[ActorRef[AutonomousDriver.Protocol]]
+  private var cachedDriversRefs =
+    Set.empty[ActorRef[AutonomousDriver.ExtendedProtocol]]
 
   private val idle = withDefaultBehavior(ActorBehaviors.waitingForTick)
 
@@ -295,10 +296,11 @@ object SimulationManager {
     case class StateUpdate(state: SimulationState) extends Protocol
 
     case class SpawnResult(
-        spawnedVehicles: Map[ActorRef[AutonomousDriver.Protocol], Vehicle#Id])
+        spawnedVehicles: Map[ActorRef[AutonomousDriver.ExtendedProtocol],
+                             Vehicle#Id])
         extends Protocol
     case class CollectResult(
-        markedVehicles: Set[ActorRef[AutonomousDriver.Protocol]]
+        markedVehicles: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
     ) extends Protocol
 
     sealed trait RecoveryResult extends Protocol
@@ -326,7 +328,8 @@ object SimulationManager {
       }
     }
 
-    case class DriversListing(drivers: Set[ActorRef[AutonomousDriver.Protocol]])
+    case class DriversListing(
+        drivers: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
         extends Protocol
     case class RoadsListing(roads: Set[ActorRef[RoadManager.Protocol]])
         extends Protocol

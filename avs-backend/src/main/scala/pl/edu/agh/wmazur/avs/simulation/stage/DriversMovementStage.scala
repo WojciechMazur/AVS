@@ -18,11 +18,11 @@ object DriversMovementStage {
   sealed trait Protocol extends SimulationProtocol
   case class Step(replyTo: ActorRef[SimulationManager.Protocol],
                   roadRefs: Set[ActorRef[RoadManager.Protocol]],
-                  driversRefs: Set[ActorRef[AutonomousDriver.Protocol]],
+                  driversRefs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
                   currentTime: Timestamp,
                   tickDelta: FiniteDuration)
       extends Protocol
-  case class DriverMoved(driverRef: ActorRef[AutonomousDriver.Protocol],
+  case class DriverMoved(driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
                          oldPosition: Point,
                          newPosition: Point)
       extends Protocol {
@@ -30,7 +30,7 @@ object DriversMovementStage {
       SpatialUtils.shapeFactory.getSpatialContext
         .calcDistance(oldPosition, newPosition)
   }
-  case class DriverLost(driverRef: ActorRef[AutonomousDriver.Protocol])
+  case class DriverLost(driverRef: ActorRef[AutonomousDriver.ExtendedProtocol])
       extends Protocol
 
   final lazy val init: Behavior[Protocol] = Behaviors.setup { ctx =>
@@ -50,7 +50,7 @@ object DriversMovementStage {
 
   private def waitForResponses(
       replyTo: ActorRef[SimulationManager.Protocol],
-      awaiting: Set[ActorRef[AutonomousDriver.Protocol]])
+      awaiting: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
     : Behaviors.Receive[Protocol] = {
     if (awaiting.isEmpty) {
       replyTo ! Done

@@ -57,7 +57,7 @@ object RoadSpawnerWorker {
   private def waitForLaneSpawners(
       context: Context,
       awaiting: Set[Lane],
-      spawned: Map[ActorRef[AutonomousDriver.Protocol], Vehicle#Id])
+      spawned: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
     : Behavior[Protocol] = {
     if (awaiting.isEmpty) {
       context.mainSpawnerRef.get ! RoadSpawnResult(context.roadRef, spawned)
@@ -78,13 +78,15 @@ object RoadSpawnerWorker {
   case class TrySpawn(
       replyTo: ActorRef[VehiclesSpawnerStage.Protocol],
       entityManagerRef: ActorRef[EntityManager.Protocol],
-      vehiclesAtLanes: Map[Lane, Set[ActorRef[AutonomousDriver.Protocol]]],
+      vehiclesAtLanes: Map[Lane,
+                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]],
       currentTime: Timestamp)
       extends Protocol
   sealed trait LaneSpawnResult extends Protocol
-  case class SpawnedAtLane(lane: Lane,
-                           driverRef: ActorRef[AutonomousDriver.Protocol],
-                           vehicleId: Vehicle#Id)
+  case class SpawnedAtLane(
+      lane: Lane,
+      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      vehicleId: Vehicle#Id)
       extends LaneSpawnResult
   case class NotSpawned(lane: Lane) extends LaneSpawnResult
 }

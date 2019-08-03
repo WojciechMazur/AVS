@@ -19,7 +19,7 @@ case class BasicVehicle(
     gauges: VehicleGauges,
     spec: VehicleSpec,
     targetVelocity: Velocity,
-    driverRef: ActorRef[AutonomousDriver.Protocol],
+    driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
     spawnTime: Int
 ) extends Vehicle
     with VelocityReachingMovement {
@@ -58,7 +58,7 @@ object BasicVehicle extends EntitySettings[BasicVehicle] {
   def apply(
       id: Option[Vehicle#Id] = None,
       position: Point,
-      driverRef: ActorRef[AutonomousDriver.Protocol],
+      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
       heading: Angle = 0.0,
       velocity: Velocity = 0.0,
       targetVelocity: Option[Velocity] = None,

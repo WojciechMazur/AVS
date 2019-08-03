@@ -5,11 +5,11 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import org.locationtech.spatial4j.shape.{Point, Shape}
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousDriver._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.IntersectionManagerInRange
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   BasicVehicle,
   Vehicle,
@@ -21,7 +21,7 @@ import pl.edu.agh.wmazur.avs.simulation.stage.{
   DriversMovementStage,
   SimulationStateGatherer
 }
-import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
+import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
 
 import scala.collection.mutable
 class AutonomousDriver(val context: ActorContext[Protocol],
@@ -36,10 +36,6 @@ class AutonomousDriver(val context: ActorContext[Protocol],
                                                       context.self)
 
   var destination: Option[Road] = None
-  var prevIntersectionManager: Option[IntersectionManager] = None
-  var nextIntersectionManager: Option[IntersectionManager] = None
-  var distanceToNextIntersection: Option[Dimension] = None
-  var distanceToPrevIntersection: Option[Dimension] = None
 
   override protected def setCurrentLane(lane: Lane): Lane = {
     val previousState = occupiedLanes.toSet
@@ -58,6 +54,7 @@ class AutonomousDriver(val context: ActorContext[Protocol],
           replyTo ! PositionReading(
             driverRef = context.self,
             position = vehicle.position,
+            heading = vehicle.heading,
             area = vehicle.area
           )
           Behaviors.same
@@ -77,6 +74,15 @@ class AutonomousDriver(val context: ActorContext[Protocol],
           replyTo ! DriversMovementStage.DriverMoved(context.self,
                                                      oldPosition,
                                                      newPosition)
+          Behaviors.same
+
+        case IntersectionManagerInRange(ref, position) =>
+          if (nextIntersectionManager.isEmpty) {
+            nextIntersectionManager = Some(ref)
+            nextIntersectionPosition = Some(position)
+            println("Registered intersection manager")
+          }
+          ///TODO Should ask for reservation already?
           Behaviors.same
       }
       .receiveSignal {
@@ -103,19 +109,26 @@ class AutonomousDriver(val context: ActorContext[Protocol],
 }
 
 object AutonomousDriver {
-  sealed trait Protocol extends VehicleDriver.Protocol
+  type Protocol = VehicleDriver.Protocol
+  sealed trait ExtendedProtocol extends VehicleDriver.Protocol
+
   case class GetPositionReading(replyTo: ActorRef[PositionReading])
-      extends Protocol
-  case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
-                             position: Point,
-                             area: Shape)
-      extends Protocol
+      extends ExtendedProtocol
+
+  case class PositionReading(
+      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      position: Point,
+      heading: Angle,
+      area: Shape)
+      extends ExtendedProtocol
+
   case class GetDetailedReadings(
       replyTo: ActorRef[SimulationStateGatherer.Protocol])
-      extends Protocol
+      extends ExtendedProtocol
+
   case class MovementStep(replyTo: ActorRef[DriversMovementStage.Protocol],
                           tickDelta: TickDelta)
-      extends Protocol
+      extends ExtendedProtocol
 
   def init(
       id: Vehicle#Id,
@@ -125,8 +138,8 @@ object AutonomousDriver {
       velocity: Velocity,
       lane: Lane,
       replyTo: Option[ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]]] =
-        None): Behavior[Protocol] = {
-    Behaviors.setup { ctx =>
+        None): Behavior[ExtendedProtocol] = {
+    Behaviors.setup[VehicleDriver.Protocol] { ctx =>
       val vehicle = BasicVehicle(driverRef = ctx.self,
                                  spec = spec,
                                  position = position,
@@ -135,5 +148,6 @@ object AutonomousDriver {
       replyTo.foreach(_ ! SpawnResult(vehicle, ctx.self.unsafeUpcast))
       new AutonomousDriver(context = ctx, spawnLane = lane, vehicle = vehicle)
     }
-  }
+  }.narrow
+
 }

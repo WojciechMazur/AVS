@@ -40,7 +40,7 @@ class VehiclesCollectorStage(val context: ActorContext[Protocol])
   def waitForResults(
       replyTo: ActorRef[SimulationManager.Protocol],
       awaiting: Set[ActorRef[RoadManager.Protocol]],
-      markedToDeletion: Set[ActorRef[AutonomousDriver.Protocol]]
+      markedToDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]]
   ): Behavior[Protocol] = {
     {
       def finalize: Behavior[Protocol] = {
@@ -79,8 +79,9 @@ object VehiclesCollectorStage {
                         currentTime: Timestamp)
       extends Protocol
 
-  case class MarkedToDeletion(roadManager: ActorRef[RoadManager.Protocol],
-                              refs: Set[ActorRef[AutonomousDriver.Protocol]])
+  case class MarkedToDeletion(
+      roadManager: ActorRef[RoadManager.Protocol],
+      refs: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
       extends Protocol
 
   case class EntityManagerListing(refs: Set[ActorRef[EntityManager.Protocol]])

@@ -33,9 +33,10 @@ class RoadCollectorWorker(
       getReadings(replyTo, laneWorkersFiltered.toSet, Set.empty)
   }
 
-  def getReadings(replyTo: ActorRef[VehiclesCollectorStage.Protocol],
-                  awaiting: Set[ActorRef[LaneCollectorWorker.Protocol]],
-                  markedToDeletion: Set[ActorRef[AutonomousDriver.Protocol]])
+  def getReadings(
+      replyTo: ActorRef[VehiclesCollectorStage.Protocol],
+      awaiting: Set[ActorRef[LaneCollectorWorker.Protocol]],
+      markedToDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
     : Behavior[Protocol] = {
     if (awaiting.isEmpty) {
       replyTo ! VehiclesCollectorStage.MarkedToDeletion(roadManagerRef,
@@ -70,12 +71,13 @@ object RoadCollectorWorker {
   case class TryCollect(
       replyTo: ActorRef[VehiclesCollectorStage.Protocol],
       entityManagerRef: ActorRef[EntityManager.Protocol],
-      vehiclesAtLanes: Map[Lane, Set[ActorRef[AutonomousDriver.Protocol]]])
+      vehiclesAtLanes: Map[Lane,
+                           Set[ActorRef[AutonomousDriver.ExtendedProtocol]]])
       extends Protocol
 
   case class LaneCollectResult(
       lane: ActorRef[LaneCollectorWorker.Protocol],
-      markedForDeletion: Set[ActorRef[AutonomousDriver.Protocol]])
+      markedForDeletion: Set[ActorRef[AutonomousDriver.ExtendedProtocol]])
       extends Protocol
 
 }

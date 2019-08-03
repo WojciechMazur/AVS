@@ -14,6 +14,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.LaneSpawnerWorker.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadSpawnerWorker.NotSpawned
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousDriver,
   VehicleDriver
@@ -48,8 +49,9 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
             context.messageAdapter[AutonomousDriver.PositionReading] {
               case AutonomousDriver.PositionReading(driverRef,
                                                     position,
+                                                    heading,
                                                     area) =>
-                PositionReading(driverRef, position, area)
+                PositionReading(driverRef, position, heading, area)
             }
           ref ! AutonomousDriver.GetPositionReading(adapter)
         }
@@ -62,16 +64,16 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
 
   private def getReadings(
       entityManagerRef: ActorRef[EntityManager.Protocol],
-      awaiting: Set[ActorRef[AutonomousDriver.Protocol]],
+      awaiting: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
       readings: Set[PositionReading]): Behavior[Protocol] = {
 
     if (awaiting.isEmpty) {
       trySpawn(entityManagerRef, readings)
     } else {
       Behaviors.receiveMessagePartial {
-        case reading @ PositionReading(driverRef, _, _) =>
+        case reading: PositionReading =>
           getReadings(entityManagerRef,
-                      awaiting - driverRef,
+                      awaiting - reading.driverRef,
                       readings + reading)
         case Terminated(ref) =>
           getReadings(entityManagerRef, awaiting - ref, readings)
@@ -124,17 +126,19 @@ object LaneSpawnerWorker {
     }
 
   sealed trait Protocol extends SimulationProtocol
-  case class TrySpawn(drivers: Set[ActorRef[AutonomousDriver.Protocol]],
+  case class TrySpawn(drivers: Set[ActorRef[AutonomousDriver.ExtendedProtocol]],
                       entityManagerRef: ActorRef[EntityManager.Protocol],
                       currentTime: Timestamp)
       extends Protocol
-  case class PositionReading(driverRef: ActorRef[AutonomousDriver.Protocol],
-                             position: Point,
-                             area: Shape)
+  case class PositionReading(
+      driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
+      position: Point,
+      heading: Angle,
+      area: Shape)
       extends Protocol
-  case class Spawned(driverRef: ActorRef[AutonomousDriver.Protocol],
+  case class Spawned(driverRef: ActorRef[AutonomousDriver.ExtendedProtocol],
                      id: Vehicle#Id)
       extends Protocol
-  case class Terminated(ref: ActorRef[AutonomousDriver.Protocol])
+  case class Terminated(ref: ActorRef[AutonomousDriver.ExtendedProtocol])
       extends Protocol
 }

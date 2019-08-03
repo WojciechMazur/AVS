@@ -20,7 +20,7 @@ object VehiclesSpawnerStage {
       extends Protocol
   case class RoadSpawnResult(
       roadRef: ActorRef[RoadManager.Protocol],
-      spawned: Map[ActorRef[AutonomousDriver.Protocol], Vehicle#Id])
+      spawned: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
       extends Protocol
   case class NotSpawned(roadRef: ActorRef[RoadManager.Protocol])
       extends Protocol
@@ -68,12 +68,12 @@ object VehiclesSpawnerStage {
       entityManagerRef: ActorRef[EntityManager.Protocol],
       replyTo: ActorRef[SimulationManager.Protocol.SpawnResult],
       awaiting: Set[ActorRef[RoadManager.Protocol]],
-      results: Map[ActorRef[AutonomousDriver.Protocol], Vehicle#Id])
+      results: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
     : Behaviors.Receive[Protocol] = {
 
     def checkIfReady(
         awaiting: Set[ActorRef[RoadManager.Protocol]],
-        results: Map[ActorRef[AutonomousDriver.Protocol], Vehicle#Id])
+        results: Map[ActorRef[AutonomousDriver.ExtendedProtocol], Vehicle#Id])
       : Behavior[Protocol] = {
       if (awaiting.isEmpty) {
         replyTo ! SpawnResult(results)
