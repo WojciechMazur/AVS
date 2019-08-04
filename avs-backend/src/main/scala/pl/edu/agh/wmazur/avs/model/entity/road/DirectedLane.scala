@@ -12,21 +12,21 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.{MathUtils, SpatialUtils}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
 case class DirectedLane(id: Lane#Id,
-                        private val line: LineString,
+                        override val middleLine: LineString,
                         spec: LaneSpec)
     extends Lane {
 
-  private val startPoint = line.getStartPoint
-  private val endPoint = line.getEndPoint
+  private val startPoint = middleLine.getStartPoint
+  private val endPoint = middleLine.getEndPoint
 
   lazy val laneVector: Vector2 = Vector2
-    .of(line.getEndPoint.getX - line.getStartPoint.getX,
-        line.getEndPoint.getY - line.getStartPoint.getY)
+    .of(middleLine.getEndPoint.getX - middleLine.getStartPoint.getX,
+        middleLine.getEndPoint.getY - middleLine.getStartPoint.getY)
 
   lazy val squaredLaneLength: Dimension =
     laneVector.dotProduct(laneVector).fromGeoDegrees
-  lazy val length
-    : Dimension = line.getStartPoint.distance(line.getEndPoint) * DistanceUtils.DEG_TO_KM * 1000
+  lazy val length: Dimension = middleLine.getStartPoint.distance(
+    middleLine.getEndPoint) * DistanceUtils.DEG_TO_KM * 1000
 
   lazy val heading: Angle =
     MathUtils.boundedAngle(
@@ -49,12 +49,12 @@ case class DirectedLane(id: Lane#Id,
     )
   }
 
-  val leftBorder: Shape = LineFactory(
+  override val leftBorder: LineString = LineFactory(
     startPoint.move(-xDiff, -yDiff),
     endPoint.move(-xDiff, -yDiff)
   )
 
-  val rightBorder: Shape = LineFactory(
+  override val rightBorder: LineString = LineFactory(
     startPoint.move(xDiff, yDiff),
     endPoint.move(xDiff, yDiff),
   )
@@ -114,17 +114,17 @@ case class DirectedLane(id: Lane#Id,
   }
 
   override def distanceFromPoint(pos: Point): Dimension =
-    closestDistanceSquared(line, pos)
+    closestDistanceSquared(middleLine, pos)
 
   override def leftIntersectionPoint(line: LineString): Option[Point] = {
-    SpatialUtils.lineStringsIntersection(leftBorder, this.line)
+    SpatialUtils.lineStringsIntersection(leftBorder, this.middleLine)
   }
 
   override def rightIntersectionPoint(line: LineString): Option[Point] =
-    SpatialUtils.lineStringsIntersection(rightBorder, this.line)
+    SpatialUtils.lineStringsIntersection(rightBorder, this.middleLine)
 
   override def centerIntersectionPoint(line: LineString): Option[Point] =
-    SpatialUtils.lineStringsIntersection(line, this.line)
+    SpatialUtils.lineStringsIntersection(line, this.middleLine)
 
   override type Self = DirectedLane
   override def entitySettings: EntitySettings[DirectedLane] = DirectedLane

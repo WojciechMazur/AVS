@@ -27,6 +27,8 @@ trait Vehicle extends Entity with DeltaOps[Vehicle] {
   def gauges: VehicleGauges
 
   override def position: Point = gauges.position
+  lazy val positionAsGeometry: Geometry =
+    SpatialUtils.shapeFactory.getGeometryFrom(position)
   override def heading: Angle = gauges.heading
   override def velocity: Velocity = gauges.velocity
   override def acceleration: Acceleration = gauges.acceleration

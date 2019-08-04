@@ -6,16 +6,16 @@ import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  AccelerationSchedule,
   BasicVehicle,
   Vehicle,
   VehicleDriverGauges
 }
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationProfile
 import pl.edu.agh.wmazur.avs.protocol.{Response, SimulationProtocol}
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
-import com.softwaremill.quicklens._
+
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
@@ -47,7 +47,7 @@ trait VehicleDriver {
   final def updateVehicle(fn: Vehicle => Vehicle): VehicleDriver = {
     withVehicle(fn(vehicle))
   }
-  protected def withVehicle(vehicle: Vehicle): this.type
+  def withVehicle(vehicle: Vehicle): this.type
 
   var nextIntersectionManager: Option[ActorRef[IntersectionManager.Protocol]] =
     None
@@ -84,15 +84,9 @@ object VehicleDriver {
         arrivalVelocity: Velocity,
         arrivalLaneId: Lane#Id,
         departureLaneId: Lane#Id,
-        accelerationProfile: AccelerationProfile,
+        accelerationProfile: AccelerationSchedule,
     ) extends Response[Protocol](requestId)
         with Protocol
-
-    object ReservationConfirmed {
-      case class AccelerationProfile(events: List[AccelerationEvent])
-      case class AccelerationEvent(acceleration: Double,
-                                   duration: FiniteDuration)
-    }
 
     final case class ReservationRejected(
         requestId: Long,

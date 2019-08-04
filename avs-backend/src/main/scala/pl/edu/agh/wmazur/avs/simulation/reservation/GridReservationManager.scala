@@ -6,11 +6,11 @@ import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs
 import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   CrashTestDriver,
   VehicleDriver

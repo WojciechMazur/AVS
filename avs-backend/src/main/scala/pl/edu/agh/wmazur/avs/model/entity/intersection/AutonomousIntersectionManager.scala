@@ -28,8 +28,11 @@ class AutonomousIntersectionManager(
     with DefaultPolicy
     with IntersectionConnectivity {
   // TODO ACZs
-  val reservationManager =
-    GridReservationManager(gridManagerConfig, intersection)
+
+  val reservationManager = GridReservationManager(
+    gridManagerConfig,
+    intersection
+  )
 
   override protected val initialBehaviour
     : Behavior[IntersectionManager.Protocol] =

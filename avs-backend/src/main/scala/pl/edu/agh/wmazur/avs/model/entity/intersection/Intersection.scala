@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection
 
 import mikera.vectorz.Vector2
 import org.locationtech.spatial4j.shape.Point
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.Entity
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.DeltaOps
@@ -30,6 +31,11 @@ trait Intersection extends Entity with DeltaOps[Intersection] {
   def exitPoints: Map[Lane, Point]
   def entryHeadings: Map[Lane, Angle]
   def exitHeading: Map[Lane, Angle]
+
+  def isExitedBy(lane: Lane): Boolean = exitPoints.contains(lane)
+  def isEnteredBy(lane: Lane): Boolean = entryPoints.contains(lane)
+
+  def calcTravelsalDistance(arrivalLane: Lane, departureLane: Lane): Dimension
 
   lazy val lanesById: Map[LaneId, Lane] = (entryRoads ++ exitRoads).flatMap {
     road =>

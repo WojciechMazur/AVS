@@ -52,6 +52,71 @@ case class AutonomousRoadIntersection(
   lazy val exitHeading: Map[Lane, Angle] = iaSegments.exitHeadings
 
 //  override def intersectionManager: IntersectionManager = ???
+  override def calcTravelsalDistance(arrivalLane: Lane,
+                                     departureLane: Lane): Dimension = {
+
+    def lineStringLength(shape: Shape): Dimension = {
+      shape match {
+        case line: LineString => line.getLength.fromGeoDegrees
+        case _                => sys.error("This should not happend")
+      }
+    }
+
+    if (arrivalLane == departureLane) {
+      (
+        entryPoints(arrivalLane) distance exitPoints(departureLane)
+      ).fromGeoDegrees
+    } else {
+      val arrivalLaneEnd = if (isExitedBy(arrivalLane)) {
+        exitPoints(arrivalLane)
+      } else {
+        arrivalLane.exitPoint
+      }
+
+      val departureLaneStart = if (isEnteredBy(departureLane)) {
+        entryPoints(departureLane)
+      } else {
+        departureLane.entryPoint
+      }
+
+      val arrivalLaneIntersectionSegment =
+        LineFactory(entryPoints(arrivalLane), arrivalLaneEnd)
+      val departureLineIntersectionSegment =
+        LineFactory(departureLaneStart, exitPoints(departureLane))
+
+      val segmentsIntersects = arrivalLaneIntersectionSegment
+        .relate(departureLineIntersectionSegment)
+        .intersects()
+
+      val segments = if (segmentsIntersects) {
+        val arrivalSegmentGeometry =
+          shapeFactory.getGeometryFrom(arrivalLaneIntersectionSegment)
+        val departureSegmentGeometry =
+          shapeFactory.getGeometryFrom(departureLineIntersectionSegment)
+
+        val intersectionPoint =
+          arrivalSegmentGeometry.intersection(departureSegmentGeometry) match {
+            case point: Point => point
+            case _            => sys.error("This should not happend")
+          }
+
+        List(
+          LineFactory(entryPoints(arrivalLane), intersectionPoint),
+          LineFactory(intersectionPoint, exitPoints(departureLane))
+        )
+
+      } else {
+        List(
+          arrivalLaneIntersectionSegment,
+          departureLineIntersectionSegment
+        )
+      }
+
+      segments
+        .map(lineStringLength)
+        .reduce(_ + _)
+    }
+  }
 
   override lazy val area: Shape =
     AutonomousRoadIntersection.shapeFactory.makeShapeFromGeometry {
@@ -138,7 +203,7 @@ case class AutonomousRoadIntersection(
 
     intersectingLanes.foldLeft(
       IntersectionAreaSegments(geometry = Some(intersectionGeometry))) {
-      case (IntersectionAreaSegments(geometry,
+      case (IntersectionAreaSegments(optGeometry,
                                      inletPoints,
                                      outletPoints,
                                      inletHeadings,
@@ -177,7 +242,7 @@ case class AutonomousRoadIntersection(
 //          .union {
 //          geometryFragment.symDifference(geometryFragment)
 //        }
-        val newGeometry = geometry match {
+        val newGeometry = optGeometry match {
           case Some(geo) => geo.union(filledGeometryFragment)
           case _         => filledGeometryFragment
         }

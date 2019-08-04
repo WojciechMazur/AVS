@@ -15,12 +15,7 @@ trait ClosedIntersectionPolicy {
   lazy val closedIntersection: Behavior[IntersectionManager.Protocol] =
     Behaviors
       .receiveMessagePartial[IntersectionManager.Protocol] {
-        case req @ IntersectionCrossingRequest(_,
-                                               _,
-                                               _,
-                                               _,
-                                               timestamp,
-                                               replyTo) =>
+        case req @ IntersectionCrossingRequest(_, _, _, timestamp, replyTo) =>
           replyTo ! ReservationRejected(
             requestId = req.id,
             nextAllowedCommunicationTimestamp = timestamp,

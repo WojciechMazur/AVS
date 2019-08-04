@@ -4,7 +4,7 @@ import akka.actor.typed.ActorRef
 import org.locationtech.spatial4j.shape.Shape
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Angle,
@@ -17,17 +17,16 @@ import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 
 trait IntersectionManager {
   def intersection: Intersection
-  val id: Intersection#Id = intersection.id
 
-  def manages(lane: Lane): Boolean =
+  def manages(laneId: Lane#Id): Boolean =
     intersection.roads
       .exists(
         _.lanes
-          .exists(_.id == lane.id))
+          .exists(_.id == laneId))
 
-  def manages(road: Road): Boolean =
+  def manages(roadId: Road#Id): Boolean =
     intersection.roads
-      .exists(_.id == road.id)
+      .exists(_.id == roadId)
 
   def contains(vehicle: Vehicle): Boolean = intersects(vehicle.area)
 
@@ -44,8 +43,7 @@ object IntersectionManager {
   object Protocol {
     final case class IntersectionCrossingRequest(
         vin: Vehicle#Id,
-        intersectionId: Intersection#Id,
-        spec: IntersectionCrossingRequest.VehicleSpec,
+        spec: IntersectionCrossingRequest.CrossingVehicleSpec,
         proposals: List[IntersectionCrossingRequest.Proposal],
         currentTime: Timestamp,
         replyTo: ActorRef[VehicleDriver.Protocol]
@@ -61,7 +59,7 @@ object IntersectionManager {
           maxTurnVelocity: Velocity
       )
 
-      final case class VehicleSpec(
+      final case class CrossingVehicleSpec(
           maxAcceleration: Acceleration,
           maxDeceleration: Acceleration,
           minVelocity: Velocity,
@@ -73,9 +71,9 @@ object IntersectionManager {
           maxTurnPerSecond: Angle
       )
 
-      object VehicleSpec {
-        def apply(vehicleSpec: VehicleSpec): VehicleSpec = {
-          VehicleSpec(
+      object CrossingVehicleSpec {
+        def apply(vehicleSpec: VehicleSpec): CrossingVehicleSpec = {
+          CrossingVehicleSpec(
             maxAcceleration = vehicleSpec.maxAcceleration,
             maxDeceleration = vehicleSpec.maxDeceleration,
             minVelocity = vehicleSpec.minVelocity,

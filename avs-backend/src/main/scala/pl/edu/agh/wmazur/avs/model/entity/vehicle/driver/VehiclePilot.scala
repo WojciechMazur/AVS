@@ -4,20 +4,21 @@ import java.util.concurrent.TimeUnit
 
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.BasicVehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, VehicleSpec}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
 
+import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
 trait VehiclePilot {
   self: VehicleDriver =>
   import VehiclePilot._
 
-  protected def applyBasicThrothelling: VehiclePilot.this.type = {
+  protected def applyBasicThrothelling(): VehiclePilot.this.type = {
     cruise.stopBeforeVehicleInFront().stopBeforeIntersection()
   }
 
@@ -85,6 +86,7 @@ object VehiclePilot {
                            deceleration: Acceleration): Dimension = {
     (-velocity * velocity / (2 * deceleration)).fromMeters
   }
+
   def calcMaxAllowedVelocity(vehicle: BasicVehicle, lane: Lane): Velocity =
     vehicle.spec.maxVelocity.min(lane.spec.speedLimit)
 

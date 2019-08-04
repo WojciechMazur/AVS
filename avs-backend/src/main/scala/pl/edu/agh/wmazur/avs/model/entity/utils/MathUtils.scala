@@ -79,6 +79,11 @@ object MathUtils {
     }
   }
 
+  def angleDiff(angle1: Angle, angle2: Angle): Angle = {
+    val absDiff = (angle1 - angle2).abs
+    absDiff.min(Pi2 - absDiff)
+  }
+
   val Pi2: Double = Math.PI * 2
 
   def boundedAngle(angle: Double): Double = {

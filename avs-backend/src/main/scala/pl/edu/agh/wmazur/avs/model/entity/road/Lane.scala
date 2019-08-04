@@ -1,7 +1,7 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
 import org.locationtech.jts.geom.{Geometry, LineString}
-import org.locationtech.spatial4j.shape.Point
+import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
@@ -15,6 +15,10 @@ trait Lane extends Entity with Identifiable {
 
   def entryPoint: Point
   def exitPoint: Point
+
+  def rightBorder: LineString
+  def leftBorder: LineString
+  def middleLine: LineString
 
   def leadPointOf(point: Point, distance: Dimension): Point
   def distanceFromPoint(pos: Point): Dimension

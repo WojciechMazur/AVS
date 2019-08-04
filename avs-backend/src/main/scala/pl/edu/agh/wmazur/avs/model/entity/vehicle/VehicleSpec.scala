@@ -2,13 +2,15 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle
 
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
+import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.PointUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Angle,
+  VehicleSpecId,
   Velocity
 }
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.PointUtils
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 
 case class VehicleSpec(
     maxAcceleration: Acceleration,
@@ -24,9 +26,9 @@ case class VehicleSpec(
     wheelWidth: Dimension,
     maxSteeringAngle: Angle,
     maxTurnPerSecond: Angle,
+    id: VehicleSpecId = VehicleSpec.nextId
 ) {
-  //Todo przekazać TickSource.TickDelta
-  val maxTurnPerFrame: Angle = maxTurnPerSecond / 60
+  val maxTurnPerFrame: Angle = maxTurnPerSecond / TickSource.timeStepSeconds
   val wheelBase: Dimension = rearAxleDisplacement - frontAxleDisplacement
   val wheelSpan: Dimension = (width - wheelWidth) / 2.0
 
@@ -43,7 +45,8 @@ case class VehicleSpec(
 
 }
 
-object VehicleSpec {
+object VehicleSpec extends IdProvider[VehicleSpec] {
+  type VehicleSpecId = Long
   type Acceleration = Double
   type Velocity = Double
   type Angle = Double

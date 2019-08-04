@@ -12,8 +12,9 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.Protocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.{
   DriverConnectivity,
-  DrivingBehavior,
-  OnTickBehavior
+  Driving,
+  PreperingReservation,
+  OnTick
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   BasicVehicle,
@@ -34,13 +35,20 @@ class AutonomousVehicleDriver(
     with VehicleDriver
     with VehiclePilot
     with DriverConnectivity
-    with OnTickBehavior
-    with DrivingBehavior {
+    with OnTick
+    with Driving
+    with PreperingReservation {
 
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
   override var currentLane: Lane = setCurrentLane(spawnLane)
 
   var destination: Option[Road] = None
+
+  def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
+    behavior
+      .orElse(drive)
+      .orElse(basicConnectivity)
+      .orElse(onTickBehavior)
 
   override protected val initialBehaviour: Behavior[Protocol] = switchTo(drive)
 
@@ -55,7 +63,7 @@ class AutonomousVehicleDriver(
     lane
   }
 
-  override protected def withVehicle(vehicle: Vehicle): this.type = {
+  override def withVehicle(vehicle: Vehicle): this.type = {
     vehicle match {
       case bv: BasicVehicle => this.vehicle = bv
       case _                => throw new RuntimeException("Unsupported operation")
@@ -66,8 +74,9 @@ class AutonomousVehicleDriver(
 
 object AutonomousVehicleDriver
     extends DriverConnectivity.Protocol
-    with DrivingBehavior.Protocol
-    with OnTickBehavior.Protocol {
+    with Driving.Protocol
+    with OnTick.Protocol
+    with PreperingReservation.Protocol {
 
   type Protocol = VehicleDriver.Protocol
   trait ExtendedProtocol extends VehicleDriver.Protocol

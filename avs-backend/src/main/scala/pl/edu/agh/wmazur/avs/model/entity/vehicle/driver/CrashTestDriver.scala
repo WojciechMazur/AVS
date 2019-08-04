@@ -70,7 +70,7 @@ case class CrashTestDriver(var vehicle: BasicVehicle,
     CrashTestDriver.traversingLaneChangeLeadTime.toUnit(TimeUnit.SECONDS) * vehicle.velocity
   }
 
-  override protected def withVehicle(vehicle: Vehicle): this.type =
+  override def withVehicle(vehicle: Vehicle): this.type =
     vehicle match {
       case basicVehicle: BasicVehicle =>
         copy(vehicle = basicVehicle).asInstanceOf[this.type]
