@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Agent
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneCollectorWorker.Protocol
@@ -19,12 +20,14 @@ class LaneCollectorWorker(
     lane: Lane)
     extends Agent[Protocol] {
   val collectorPoint: Option[CollectorPoint] = lane.collectorPoint
-  val adapter: ActorRef[AutonomousVehicleDriver.PositionReading] =
-    context.messageAdapter[AutonomousVehicleDriver.PositionReading] {
-      case AutonomousVehicleDriver.PositionReading(driverRef,
-                                                   position,
-                                                   _,
-                                                   area) =>
+  val adapter: ActorRef[AutonomousVehicleDriver.BasicReading] =
+    context.messageAdapter[AutonomousVehicleDriver.BasicReading] {
+      case AutonomousVehicleDriver.BasicReading(driverRef,
+                                                position,
+                                                _,
+                                                _,
+                                                _,
+                                                area) =>
         PositionReading(driverRef, position, area)
     }
 
@@ -54,10 +57,11 @@ class LaneCollectorWorker(
       idle
     } else {
       Behaviors.receiveMessagePartial {
-        case PositionReading(ref, position, area) =>
+        case PositionReading(ref, position, geometry) =>
           val markedVehicles =
             if (collectorPoint
-                  .exists(_.shouldBeRemoved(position, area))) {
+                  .exists(
+                    _.shouldBeRemoved(position, geometry = Some(geometry)))) {
               markedToDeletion + ref
             } else {
               markedToDeletion
@@ -87,7 +91,7 @@ object LaneCollectorWorker {
     case class PositionReading(
         driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
         position: Point,
-        area: Shape)
+        geometry: Geometry)
         extends Protocol
 
   }

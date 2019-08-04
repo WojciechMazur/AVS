@@ -1,14 +1,19 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.locationtech.spatial4j.shape.Point
-import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
+import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.{
+  FindPrecedingVehicle,
+  VehicleLanesOccupation
+}
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.Protocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.{
   DriverConnectivity,
-  DrivingBehavior
+  DrivingBehavior,
+  OnTickBehavior
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   BasicVehicle,
@@ -17,7 +22,6 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
 }
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
-import AutonomousVehicleDriver.Protocol
 
 import scala.collection.mutable
 
@@ -25,10 +29,12 @@ class AutonomousVehicleDriver(
     val context: ActorContext[AutonomousVehicleDriver.Protocol],
     spawnLane: Lane,
     var vehicle: BasicVehicle,
+    val timers: TimerScheduler[AutonomousVehicleDriver.Protocol]
 ) extends Agent[Protocol]
     with VehicleDriver
     with VehiclePilot
     with DriverConnectivity
+    with OnTickBehavior
     with DrivingBehavior {
 
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
@@ -60,7 +66,9 @@ class AutonomousVehicleDriver(
 
 object AutonomousVehicleDriver
     extends DriverConnectivity.Protocol
-    with DrivingBehavior.Protocol {
+    with DrivingBehavior.Protocol
+    with OnTickBehavior.Protocol {
+
   type Protocol = VehicleDriver.Protocol
   trait ExtendedProtocol extends VehicleDriver.Protocol
 
@@ -84,9 +92,12 @@ object AutonomousVehicleDriver
       ctx.system.receptionist ! Receptionist.register(EntityRefsGroup.driver,
                                                       ctx.self)
 
-      new AutonomousVehicleDriver(context = ctx,
-                                  spawnLane = lane,
-                                  vehicle = vehicle)
+      Behaviors.withTimers { timers =>
+        new AutonomousVehicleDriver(context = ctx,
+                                    spawnLane = lane,
+                                    vehicle = vehicle,
+                                    timers)
+      }
     }
   }.narrow
 

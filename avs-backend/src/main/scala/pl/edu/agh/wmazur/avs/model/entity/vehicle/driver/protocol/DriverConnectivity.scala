@@ -3,27 +3,48 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.softwaremill.quicklens._
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.{Point, Shape}
+import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
+  Acceleration,
+  Angle,
+  Velocity
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.{
+  Protocol,
+  _
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.IntersectionManagerInRange
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 
-trait DriverConnectivity {
-  self: AutonomousVehicleDriver =>
-  def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
-    behavior.orElse(basicConnvectity)
+import scala.concurrent.duration._
 
-  val basicConnvectity: Behavior[Protocol] = Behaviors
+trait DriverConnectivity {
+  self: AutonomousVehicleDriver with OnTickBehavior =>
+
+  timers.startPeriodicTimer(FetchNeighbourVehicles,
+                            FetchNeighbourVehicles,
+                            NeighbourFetchingInterval.whenNone)
+
+  def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
+    behavior.orElse(basicConnectivity).orElse(onTickBehavior)
+
+  var driverInFront: Option[VehicleCachedReadings] = None
+
+  val basicConnectivity: Behavior[Protocol] = Behaviors
     .receiveMessagePartial[Protocol] {
       case GetPositionReading(replyTo) =>
-        replyTo ! PositionReading(
+        replyTo ! BasicReading(
           driverRef = context.self,
           position = vehicle.position,
           heading = vehicle.heading,
-          area = vehicle.area
+          velocity = vehicle.velocity,
+          acceleration = vehicle.acceleration,
+          geometry = vehicle.geometry
         )
         Behaviors.same
 
@@ -37,11 +58,46 @@ trait DriverConnectivity {
           nextIntersectionManager = Some(ref)
           nextIntersectionPosition = Some(position)
 
-          driverGauges = modify(driverGauges)(_.distanceToNextIntersection)
+          driverGauges = driverGauges
+            .modify(_.distanceToNextIntersection)
             .setTo(Some(distanceToPoint(position)))
-          println("Registered intersection manager")
         }
-        ///TODO Should ask for reservation already?
+        Behaviors.same
+
+      case FetchNeighbourVehicles =>
+        currentLane.spec.road.get.managerRef ! RoadManager.FindPrecedingVehicle(
+          context.self)
+        Behaviors.same
+
+      case result: PrecedingVehicleResult =>
+        result match {
+          case NotFoundPrecedingVehicle =>
+            if (driverInFront.nonEmpty) {
+              timers.cancel(FetchNeighbourVehicles)
+              timers.startPeriodicTimer(FetchNeighbourVehicles,
+                                        FetchNeighbourVehicles,
+                                        NeighbourFetchingInterval.whenNone)
+              driverInFront = None
+              driverGauges.updateVehicleInFront(None, vehicle)
+            }
+          case FoundPrecedingVehicle(vehicleRef, position, velocity) =>
+            if (driverInFront.isEmpty) {
+              timers.cancel(FetchNeighbourVehicles)
+              timers.startPeriodicTimer(FetchNeighbourVehicles,
+                                        FetchNeighbourVehicles,
+                                        NeighbourFetchingInterval.whenSome)
+            }
+            driverInFront = Some {
+              VehicleCachedReadings(
+                ref = vehicleRef,
+                position = position,
+                velocity = velocity,
+                geometry = None
+              )
+            }
+            driverGauges =
+              driverGauges.updateVehicleInFront(driverInFront, vehicle)
+        }
         Behaviors.same
     }
     .receiveSignal {
@@ -62,14 +118,19 @@ trait DriverConnectivity {
 
 object DriverConnectivity {
   trait Protocol {
-    case class GetPositionReading(replyTo: ActorRef[PositionReading])
+    self: AutonomousVehicleDriver.type =>
+
+    case class GetPositionReading(replyTo: ActorRef[BasicReading])
         extends ExtendedProtocol
 
-    case class PositionReading(
+    case class BasicReading(
         driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
         position: Point,
         heading: Angle,
-        area: Shape)
+        velocity: Velocity,
+        acceleration: Acceleration,
+        geometry: Geometry)
+        extends Protocol
 
     case class GetDetailedReadings(
         replyTo: ActorRef[SimulationStateGatherer.Protocol])
@@ -82,5 +143,18 @@ object DriverConnectivity {
         position: Point,
         velocity: Velocity)
         extends PrecedingVehicleResult
+
+    object NeighbourFetchingInterval {
+      val whenNone: FiniteDuration = 100.millis
+      val whenSome: FiniteDuration = 250.millis
+    }
+    case object FetchNeighbourVehicles extends Protocol
+
   }
+  case class VehicleCachedReadings(
+      ref: ActorRef[AutonomousVehicleDriver.Protocol],
+      position: Point,
+      velocity: Velocity,
+      geometry: Option[Geometry]
+  )
 }

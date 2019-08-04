@@ -1,12 +1,17 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle
 
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.model.entity.Entity
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{
   PointUtils,
   PolygonFactory
 }
-import pl.edu.agh.wmazur.avs.model.entity.utils.{DeltaOps, IdProvider}
+import pl.edu.agh.wmazur.avs.model.entity.utils.{
+  DeltaOps,
+  IdProvider,
+  SpatialUtils
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Angle,

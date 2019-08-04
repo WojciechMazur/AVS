@@ -18,7 +18,8 @@ import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol.Ack
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.AdapterProtocol.{
   DriversListing,
   IntersectionsListing,
-  RoadsListing
+  RoadsListing,
+  TickSubscribersListing
 }
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol.RecoveryResult.{
@@ -46,12 +47,14 @@ class SimulationManager(context: ActorContext[Protocol],
   private var lastTickDelta = Duration.Zero
 
   private var cachedSimulationState: SimulationState = SimulationState.empty
+
   private var cachedRoadsRefs = Set.empty[ActorRef[RoadManager.Protocol]]
   private var cachedIntersectionRefs =
     Set.empty[ActorRef[IntersectionManager.Protocol]]
-
   private var cachedDriversRefs =
     Set.empty[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]]
+  private var cachedTickSubscribersRefs =
+    Set.empty[ActorRef[SimulationProtocol.Tick]]
 
   private val idle = withDefaultBehavior(ActorBehaviors.waitingForTick)
 
@@ -71,6 +74,10 @@ class SimulationManager(context: ActorContext[Protocol],
           tick = tick.next
           lastTickDelta = tickContext.timeDelta
 
+          val tickMessage = SimulationProtocol.Tick.Default(currentTime,
+                                                            lastTickDelta,
+                                                            tick.seq)
+          cachedTickSubscribersRefs.foreach(_ ! tickMessage)
           context.log.debug(
             s"Tick - {} @ {}, ups: ${1.seconds / tickContext.timeDelta}",
             tick,
@@ -85,7 +92,7 @@ class SimulationManager(context: ActorContext[Protocol],
     lazy val waitingForSpawnersFinish: Behavior[Protocol] = {
       Behaviors.receiveMessagePartial {
         case SpawnResult(spawnedVehicles) =>
-          context.log.debug("Spawned {} vehicles", spawnedVehicles.size)
+//          context.log.debug("Spawned {} vehicles", spawnedVehicles.size)
           cachedDriversRefs ++= spawnedVehicles.keySet
           withDefaultBehavior {
             letDriversMove
@@ -116,7 +123,9 @@ class SimulationManager(context: ActorContext[Protocol],
         case IntersectionsListing(intersections) =>
           cachedIntersectionRefs = intersections
           Behaviors.same
-
+        case TickSubscribersListing(refs) =>
+          cachedTickSubscribersRefs = refs
+          Behaviors.same
         case other =>
           context.log.warning("Unhandled message {} in {}",
                               other,
@@ -137,7 +146,8 @@ class SimulationManager(context: ActorContext[Protocol],
       context.ask(recoveryAgent)(StateRecoveryAgent.StartRecovery) {
         case Success(RecoveryFinished(roads, intersection)) =>
           RecoveryFinished(roads, intersection)
-        case util.Failure(exception) => RecoveryFailed(exception)
+        case Success(failed: RecoveryFailed) => failed
+        case util.Failure(exception)         => RecoveryFailed(exception)
       }
 
       Behaviors.receiveMessagePartial {
@@ -162,12 +172,9 @@ class SimulationManager(context: ActorContext[Protocol],
       withDefaultBehavior {
         Behaviors.receiveMessagePartial {
           case CollectResult(markedVehicles) =>
-            context.log.debug("Collected {} drivers to deletion",
-                              markedVehicles.size)
+//            context.log.debug("Collected {} drivers to deletion",
+//                              markedVehicles.size)
             cachedDriversRefs --= markedVehicles
-            if (markedVehicles.nonEmpty) {
-              println(markedVehicles)
-            }
             gatherCurrentState()
         }
       }
@@ -185,7 +192,7 @@ class SimulationManager(context: ActorContext[Protocol],
       withDefaultBehavior {
         Behaviors.receiveMessagePartial {
           case update @ StateUpdate(state) =>
-            context.log.debug("Gathered new state")
+//            context.log.debug("Gathered new state")
             cachedSimulationState = state
             SimulationEngine.stateUpdateRef ! update
             waitingForTick
@@ -194,7 +201,7 @@ class SimulationManager(context: ActorContext[Protocol],
     }
 
     def waitForSpawners(): Behavior[Protocol] = {
-      context.log.debug("Waiting for spawners finished")
+//      context.log.debug("Waiting for spawners finished")
       workers.vehiclesSpawner ! VehiclesSpawnerStage.TrySpawn(context.self,
                                                               cachedRoadsRefs,
                                                               currentTime,
@@ -229,7 +236,7 @@ class SimulationManager(context: ActorContext[Protocol],
 
       Behaviors.receiveMessagePartial {
         case Done =>
-          context.log.debug("Drivers move step finished")
+//          context.log.debug("Drivers move step finished")
           collectVehicleToDeletion()
       }
     }
@@ -267,7 +274,10 @@ object SimulationManager {
       )
 
     for {
-      enityGroupKey <- List(EntityRefsGroup.driver, EntityRefsGroup.road)
+      enityGroupKey <- List(EntityRefsGroup.driver,
+                            EntityRefsGroup.road,
+                            EntityRefsGroup.intersection,
+                            EntityRefsGroup.tickSubscribers)
     } ctx.system.receptionist ! Receptionist.subscribe(
       enityGroupKey,
       AdapterProtocol.listingAdapter(ctx)
@@ -288,6 +298,7 @@ object SimulationManager {
 
     case class Tick(ackTo: ActorRef[Ack], context: SimulationTickContext)
         extends Protocol
+        with SimulationProtocol.Tick
 
     case class Result(ackTo: ActorRef[Ack], context: StateUpdate)
         extends Protocol
@@ -325,6 +336,8 @@ object SimulationManager {
         case EntityRefsGroup.driver.Listing(refs) => DriversListing(refs)
         case EntityRefsGroup.intersection.Listing(refs) =>
           IntersectionsListing(refs)
+        case EntityRefsGroup.tickSubscribers.Listing(refs) =>
+          TickSubscribersListing(refs)
       }
     }
 
@@ -335,6 +348,9 @@ object SimulationManager {
         extends Protocol
     case class IntersectionsListing(
         intersections: Set[ActorRef[IntersectionManager.Protocol]])
+        extends Protocol
+    case class TickSubscribersListing(
+        refs: Set[ActorRef[SimulationProtocol.Tick]])
         extends Protocol
   }
 

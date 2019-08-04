@@ -1,11 +1,10 @@
 package pl.edu.agh.wmazur.avs.http.codec
 
-import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.{Coordinate, Geometry, Point => JtsPoint}
 import org.locationtech.spatial4j.distance.DistanceUtils
-import org.locationtech.spatial4j.shape.{Point, Shape}
+import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{PointUtils, _}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.state.SimulationStateUpdate
@@ -35,7 +34,6 @@ import protobuf.pl.edu.agh.wmazur.avs.model.vehicle.{
   Vehicle => ProtoVehicle,
   VehicleSpec => ProtoVehicleSpec
 }
-
 import scala.concurrent.duration._
 
 object SimulationStateUpdateEncoder
@@ -44,6 +42,16 @@ object SimulationStateUpdateEncoder
   private def geoDegresToMeters(value: Double): Double = {
     value * DistanceUtils.DEG_TO_KM * 1000
   }
+  def pointEncoder(point: JtsPoint): ProtoVector3 = {
+    val x = geoDegresToMeters(point.getX).toFloat
+    val y = geoDegresToMeters(point.getY).toFloat
+    ProtoVector3.of(
+      x = x,
+      y = 0f,
+      z = y
+    )
+  }
+
   def pointEncoder(point: Point): ProtoVector3 = {
     val x = geoDegresToMeters(point.x).toFloat
     val y = geoDegresToMeters(point.y).toFloat
@@ -64,8 +72,7 @@ object SimulationStateUpdateEncoder
     )
   }
 
-  def geometryEncoder(shape: Shape): ProtoGeometry = {
-    val geometry = SpatialUtils.shapeFactory.getGeometryFrom(shape)
+  def geometryEncoder(geometry: Geometry): ProtoGeometry = {
 
     val shapes = 0
       .until(geometry.getNumGeometries)
@@ -74,7 +81,7 @@ object SimulationStateUpdateEncoder
       .map(indices => ProtoGeometry.Shape.of(indices))
 
     val position = for {
-      point <- Some(shape.getCenter)
+      point <- Some(geometry.getCentroid)
     } yield pointEncoder(point)
 
     ProtoGeometry.of(position, shapes)
@@ -85,7 +92,7 @@ object SimulationStateUpdateEncoder
       width = vehicle.spec.width.meters.toFloat,
       length = vehicle.spec.length.meters.toFloat,
       height = vehicle.spec.height.meters.toFloat,
-      geometry = Some(geometryEncoder(vehicle.area))
+      geometry = Some(geometryEncoder(vehicle.geometry))
     )
     ProtoVehicle(
       id = vehicle.id.toString,
@@ -105,17 +112,17 @@ object SimulationStateUpdateEncoder
     val lanes = road.lanes.map { lane =>
       val spawnPoint = for {
         spawnPoint <- lane.spawnPoint
-        geometry = geometryEncoder(spawnPoint.spawnArea)
+        geometry = geometryEncoder(spawnPoint.spawnGeometry)
       } yield ProtoSpawnPoint.of(Some(geometry))
 
       val collectPoint = for {
         collectPoint <- lane.collectorPoint
-        geometry = geometryEncoder(collectPoint.collectArea)
+        geometry = geometryEncoder(collectPoint.collectGeometry)
       } yield ProtoCollectPoint.of(Some(geometry))
 
       ProtoLane.of(
         id = lane.id.toString,
-        geometry = Some(geometryEncoder(lane.area)),
+        geometry = Some(geometryEncoder(lane.geometry)),
         entryPoint = Some(pointEncoder(lane.entryPoint)),
         exitPoint = Some(pointEncoder(lane.exitPoint)),
         spawnPoint = spawnPoint,
@@ -125,7 +132,7 @@ object SimulationStateUpdateEncoder
 
     ProtoRoad.of(id = road.id.toString,
                  lanes = lanes,
-                 geometry = Some(geometryEncoder(road.area)))
+                 geometry = Some(geometryEncoder(road.geometry)))
   }
 
   def intersectionEncoder(intersection: Intersection): ProtoIntersection = {
@@ -134,7 +141,7 @@ object SimulationStateUpdateEncoder
 
     ProtoIntersection.of(
       id = intersection.id.toString,
-      geometry = Some(geometryEncoder(intersection.area)),
+      geometry = Some(geometryEncoder(intersection.geometry)),
       entryPoints = entryPoints,
       exitPoints = exitPoints
     )

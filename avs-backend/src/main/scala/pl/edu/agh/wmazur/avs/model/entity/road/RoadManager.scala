@@ -27,15 +27,8 @@ class RoadManager(
     val context: ActorContext[Protocol],
     val road: Road,
     var oppositeRoadManager: Option[ActorRef[RoadManager.Protocol]] = None,
-    val vehiclesCoordinator: ActorRef[RoadVehiclesCoordinator.Protocol])
+    val workers: Workers)
     extends Agent[Protocol] {
-  val roadSpawnerWorker: ActorRef[RoadSpawnerWorker.Protocol] = context.spawn(
-    RoadSpawnerWorker.init(context.self, road.lanes),
-    s"road-spawner-${road.id}"
-  )
-  val roadCollectorWorker: ActorRef[RoadCollectorWorker.Protocol] = context
-    .spawn(RoadCollectorWorker.init(context.self, road.lanes),
-           s"road-collector-${road.id}")
 
   context.system.receptionist ! Receptionist.register(EntityRefsGroup.road,
                                                       context.self)
@@ -49,14 +42,15 @@ class RoadManager(
   override protected val initialBehaviour: Behavior[Protocol] =
     Behaviors.receiveMessagePartial {
       case TrySpawn(replyTo, entityManagerRef, currentTime) =>
-        roadSpawnerWorker ! RoadSpawnerWorker.TrySpawn(replyTo,
-                                                       entityManagerRef,
-                                                       vehiclesAtLanes.toMap,
-                                                       currentTime)
+        workers.roadSpawnerWorker ! RoadSpawnerWorker.TrySpawn(
+          replyTo,
+          entityManagerRef,
+          vehiclesAtLanes.toMap,
+          currentTime)
         Behaviors.same
 
       case TryCollect(replyTo, entityManagerRef, currentTime) =>
-        roadCollectorWorker ! RoadCollectorWorker.TryCollect(
+        workers.roadCollector ! RoadCollectorWorker.TryCollect(
           replyTo,
           entityManagerRef,
           vehiclesAtLanes.toMap)
@@ -84,11 +78,20 @@ class RoadManager(
           enteredLane <- vlo.enteredLanes
           lastState = vehiclesAtLanes.getOrElse(enteredLane, Set.empty)
         } vehiclesAtLanes.update(enteredLane, lastState + driver)
+
+        workers.coordinator ! RoadVehiclesCoordinator.Protocol
+          .VehiclesOccupationUpdate(driver, vlo.enteredLanes, vlo.leavedLanes)
+
         Behaviors.same
 
       case GetLanesOccupation(replyTo) =>
         replyTo ! LanesOccupation(context.self, vehiclesAtLanes.toMap)
 
+        Behaviors.same
+
+      case FindPrecedingVehicle(replyTo) =>
+        workers.coordinator ! RoadVehiclesCoordinator.Protocol
+          .FindPrecedingVehicle(replyTo)
         Behaviors.same
     }
 }
@@ -135,6 +138,10 @@ object RoadManager {
   }
   // format: on
 
+  case class Workers(coordinator: ActorRef[RoadVehiclesCoordinator.Protocol],
+                     roadSpawnerWorker: ActorRef[RoadSpawnerWorker.Protocol],
+                     roadCollector: ActorRef[RoadCollectorWorker.Protocol])
+
   def init(
       optId: Option[Road#Id],
       lanes: List[Lane],
@@ -145,10 +152,19 @@ object RoadManager {
       val road = Road(optId, lanes, ctx.self)
       replyTo.foreach(_ ! SpawnResult(road, ctx.self))
 
-      val coordinator =
-        ctx.spawn(RoadVehiclesCoordinator.init, "road-coordinator")
+      val workers = Workers(
+        coordinator = ctx.spawn(RoadVehiclesCoordinator.init(lanes),
+                                s"road-coordinator-${road.id}"),
+        roadSpawnerWorker = ctx.spawn(
+          RoadSpawnerWorker.init(ctx.self, road.lanes),
+          s"road-spawner-${road.id}"
+        ),
+        roadCollector = ctx
+          .spawn(RoadCollectorWorker.init(ctx.self, road.lanes),
+                 s"road-collector-${road.id}")
+      )
 
-      new RoadManager(ctx, road, oppositeRoadRef, coordinator)
+      new RoadManager(ctx, road, oppositeRoadRef, workers)
 
     }
 

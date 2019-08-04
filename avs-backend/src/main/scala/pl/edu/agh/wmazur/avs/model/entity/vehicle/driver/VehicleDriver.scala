@@ -15,7 +15,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationConfirmed.AccelerationProfile
 import pl.edu.agh.wmazur.avs.protocol.{Response, SimulationProtocol}
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
-
+import com.softwaremill.quicklens._
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
@@ -36,12 +36,11 @@ trait VehicleDriver {
   }
 
   def updateGauges(): this.type = {
-    driverGauges = VehicleDriverGauges(
-      distanceToCarInFront = None,
-      distanceToNextIntersection = nextIntersectionPosition.map(distanceToPoint),
-      distanceToPrevIntersection =
-        previousIntersectionPosition.map(distanceToPoint)
-    )
+    driverGauges = driverGauges.updateDistanceToIntersections(
+      nextIntersectionPosition,
+      previousIntersectionPosition,
+      vehicle)
+
     this
   }
 

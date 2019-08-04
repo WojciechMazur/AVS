@@ -33,7 +33,7 @@ trait VehiclePilot {
     }
   }
 
-  protected def stopBeforeVehicleInFront(): self.type = {
+  protected def stopBeforeVehicleInFront(): VehiclePilot.this.type = {
     val breakingDistance =
       calcStoppingDistance(vehicle.velocity, vehicle.spec.maxDeceleration)
     val safeDistance = breakingDistance + minimumDistanceBetweenCars
@@ -43,7 +43,7 @@ trait VehiclePilot {
     }
   }
 
-  protected def cruise: self.type =
+  protected def cruise: VehiclePilot.this.type =
     withVehicle {
       vehicle.maxAccelerationWithTargetVelocity {
         calcMaxAllowedVelocity(vehicle, currentLane)
@@ -78,7 +78,7 @@ trait VehiclePilot {
 }
 
 object VehiclePilot {
-  val minimumDistanceBetweenCars: Dimension = 1.0.fromMeters
+  val minimumDistanceBetweenCars: Dimension = 6.0.fromMeters
   val stopDistanceBeforeIntersection: Dimension = 1.0.fromMeters
 
   def calcStoppingDistance(velocity: Velocity,

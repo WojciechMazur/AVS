@@ -1,30 +1,19 @@
 package pl.edu.agh.wmazur.avs.protocol
 
 import akka.actor.typed.ActorRef
+import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 
 import scala.concurrent.duration.FiniteDuration
 
 trait SimulationProtocol
 object SimulationProtocol {
-  trait SimulationStep
-      extends SimulationProtocol
-      with Command[SimulationStep, SimulationProtocol] {
-    def timeDelta: FiniteDuration
-    def replyTo: ActorRef[SimulationProtocol]
-    def step: Int
-  }
+  trait Tick extends SimulationProtocol
 
-  object SimulationStep {
-    final case class Default(
-        timeDelta: FiniteDuration,
-        replyTo: ActorRef[SimulationProtocol],
-        step: Int
-    ) extends SimulationStep
-
-    def apply(timeDelta: FiniteDuration,
-              replyTo: ActorRef[SimulationProtocol]): SimulationStep =
-      Default(timeDelta, replyTo, steps.next())
-    val steps: Iterator[Int] = Iterator.from(0)
+  object Tick {
+    case class Default(currentTime: Timestamp,
+                       timeDelta: FiniteDuration,
+                       step: Long)
+        extends Tick
   }
 
   trait SimulationUpdate extends SimulationProtocol

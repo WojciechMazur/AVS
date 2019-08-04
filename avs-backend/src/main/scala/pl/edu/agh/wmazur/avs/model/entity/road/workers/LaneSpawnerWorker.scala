@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Agent
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneSpawnerWorker.{
@@ -47,11 +48,13 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
         drivers.foreach { ref =>
 //          context.watchWith(ref, Terminated(ref))
           val adapter =
-            context.messageAdapter[AutonomousVehicleDriver.PositionReading] {
-              case AutonomousVehicleDriver.PositionReading(driverRef,
-                                                           position,
-                                                           heading,
-                                                           area) =>
+            context.messageAdapter[AutonomousVehicleDriver.BasicReading] {
+              case AutonomousVehicleDriver.BasicReading(driverRef,
+                                                        position,
+                                                        heading,
+                                                        _,
+                                                        _,
+                                                        area) =>
                 PositionReading(driverRef, position, heading, area)
             }
           ref ! AutonomousVehicleDriver.GetPositionReading(adapter)
@@ -94,7 +97,7 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
                            spec = spec,
                            position = lane.entryPoint,
                            heading = lane.heading,
-                           velocity = spec.maxVelocity,
+                           velocity = spec.maxVelocity / 3,
                            lane = lane)
       waitForSpawnResult()
     } else {
@@ -135,7 +138,7 @@ object LaneSpawnerWorker {
       driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
       position: Point,
       heading: Angle,
-      area: Shape)
+      geometry: Geometry)
       extends Protocol
   case class Spawned(driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
                      id: Vehicle#Id)

@@ -26,7 +26,7 @@ object DriversFetcherAgent {
                               exitPoints: Map[Lane, Point],
                               intersectionManagerRef: ActorRef[IntersectionManager.Protocol],
                               lanesOccupationAdapter: ActorRef[RoadManager.LanesOccupation],
-                              driversPositionAdapter: ActorRef[AutonomousVehicleDriver.PositionReading]
+                              driversPositionAdapter: ActorRef[AutonomousVehicleDriver.BasicReading]
                             )
 
   sealed trait Protocol extends IntersectionManager.Protocol
@@ -42,7 +42,7 @@ object DriversFetcherAgent {
                             position: Point,
                             heading: Angle)
     extends Protocol
-  
+
   // format: on
   def init(intersectionPosition: Point,
            intersectionGeometry: Geometry,
@@ -63,12 +63,14 @@ object DriversFetcherAgent {
         }
 
       val driversPositionAdapter
-        : ActorRef[AutonomousVehicleDriver.PositionReading] =
-        ctx.messageAdapter[AutonomousVehicleDriver.PositionReading] {
-          case AutonomousVehicleDriver.PositionReading(ref,
-                                                       position,
-                                                       heading,
-                                                       _) =>
+        : ActorRef[AutonomousVehicleDriver.BasicReading] =
+        ctx.messageAdapter[AutonomousVehicleDriver.BasicReading] {
+          case AutonomousVehicleDriver.BasicReading(ref,
+                                                    position,
+                                                    heading,
+                                                    _,
+                                                    _,
+                                                    _) =>
             DriverReading(ref, position, heading)
         }
 
@@ -165,8 +167,10 @@ object DriversFetcherAgent {
                                    driverLanesOccupation)
         }
         .receiveSignal {
-          case (_,
-                Terminated(ref: ActorRef[AutonomousVehicleDriver.Protocol])) =>
+          case (
+              _,
+              Terminated(
+                ref: ActorRef[AutonomousVehicleDriver.Protocol] @unchecked)) =>
             waitForDriversReadings(context,
                                    awaitingDrivers - ref,
                                    driverLanesOccupation)

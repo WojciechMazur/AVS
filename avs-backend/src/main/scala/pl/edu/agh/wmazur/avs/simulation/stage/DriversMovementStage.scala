@@ -42,7 +42,7 @@ object DriversMovementStage {
   }
 
   private val idle: Behaviors.Receive[Protocol] =
-    Behaviors.receive {
+    Behaviors.receivePartial {
       case (ctx, Step(replyTo, _, driverRefs, _, tickDelta)) =>
         driverRefs.foreach { ref =>
           ctx.watchWith(ref, DriverLost(ref))
@@ -59,7 +59,7 @@ object DriversMovementStage {
       replyTo ! Done
       idle
     } else {
-      Behaviors.receive {
+      Behaviors.receivePartial {
         case (ctx, DriverMoved(driverRef, _, _)) =>
           ctx.unwatch(driverRef)
           waitForResponses(replyTo, awaiting - driverRef)

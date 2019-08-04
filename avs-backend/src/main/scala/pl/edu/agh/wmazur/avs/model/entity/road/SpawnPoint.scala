@@ -1,5 +1,6 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.Shape
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneSpawnerWorker.PositionReading
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
@@ -9,13 +10,16 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
 case class SpawnPoint(lane: Lane) {
-  val spawnArea: Shape = SpatialUtils.shapeFactory.makeShapeFromGeometry {
-    val maxVehicleLength =
-      VehicleSpec.Predefined.values.map(_.length).maxBy(_.meters)
+  val spawnGeometry: Geometry = {
+    val maxVehicleLength = VehicleSpec.Predefined.values
+      .map(_.length)
+      .maxBy(_.meters)
     lane
       .getGeometryFraction(0, maxVehicleLength.meters * 2 / lane.length.meters)
       .buffer(0.000001)
   }
+  lazy val spawnArea: Shape =
+    SpatialUtils.shapeFactory.makeShapeFromGeometry(spawnGeometry)
 
   def getRandomSpec: VehicleSpec = {
     val r = Random.nextDouble().abs
@@ -29,10 +33,10 @@ case class SpawnPoint(lane: Lane) {
     def areaIntersects =
       readings
         .exists(
-          _.area
-            .getBuffered(0.000001, SpatialUtils.shapeFactory.getSpatialContext)
-            .relate(spawnArea)
-            .intersects())
+          _.geometry
+            .buffer(0.000001)
+            .relate(spawnGeometry)
+            .isIntersects)
 
     def pointIntersects =
       readings.exists(

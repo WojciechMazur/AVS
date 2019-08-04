@@ -6,6 +6,7 @@ import pl.edu.agh.wmazur.avs.http.management.WebsocketManager
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
+import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
 
 package object avs {
@@ -24,6 +25,8 @@ package object avs {
   }
 
   object EntityRefsGroup {
+    val tickSubscribers: ServiceKey[SimulationProtocol.Tick] =
+      ServiceKey("tick-subscribers")
     val road: ServiceKey[RoadManager.Protocol] = ServiceKey("roads-group")
     val driver: ServiceKey[AutonomousVehicleDriver.ExtendedProtocol] =
       ServiceKey("drivers-group")

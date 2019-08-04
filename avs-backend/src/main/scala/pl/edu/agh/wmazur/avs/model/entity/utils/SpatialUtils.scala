@@ -52,6 +52,12 @@ object SpatialUtils {
       point.y * DistanceUtils.DEG_TO_KM * 1000
     )
 
+    def distance(that: Point): Dimension = {
+      Math.sqrt {
+        Math.pow(point.x - that.x, 2) + Math.pow(point.y - that.y, 2)
+      }
+    }.fromGeoDegrees
+
     def angle(that: Point): Angle = Math.atan2(
       that.y - point.y,
       that.x - point.x

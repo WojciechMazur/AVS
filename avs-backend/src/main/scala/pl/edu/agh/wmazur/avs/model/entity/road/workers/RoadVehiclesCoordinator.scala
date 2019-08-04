@@ -1,31 +1,36 @@
 package pl.edu.agh.wmazur.avs.model.entity.road.workers
 
-import akka.actor.typed.{ActorRef, Behavior, Terminated}
+import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.{ActorRef, Behavior, Terminated}
 import org.locationtech.spatial4j.shape.Point
+import pl.edu.agh.wmazur.avs.EntityRefsGroup
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
-import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.Protocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
+import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 
-import scala.collection.mutable
+import scala.collection.{Set, mutable}
 
 object RoadVehiclesCoordinator {
   // format: off
-  sealed trait Protocol
-  case class FindPrecedingVehicle(
-      replyTo: ActorRef[AutonomousVehicleDriver.Protocol])
-      extends Protocol
+  sealed trait Protocol extends SimulationProtocol
 
-  case class VehiclePositionReading(
-      driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
-      position: Point,
-      velocity: Velocity)
+  object Protocol extends SimulationProtocol {
+    case class FindPrecedingVehicle(replyTo: ActorRef[AutonomousVehicleDriver.Protocol])
       extends Protocol
-
-  case class VehiclesOccupationUpdate(
-      driverAtLane: Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]])
+    case class VehiclePositionReading( driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
+                                       position: Point,
+                                       velocity: Velocity)
       extends Protocol
+    case class VehiclesOccupationUpdate( driverRef: ActorRef[AutonomousVehicleDriver.Protocol],
+                                         enteredLanes: Set[Lane],
+                                         exitedLanes: Set[Lane])
+      extends Protocol
+  }
+  case object Tick extends Protocol
+  import Protocol._
   // format: on
 
   private case class DriverCachedState(
@@ -40,28 +45,51 @@ object RoadVehiclesCoordinator {
   // format: off
   private case class Context(
       context: ActorContext[Protocol],
-      driversAtLanes: mutable.Map[Lane,Set[ActorRef[AutonomousVehicleDriver.Protocol]]],
-      driversState: mutable.Map[ActorRef[AutonomousVehicleDriver.Protocol],
-                                DriverCachedState]) {
-  // format: on
+      driversAtLanes: mutable.Map[Lane, mutable.Set[ActorRef[AutonomousVehicleDriver.Protocol]]],
+      driversOccupation: mutable.Map[ActorRef[AutonomousVehicleDriver.Protocol], Set[Lane]],
+      driversState: mutable.Map[ActorRef[AutonomousVehicleDriver.Protocol], DriverCachedState],
+      driversAdapter: ActorRef[driver.AutonomousVehicleDriver.BasicReading]) {
+    // format: on
     def removeDriver(
         ref: ActorRef[AutonomousVehicleDriver.Protocol]): Context = {
-      driversState.remove(ref)
 
       driversAtLanes
-        .filter(_._2.contains(ref))
+        .filterKeys(driversOccupation(ref).contains)
         .keySet
         .foreach { lane =>
           val set = driversAtLanes(lane)
-          driversAtLanes.update(lane, set - ref)
+          set -= ref
         }
+
+      driversState.remove(ref)
+      driversOccupation.remove(ref)
       this
     }
 
-    def updateDriver(driver: ActorRef[AutonomousVehicleDriver.Protocol],
-                     state: DriverCachedState): Context = {
-      val updatedSet = driversAtLanes.getOrElse(state.currentLane, Set.empty) + driver
-      driversAtLanes.update(state.currentLane, updatedSet)
+    def updateDriverOccupation(
+        driver: ActorRef[AutonomousVehicleDriver.Protocol],
+        enteredLanes: Set[Lane],
+        leavedLanes: Set[Lane]): Context = {
+      enteredLanes.foreach { lane =>
+        driversAtLanes
+          .getOrElseUpdate(lane, mutable.Set.empty)
+          .update(driver, included = true)
+      }
+
+      leavedLanes.foreach { lane =>
+        driversAtLanes
+          .getOrElseUpdate(lane, mutable.Set.empty)
+          .update(driver, included = false)
+      }
+      driversOccupation.update(
+        driver,
+        driversOccupation
+          .getOrElse(driver, Set.empty) ++ enteredLanes -- leavedLanes)
+      this
+    }
+
+    def updateDriverState(driver: ActorRef[AutonomousVehicleDriver.Protocol],
+                          state: DriverCachedState): Context = {
 
       driversState.update(driver, state)
       this
@@ -69,24 +97,45 @@ object RoadVehiclesCoordinator {
 
   }
 
-  def init: Behavior[Protocol] = Behaviors.setup { ctx =>
+  def init(lanes: List[Lane]): Behavior[Protocol] = Behaviors.setup { ctx =>
+    val driversAdapter =
+      ctx.messageAdapter[AutonomousVehicleDriver.BasicReading] {
+        case AutonomousVehicleDriver.BasicReading(ref,
+                                                  position,
+                                                  velocity,
+                                                  _,
+                                                  _,
+                                                  _) =>
+          VehiclePositionReading(ref, position, velocity)
+      }
+
+    val tickAdapter = ctx.messageAdapter[SimulationProtocol.Tick] {
+      _: SimulationProtocol.Tick =>
+        Tick
+    }
+
     val context = Context(context = ctx,
                           driversAtLanes = mutable.Map.empty,
-                          driversState = mutable.Map.empty)
+                          driversOccupation = mutable.Map.empty,
+                          driversState = mutable.Map.empty,
+                          driversAdapter = driversAdapter)
 
-    idle(context)
+    ctx.system.receptionist ! Receptionist
+      .register(EntityRefsGroup.tickSubscribers, tickAdapter)
+
+    active(context)
   }
 
-  private def idle(context: Context): Behavior[Protocol] =
+  private def active(context: Context): Behavior[Protocol] =
     Behaviors
-      .receiveMessagePartial[Protocol] {
+      .receiveMessage[Protocol] {
         case FindPrecedingVehicle(replyTo) =>
           val precedingVehicleState = for {
             driverState <- context.driversState.get(replyTo)
             lane = driverState.currentLane
             drivers <- context.driversAtLanes.get(lane)
             driversWithState = drivers
-              .map(context.driversState)
+              .flatMap(context.driversState.get)
               .toVector
               .sortBy(_.normalizedDistanceAlongLane)
             driversPrecedingVehicle = driversWithState
@@ -104,15 +153,44 @@ object RoadVehiclesCoordinator {
             case None =>
               replyTo ! AutonomousVehicleDriver.NotFoundPrecedingVehicle
           }
+          active(context)
 
-          Behaviors.same
-        //TODO Integracja z RoadManagerem oraz zdobywanie informacji o statusie pojazdów
+        case Tick =>
+          for {
+            readingRequest <- Some(
+              AutonomousVehicleDriver.GetPositionReading(
+                context.driversAdapter))
+            driverRef <- context.driversOccupation.keySet
+          } driverRef ! readingRequest
+
+          active(context)
+
+        case VehiclesOccupationUpdate(driverRef, enteredLanes, exitedLanes) => {
+          active {
+            context.updateDriverOccupation(driverRef, enteredLanes, exitedLanes)
+          }
+        }
+
+        case VehiclePositionReading(driverRef, position, velocity) =>
+          val currentLane = context.driversOccupation(driverRef) match {
+            case lanes if lanes.tail.isEmpty => lanes.head
+            case lanes                       => lanes.find(_.area.relate(position).intersects()).get
+          }
+
+          active {
+            context.updateDriverState(driverRef,
+                                      DriverCachedState(ref = driverRef,
+                                                        position = position,
+                                                        velocity = velocity,
+                                                        currentLane =
+                                                          currentLane))
+          }
       }
       .receiveSignal {
         case (_,
               Terminated(
                 ref: ActorRef[AutonomousVehicleDriver.Protocol] @unchecked)) =>
-          idle {
+          active {
             context.removeDriver(ref)
           }
       }
