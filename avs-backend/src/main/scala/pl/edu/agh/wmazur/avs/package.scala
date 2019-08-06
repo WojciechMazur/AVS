@@ -8,7 +8,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
-
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 package object avs {
 
   object Services {
@@ -53,6 +53,9 @@ package object avs {
     def sqrt: Dimension = Math.sqrt(meters)
     //scalastyle:on
 
+    def isEqual(that: Dimension): Boolean = {
+      this.meters isEqual that.meters
+    }
     override def compare(that: Dimension): Int = this.meters compare that.meters
   }
 
