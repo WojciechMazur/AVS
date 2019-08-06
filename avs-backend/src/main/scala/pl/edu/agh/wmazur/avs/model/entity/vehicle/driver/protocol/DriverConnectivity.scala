@@ -5,8 +5,6 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.softwaremill.quicklens._
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.Point
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
@@ -64,7 +62,7 @@ trait DriverConnectivity {
             .modify(_.distanceToNextIntersection)
             .setTo(Some(distanceToPoint(position)))
 
-          context.self ! TryGetIntersectionReservation
+          context.self ! AskForMaximalCrossingVelocities
         }
         Behaviors.same
 
@@ -150,7 +148,7 @@ object DriverConnectivity {
         extends PrecedingVehicleResult
 
     case object FetchNeighbourVehicles extends Protocol
-    case object TryGetIntersectionReservation extends Protocol
+    case object AskForMaximalCrossingVelocities extends Protocol
   }
 
   object NeighbourFetchingInterval {

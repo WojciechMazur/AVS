@@ -1,4 +1,4 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.policy
+package pl.edu.agh.wmazur.avs.model.entity.intersection.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
@@ -43,51 +43,50 @@ object DriversFetcherAgent {
                             heading: Angle)
     extends Protocol
 
-  // format: on
-  def init(intersectionPosition: Point,
-           intersectionGeometry: Geometry,
-           entryPoints: Map[Lane, Point],
-           exitPoints: Map[Lane, Point],
-           transmitionDistance: Dimension,
-           intersectionManager: ActorRef[IntersectionManager.Protocol])
-    : Behavior[Protocol] =
-    Behaviors.setup { ctx =>
-      val transmitionArea = intersectionPosition.getBuffered(
-        transmitionDistance.geoDegrees,
-        SpatialUtils.shapeFactory.getSpatialContext)
+  def init(
+            intersectionPosition: Point,
+            intersectionGeometry: Geometry,
+            entryPoints: Map[Lane, Point],
+            exitPoints: Map[Lane, Point],
+            transmitionDistance: Dimension,
+            intersectionManager: ActorRef[IntersectionManager.Protocol]): Behavior[Protocol] =
+  Behaviors.setup { ctx =>
+    // format: on
+    val transmitionArea = intersectionPosition.getBuffered(
+      transmitionDistance.geoDegrees,
+      SpatialUtils.shapeFactory.getSpatialContext)
 
-      val lanesOccupationAdapter =
-        ctx.messageAdapter[RoadManager.LanesOccupation] {
-          case RoadManager.LanesOccupation(ref, vehiclesAtLanes) =>
-            LanesOccupation(ref, vehiclesAtLanes)
-        }
-
-      val driversPositionAdapter
-        : ActorRef[AutonomousVehicleDriver.BasicReading] =
-        ctx.messageAdapter[AutonomousVehicleDriver.BasicReading] {
-          case AutonomousVehicleDriver.BasicReading(ref,
-                                                    position,
-                                                    heading,
-                                                    _,
-                                                    _,
-                                                    _) =>
-            DriverReading(ref, position, heading)
-        }
-
-      idle {
-        Context(
-          context = ctx,
-          transmitionArea = transmitionArea,
-          intersectionCenter = intersectionPosition,
-          entryPoints = entryPoints,
-          exitPoints = exitPoints,
-          intersectionGeometry = intersectionGeometry,
-          intersectionManagerRef = intersectionManager,
-          lanesOccupationAdapter = lanesOccupationAdapter,
-          driversPositionAdapter = driversPositionAdapter
-        )
+    val lanesOccupationAdapter =
+      ctx.messageAdapter[RoadManager.LanesOccupation] {
+        case RoadManager.LanesOccupation(ref, vehiclesAtLanes) =>
+          LanesOccupation(ref, vehiclesAtLanes)
       }
+
+    val driversPositionAdapter: ActorRef[AutonomousVehicleDriver.BasicReading] =
+      ctx.messageAdapter[AutonomousVehicleDriver.BasicReading] {
+        case AutonomousVehicleDriver.BasicReading(ref,
+                                                  position,
+                                                  heading,
+                                                  _,
+                                                  _,
+                                                  _) =>
+          DriverReading(ref, position, heading)
+      }
+
+    idle {
+      Context(
+        context = ctx,
+        transmitionArea = transmitionArea,
+        intersectionCenter = intersectionPosition,
+        entryPoints = entryPoints,
+        exitPoints = exitPoints,
+        intersectionGeometry = intersectionGeometry,
+        intersectionManagerRef = intersectionManager,
+        lanesOccupationAdapter = lanesOccupationAdapter,
+        driversPositionAdapter = driversPositionAdapter
+      )
     }
+  }
 
   def idle(context: Context): Behavior[Protocol] = {
     Behaviors.receiveMessagePartial {

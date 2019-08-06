@@ -25,5 +25,9 @@ case class AccelerationProfile(events: List[AccelerationEvent]) {
 }
 
 object AccelerationProfile {
-  case class AccelerationEvent(acceleration: Double, duration: FiniteDuration)
+  case class AccelerationEvent(acceleration: Double,
+                               afterDuration: FiniteDuration)
+
+  def apply(accelerationEvents: AccelerationEvent*): AccelerationProfile =
+    new AccelerationProfile(accelerationEvents.toList)
 }

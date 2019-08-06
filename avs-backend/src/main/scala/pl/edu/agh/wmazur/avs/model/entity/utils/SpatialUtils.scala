@@ -128,12 +128,15 @@ object SpatialUtils {
 
   object LineFactory {
     def apply(start: Point, second: Point, tail: Point*): LineString = {
-      (start :: second :: Nil ++ tail).foldLeft {
-        shapeFactory.lineString
-      } {
-        case (builder, point) => builder.pointXY(point.getX, point.getY)
-      }
-    }.build().asInstanceOf[LineString]
+      val shape = (start :: second :: Nil ++ tail)
+        .foldLeft {
+          shapeFactory.lineString
+        } {
+          case (builder, point) => builder.pointXY(point.getX, point.getY)
+        }
+        .build()
+      shapeFactory.getGeometryFrom(shape).asInstanceOf[LineString]
+    }
   }
 
   object PolygonFactory {

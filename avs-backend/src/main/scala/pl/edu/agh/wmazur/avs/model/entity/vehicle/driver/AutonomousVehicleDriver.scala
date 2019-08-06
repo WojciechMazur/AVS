@@ -42,7 +42,7 @@ class AutonomousVehicleDriver(
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
   override var currentLane: Lane = setCurrentLane(spawnLane)
 
-  var destination: Option[Road] = None
+  var destination: Option[Road] = Some(currentLane.spec.road.get)
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior

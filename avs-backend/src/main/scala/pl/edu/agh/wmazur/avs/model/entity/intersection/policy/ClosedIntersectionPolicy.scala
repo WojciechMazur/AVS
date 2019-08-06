@@ -6,7 +6,6 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousIntersectionManager,
   IntersectionManager
 }
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected
 
 trait ClosedIntersectionPolicy {
@@ -15,7 +14,12 @@ trait ClosedIntersectionPolicy {
   lazy val closedIntersection: Behavior[IntersectionManager.Protocol] =
     Behaviors
       .receiveMessagePartial[IntersectionManager.Protocol] {
-        case req @ IntersectionCrossingRequest(_, _, _, timestamp, replyTo) =>
+        case req @ IntersectionManager.Protocol.IntersectionCrossingRequest(
+              _,
+              _,
+              _,
+              timestamp,
+              replyTo) =>
           replyTo ! ReservationRejected(
             requestId = req.id,
             nextAllowedCommunicationTimestamp = timestamp,

@@ -14,53 +14,14 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
 
-case class BasicVehicle(
+abstract class BasicVehicle(
     id: Vin,
     gauges: VehicleGauges,
     spec: VehicleSpec,
     targetVelocity: Velocity,
-    driverRef: ActorRef[AutonomousVehicleDriver.ExtendedProtocol],
     spawnTime: Int
 ) extends Vehicle
     with VelocityReachingMovement {
-
-  override def withAcceleration(
-      acceleration: Acceleration): BasicVehicle.this.type = {
-    modify(this)(_.gauges.acceleration)
-      .setTo(acceleration)
-      .asInstanceOf[this.type]
-  }
-  override def withVelocity(velocity: Velocity): BasicVehicle.this.type =
-    modify(this)(_.gauges.velocity)
-      .setTo(velocity)
-      .asInstanceOf[this.type]
-
-  override def withSteeringAngle(steeringAngle: Angle): BasicVehicle.this.type =
-    modify(this)(_.gauges.steeringAngle)
-      .setTo {
-        MathUtils
-          .withConstraint(steeringAngle,
-                          -spec.maxSteeringAngle,
-                          spec.maxSteeringAngle)
-      }
-      .asInstanceOf[this.type]
-
-  override def withHeading(heading: Angle): BasicVehicle.this.type =
-    modify(this)(_.gauges.heading)
-      .setTo(heading)
-      .modify(_.gauges.area)
-      .setTo(Vehicle.calcArea(position, heading, spec))
-      .asInstanceOf[this.type]
-
-  override def withPosition(position: Point): BasicVehicle.this.type =
-    modify(this)(_.gauges.position)
-      .setTo(position)
-      .modify(_.gauges.area)
-      .setTo(Vehicle.calcArea(position, heading, spec))
-      .asInstanceOf[this.type]
-
-  override def withTargetVelocity(targetVelocity: Velocity): this.type =
-    modify(this)(_.targetVelocity).setTo(targetVelocity).asInstanceOf[this.type]
 
   override type Self = BasicVehicle
   override def entitySettings: EntitySettings[BasicVehicle] = BasicVehicle
@@ -89,7 +50,7 @@ object BasicVehicle extends EntitySettings[BasicVehicle] {
       area = Vehicle.calcArea(position, heading, spec)
     )
 
-    lazy val vehicle: BasicVehicle = new BasicVehicle(
+    lazy val vehicle: BasicVehicle = AutonomousVehicle(
       id = id.getOrElse(Vehicle.nextId),
       targetVelocity = targetVelocity.getOrElse(spec.maxVelocity),
       gauges = gauges,

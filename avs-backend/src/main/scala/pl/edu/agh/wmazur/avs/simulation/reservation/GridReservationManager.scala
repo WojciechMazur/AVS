@@ -16,7 +16,13 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   VehicleDriver
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, Vehicle}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  BasicVehicle,
+  Vehicle,
+  VehicleGauges,
+  VehicleSpec,
+  VirtualVehicle
+}
 import pl.edu.agh.wmazur.avs.simulation.map.micro.{Tile, TilesGrid}
 import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.{
   ManagerConfig,
@@ -50,7 +56,7 @@ case class GridReservationManager(config: ManagerConfig,
     val departueLane = intersection.lanesById(query.departureLaneId)
 
     val driver = {
-      val v = createTestVehicle(vehicle = query.vehicle,
+      val v = createTestVehicle(vehicleSpec = query.vehicleSpec,
                                 arrivalVelocity = query.arrivalVelocity,
                                 maxVelocity = query.maxTurnVelocity,
                                 arrivalLane = arrivalLane)
@@ -179,22 +185,23 @@ case class GridReservationManager(config: ManagerConfig,
       }
   }
 
-  private def createTestVehicle(vehicle: Vehicle,
+  private def createTestVehicle(vehicleSpec: VehicleSpec,
                                 arrivalVelocity: Velocity,
                                 maxVelocity: Velocity,
                                 arrivalLane: Lane): BasicVehicle = {
-    vehicle match {
-      case v: BasicVehicle =>
-        v.withPosition(intersection.entryPoints(arrivalLane))
-          .withHeading(intersection.entryHeadings(arrivalLane))
-          .withVelocity(arrivalVelocity)
-          .modify(_.spec.maxVelocity)
-          .setTo(maxVelocity)
-          .modifyAll(_.spec.wheelRadius, _.spec.wheelWidth)
-          .setTo(avs.Dimension(0d))
-          .modifyAll(_.gauges.steeringAngle, _.gauges.acceleration)
-          .setTo(0)
-    }
+    val position = intersection.entryPoints(arrivalLane)
+    val heading = intersection.entryHeadings(arrivalLane)
+    VirtualVehicle(
+      gauges = VehicleGauges(position,
+                             arrivalVelocity,
+                             0,
+                             0,
+                             heading,
+                             Vehicle.calcArea(position, heading, vehicleSpec)),
+      spec = vehicleSpec,
+      targetVelocity = 0,
+      spawnTime = -1
+    )
   }
 
   private def calculateTimeBuffer(tile: Tile): FiniteDuration = {
@@ -257,7 +264,7 @@ object GridReservationManager {
       maxTurnVelocity: Velocity,
       arrivalLaneId: LaneId,
       departureLaneId: LaneId,
-      vehicle: Vehicle,
+      vehicleSpec: VehicleSpec,
       isAccelerating: Boolean
   ) {
     require(arrivalVelocity != 0f || isAccelerating,

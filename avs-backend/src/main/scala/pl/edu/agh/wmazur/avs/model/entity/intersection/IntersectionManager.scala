@@ -18,13 +18,13 @@ import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 trait IntersectionManager {
   def intersection: Intersection
 
-  def manages(laneId: Lane#Id): Boolean =
+  def managesLane(laneId: Lane#Id): Boolean =
     intersection.roads
       .exists(
         _.lanes
           .exists(_.id == laneId))
 
-  def manages(roadId: Road#Id): Boolean =
+  def managesRoad(roadId: Road#Id): Boolean =
     intersection.roads
       .exists(_.id == roadId)
 

@@ -1,8 +1,8 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.workers.coordinator
+package pl.edu.agh.wmazur.avs.model.entity.intersection.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.coordinator.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousRoadIntersection,
   IntersectionManager
@@ -14,7 +14,12 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
   CrashTestDriver
 }
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, VehicleSpec}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  Vehicle,
+  VehicleGauges,
+  VehicleSpec,
+  VirtualVehicle
+}
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.{Agent, Dimension}
@@ -53,13 +58,12 @@ class IntersectionCoordinator(
     } yield roadPriorities
   } yield lane -> roadPriorities.toMap
 
+  override protected val initialBehaviour
+    : Behavior[IntersectionCoordinator.Protocol] = active()
+
   private def active(): Behavior[IntersectionCoordinator.Protocol] =
     Behaviors.receiveMessagePartial {
-      case GetMaxCrossingVelocity(replyTo,
-                                  laneId,
-                                  roadId,
-                                  vehicle,
-                                  currentTime) =>
+      case GetMaxCrossingVelocity(replyTo, laneId, roadId, vehicleSpec) =>
         if (lanesById.keySet.contains(laneId) && roadsById.contains(roadId)) {
           val possibleVelocities: Map[Lane, Velocity] = {
             for {
@@ -68,28 +72,26 @@ class IntersectionCoordinator(
               destinationLane <- lanePriorites(currentLane)(destianationRoad)
 
               cachedVelocitesForSpec = cachedTurnVelocities.getOrElseUpdate(
-                vehicle.spec,
+                vehicleSpec,
                 mutable.Map.empty)
 
               maxVelocity = cachedVelocitesForSpec.getOrElseUpdate(
                 (currentLane.id, destinationLane.id),
-                calcMaxTurnVelocity(vehicle, currentLane, destinationLane))
+                calcMaxTurnVelocity(vehicleSpec, currentLane, destinationLane))
             } yield destinationLane -> maxVelocity
           }.toMap
-          //Todo czy limitować ilość wyjściowych jezdni?
-
+//          Todo czy limitować ilość wyjściowych jezdni?
+          replyTo ! AutonomousVehicleDriver.MaxCrossingVelocities(
+            intersection.id,
+            laneId,
+            possibleVelocities)
         } else {
-          replyTo ! AutonomousVehicleDriver.InvalidProposalParameters(laneId,
-                                                                      roadId)
+          replyTo ! AutonomousVehicleDriver.NoPathForLanes(laneId, roadId)
         }
-
         Behaviors.same
     }
 
-  override protected val initialBehaviour
-    : Behavior[IntersectionCoordinator.Protocol] = active()
-
-  def calcMaxTurnVelocity(vehicle: BasicVehicle,
+  def calcMaxTurnVelocity(vehicleSpec: VehicleSpec,
                           arrivalLane: Lane,
                           departureLane: Lane): Velocity = {
     val precision = 0.2 // m/s
@@ -98,7 +100,7 @@ class IntersectionCoordinator(
     def iterate(minVelocity: Velocity, maxVelocity: Velocity): Velocity = {
       if (maxVelocity - minVelocity < precision) {
         val testedVelocity = (minVelocity + maxVelocity) / 2
-        val isSafeToCross = isSafeToCrossIntersection(vehicle = vehicle,
+        val isSafeToCross = isSafeToCrossIntersection(vehicleSpec = vehicleSpec,
                                                       arrivalLane = arrivalLane,
                                                       departureLane =
                                                         departureLane,
@@ -114,17 +116,17 @@ class IntersectionCoordinator(
       }
     }
 
-    val maxVelocity = List(vehicle.spec.maxVelocity,
+    val maxVelocity = List(vehicleSpec.maxVelocity,
                            arrivalLane.spec.speedLimit,
                            departureLane.spec.speedLimit).min
     iterate(0, maxVelocity)
   }
 
-  def isSafeToCrossIntersection(vehicle: BasicVehicle,
+  def isSafeToCrossIntersection(vehicleSpec: VehicleSpec,
                                 arrivalLane: Lane,
                                 departureLane: Lane,
                                 velocity: Velocity): Boolean = {
-    if (velocity <= 0 || velocity > vehicle.spec.maxVelocity) {
+    if (velocity <= 0 || velocity > vehicleSpec.maxVelocity) {
       false
     } else {
       val travelsalDistance = cachedTravelsalDistances
@@ -133,14 +135,20 @@ class IntersectionCoordinator(
           intersection.calcTravelsalDistance(arrivalLane, departureLane)
         )
       val maxTime = (travelsalDistance.meters / velocity).seconds
+      val position = intersection.entryPoints(arrivalLane)
+      val heading = intersection.entryHeadings(arrivalLane)
       val testDriver = CrashTestDriver(
-        vehicle = vehicle
-          .withPosition(intersection.entryPoints(arrivalLane))
-          .withHeading(intersection.entryHeadings(arrivalLane))
-          .withVelocity(velocity)
-          .withAcceleration(0)
-          .withSteeringAngle(0)
-          .withTargetVelocity(0),
+        vehicle = VirtualVehicle(
+          gauges =
+            VehicleGauges(position,
+                          velocity,
+                          0,
+                          0,
+                          heading,
+                          Vehicle.calcArea(position, heading, vehicleSpec)),
+          spec = vehicleSpec,
+          targetVelocity = 0,
+          spawnTime = -1),
         arrivalLane,
         departureLane
       )
@@ -157,8 +165,7 @@ class IntersectionCoordinator(
         def timeElapsed = time <= maxTime
 
         def withinIntersection =
-          intersection.area.relate(vehicle.position).intersects()
-        //        def
+          intersection.area.relate(testDriver.vehicle.position).intersects()
 
         val finished = timeElapsed && (!enteredIntersection || withinIntersection)
         if (!finished) {
@@ -168,10 +175,12 @@ class IntersectionCoordinator(
             beforeMoveState.vehicle
               .move(TickSource.timeStepSeconds))
 
-          val newMinSteeringAngle = vehicle.steeringAngle.min(minSteeringAngle)
-          val newMaxSteeringAngle = vehicle.steeringAngle.max(maxSteeringAngle)
+          val newMinSteeringAngle =
+            testDriver.vehicle.steeringAngle.min(minSteeringAngle)
+          val newMaxSteeringAngle =
+            testDriver.vehicle.steeringAngle.max(maxSteeringAngle)
 
-          val didEnteredIntersection = enteredIntersection || vehicle.area
+          val didEnteredIntersection = enteredIntersection || testDriver.vehicle.area
             .relate(intersection.bufferedArea)
             .intersects()
 
@@ -223,13 +232,17 @@ class IntersectionCoordinator(
 }
 
 object IntersectionCoordinator {
-  sealed trait Protocol extends SimulationProtocol
+  sealed trait CoordinatorProtocol
+
+  sealed trait Protocol
+      extends IntersectionManager.Protocol
+      with CoordinatorProtocol
   object Protocol {
     case class GetMaxCrossingVelocity(
         replyTo: ActorRef[AutonomousVehicleDriver.Protocol],
         currentLane: Lane#Id,
         destinationRoad: Road#Id,
-        vehicleSpec: BasicVehicle,
+        vehicleSpec: VehicleSpec,
     ) extends Protocol
   }
 

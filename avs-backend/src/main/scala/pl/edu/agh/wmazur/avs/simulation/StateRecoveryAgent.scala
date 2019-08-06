@@ -55,10 +55,11 @@ object StateRecoveryAgent {
         val adapter = ctx.messageAdapter[SpawnResult[_ <: Entity, _]] {
           case SpawnResult(entity, ref) =>
             (entity, ref) match {
-              case (road: Road, ref: ActorRef[RoadManager.Protocol]) =>
+              case (road: Road,
+                    ref: ActorRef[RoadManager.Protocol] @unchecked) =>
                 RoadSpawned(road, ref)
               case (intersection: Intersection,
-                    ref: ActorRef[IntersectionManager.Protocol]) =>
+                    ref: ActorRef[IntersectionManager.Protocol] @unchecked) =>
                 IntersectionSpawned(intersection, ref)
             }
         }

@@ -55,8 +55,8 @@ case class AutonomousRoadIntersection(
   override def calcTravelsalDistance(arrivalLane: Lane,
                                      departureLane: Lane): Dimension = {
 
-    def lineStringLength(shape: Shape): Dimension = {
-      shape match {
+    def lineStringLength(geometry: Geometry): Dimension = {
+      geometry match {
         case line: LineString => line.getLength.fromGeoDegrees
         case _                => sys.error("This should not happend")
       }
@@ -86,16 +86,12 @@ case class AutonomousRoadIntersection(
 
       val segmentsIntersects = arrivalLaneIntersectionSegment
         .relate(departureLineIntersectionSegment)
-        .intersects()
+        .isIntersects
 
       val segments = if (segmentsIntersects) {
-        val arrivalSegmentGeometry =
-          shapeFactory.getGeometryFrom(arrivalLaneIntersectionSegment)
-        val departureSegmentGeometry =
-          shapeFactory.getGeometryFrom(departureLineIntersectionSegment)
-
         val intersectionPoint =
-          arrivalSegmentGeometry.intersection(departureSegmentGeometry) match {
+          arrivalLaneIntersectionSegment.intersection(
+            departureLineIntersectionSegment) match {
             case point: Point => point
             case _            => sys.error("This should not happend")
           }

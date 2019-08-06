@@ -4,12 +4,19 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Protocol.FetchDrivers
+import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Workers
 import pl.edu.agh.wmazur.avs.model.entity.intersection.policy.{
   ClosedIntersectionPolicy,
   DefaultPolicy,
-  IntersectionConnectivity
+  IntersectionConnectivity,
+  Routing
+}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
+  DriversFetcherAgent,
+  IntersectionCoordinator
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager
 import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
@@ -21,12 +28,14 @@ class AutonomousIntersectionManager(
     gridManagerConfig: GridReservationManager.ManagerConfig,
     val roads: List[Road],
     val context: ActorContext[IntersectionManager.Protocol],
-    val timers: TimerScheduler[IntersectionManager.Protocol]
+    val timers: TimerScheduler[IntersectionManager.Protocol],
+    val workers: Workers
 ) extends Agent[IntersectionManager.Protocol]
     with IntersectionManager
     with ClosedIntersectionPolicy
     with DefaultPolicy
-    with IntersectionConnectivity {
+    with IntersectionConnectivity
+    with Routing {
   // TODO ACZs
 
   val reservationManager = GridReservationManager(
@@ -40,6 +49,11 @@ class AutonomousIntersectionManager(
 }
 
 object AutonomousIntersectionManager {
+  case class Workers(
+      driversFetcher: ActorRef[DriversFetcherAgent.Protocol],
+      coordinator: ActorRef[IntersectionCoordinator.Protocol]
+  )
+
   sealed trait Protocol extends IntersectionManager.Protocol
   object Protocol {
     case object FetchDrivers extends Protocol
@@ -69,11 +83,40 @@ object AutonomousIntersectionManager {
                                   FetchDrivers,
                                   transmitionInterval)
 
+        val driversFetcherManager: ActorRef[DriversFetcherAgent.Protocol] =
+          ctx.spawn(
+            DriversFetcherAgent.init(
+              intersectionPosition = intersection.position,
+              intersectionGeometry =
+                SpatialUtils.shapeFactory.getGeometryFrom(intersection.area),
+              entryPoints = intersection.entryPoints,
+              exitPoints = intersection.exitPoints,
+              transmitionDistance =
+                AutonomousIntersectionManager.maxTransmitionDistance,
+              intersectionManager = ctx.self
+            ),
+            "drivers-fetcher"
+          )
+
+        // format: off
+        val coordinator: ActorRef[IntersectionCoordinator.Protocol] =
+          ctx.spawn(
+            IntersectionCoordinator.init(
+              intersectionManagerRef = ctx.self,
+              intersection = intersection
+            ),
+            s"coordinator-${intersection.id}"
+          )
+        // format: on
+
+        val workers = Workers(driversFetcherManager, coordinator)
+
         new AutonomousIntersectionManager(intersection = intersection,
                                           gridManagerConfig = managerConfig,
                                           roads = roads,
                                           context = ctx,
-                                          timers = timers)
+                                          timers = timers,
+                                          workers = workers)
       }
     }
   val maximumFutureReservationTime: FiniteDuration = 10.seconds

@@ -33,6 +33,7 @@ object MathUtils {
     def isZero: Boolean = double <= 0.00000001 && double >= -0.00000001
 
     def roundFloat: Float = double2Float(double)
+    def isEqual(that: Double): Boolean = Math.abs(double - that) < 0.0000001
   }
 
   implicit class AVectorRound(vec: AVector) {
