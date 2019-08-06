@@ -20,6 +20,7 @@ trait ClosedIntersectionPolicy {
               _,
               timestamp,
               replyTo) =>
+          context.log.info("reservation request")
           replyTo ! ReservationRejected(
             requestId = req.id,
             nextAllowedCommunicationTimestamp = timestamp,

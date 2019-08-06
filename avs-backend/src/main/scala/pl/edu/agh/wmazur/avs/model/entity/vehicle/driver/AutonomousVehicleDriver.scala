@@ -46,6 +46,7 @@ class AutonomousVehicleDriver(
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior
+      .orElse(reservation)
       .orElse(drive)
       .orElse(basicConnectivity)
       .orElse(onTickBehavior)

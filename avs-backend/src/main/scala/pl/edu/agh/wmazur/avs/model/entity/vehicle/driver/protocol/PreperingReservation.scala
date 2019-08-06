@@ -28,39 +28,56 @@ trait PreperingReservation {
   self: AutonomousVehicleDriver with Driving =>
   import AutonomousVehicleDriver._
 
-  val maxAllowedVelocities
-    : mutable.Map[ActorRef[IntersectionManager.Protocol], Map[Lane, Velocity]] =
-    mutable.Map.empty
-
   final val maxExpectedIntersectionManagerReplyTime
     : FiniteDuration = 2 * TickSource.timeStep
   final val arrivalEstimationAccelerationReduction = 1.0
 
-  def reservation: Behavior[Protocol] = Behaviors.receiveMessagePartial {
+  val reservation: Behavior[Protocol] = Behaviors.receiveMessagePartial {
     case AskForMaximalCrossingVelocities =>
       if (nextIntersectionManager.nonEmpty) {
-
-//        val spec =          IntersectionCrossingRequest.CrossingVehicleSpec(vehicle.spec)
 
         nextIntersectionManager.get ! IntersectionCoordinator.Protocol
           .GetMaxCrossingVelocity(context.self,
                                   currentLane.id,
                                   destination.get.id,
                                   vehicle.spec)
-//
-//        val proposals = buildIntersectionCrossingProposals()
-//
-//        val reservationRequest: IntersectionCrossingRequest =
-//          IntersectionProtocol.IntersectionCrossingRequest(
-//            vin = vehicle.id,
-//            spec = spec,
-//            proposals = proposals,
-//            currentTime = currentTime,
-//            replyTo = context.self
-//          )
-//        nextIntersectionManager.get ! reservationRequest
       }
       Behaviors.same
+    case MaxCrossingVelocities(intersectionRef, arrivalLaneId, maxVelocities) =>
+      if (nextIntersectionManager.contains(intersectionRef) &&
+          currentLane.id == arrivalLaneId) {
+
+        val estimations = maxVelocities
+          .mapValues(estimateArrival)
+          .collect {
+            case (lane, Some(estimation)) => lane -> estimation
+          }
+
+        val proposals = estimations.map {
+          case (departureLane,
+                VehicleArrivalEstimator.Result(arrivalTime,
+                                               arrivalVelocity,
+                                               accScheduleProposal)) =>
+            IntersectionCrossingRequest.Proposal(currentLane.id,
+                                                 departureLane.id,
+                                                 arrivalTime,
+                                                 arrivalVelocity,
+                                                 maxVelocities(departureLane),
+                                                 accScheduleProposal)
+        }
+        val request = IntersectionCrossingRequest(
+          vehicle.id,
+          IntersectionCrossingRequest.CrossingVehicleSpec(vehicle.spec),
+          proposals.toList,
+          currentTime,
+          context.self
+        )
+
+        intersectionRef ! request
+      }
+
+      Behaviors.same
+
   }
 
   def estimateArrival(
@@ -141,22 +158,15 @@ trait PreperingReservation {
     }
   }
 
-  private def buildIntersectionCrossingProposals()
-    : List[IntersectionCrossingRequest.Proposal] = {
-    IntersectionCrossingRequest.Proposal(arrivalLaneId = currentLane.id,
-                                         departureLaneId = currentLane.id,
-                                         arrivalTime = 0,
-                                         arrivalVelocity = 0,
-                                         maxTurnVelocity = 0) :: Nil
-  }
 }
 
 object PreperingReservation {
 
   trait Protocol {
-    case class MaxCrossingVelocities(intersectionId: Intersection#Id,
-                                     arrivalLaneId: Lane#Id,
-                                     allowedVelocities: Map[Lane, Velocity])
+    case class MaxCrossingVelocities(
+        intersectionRef: ActorRef[IntersectionManager.Protocol],
+        arrivalLaneId: Lane#Id,
+        allowedVelocities: Map[Lane, Velocity])
         extends ExtendedProtocol
     case class NoPathForLanes(laneId: Lane#Id, roadId: Road#Id)
         extends ExtendedProtocol

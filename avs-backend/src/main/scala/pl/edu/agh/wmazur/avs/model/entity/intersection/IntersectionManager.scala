@@ -4,7 +4,11 @@ import akka.actor.typed.ActorRef
 import org.locationtech.spatial4j.shape.Shape
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  AccelerationSchedule,
+  Vehicle,
+  VehicleSpec
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Angle,
@@ -56,7 +60,8 @@ object IntersectionManager {
           departureLaneId: Lane#Id,
           arrivalTime: Long,
           arrivalVelocity: Velocity,
-          maxTurnVelocity: Velocity
+          maxTurnVelocity: Velocity,
+          accelerationSchedule: AccelerationSchedule
       )
 
       final case class CrossingVehicleSpec(

@@ -82,7 +82,7 @@ class IntersectionCoordinator(
           }.toMap
 //          Todo czy limitować ilość wyjściowych jezdni?
           replyTo ! AutonomousVehicleDriver.MaxCrossingVelocities(
-            intersection.id,
+            intersectionManagerRef,
             laneId,
             possibleVelocities)
         } else {
@@ -98,7 +98,7 @@ class IntersectionCoordinator(
 
     @tailrec
     def iterate(minVelocity: Velocity, maxVelocity: Velocity): Velocity = {
-      if (maxVelocity - minVelocity < precision) {
+      if (maxVelocity - minVelocity > precision) {
         val testedVelocity = (minVelocity + maxVelocity) / 2
         val isSafeToCross = isSafeToCrossIntersection(vehicleSpec = vehicleSpec,
                                                       arrivalLane = arrivalLane,

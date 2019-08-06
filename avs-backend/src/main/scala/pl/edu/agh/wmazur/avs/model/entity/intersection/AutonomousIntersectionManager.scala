@@ -43,9 +43,14 @@ class AutonomousIntersectionManager(
     intersection
   )
 
+  def switchBehavior(behavior: Behavior[IntersectionManager.Protocol])
+    : Behavior[IntersectionManager.Protocol] = {
+    behavior.orElse(basicConnectivity).orElse(routing)
+  }
+
   override protected val initialBehaviour
     : Behavior[IntersectionManager.Protocol] =
-    closedIntersection
+    switchBehavior(closedIntersection)
 }
 
 object AutonomousIntersectionManager {
