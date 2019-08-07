@@ -11,6 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDeltaSeconds
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
+import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -66,6 +67,12 @@ object VehicleMovement {
   trait VariableVehicleMovement extends VehicleMovement {
     self: Vehicle =>
     def moveWithAcceleration(timeDelta: TimeDeltaSeconds): self.type
+  }
+
+  trait ScheduledVehicleMovement extends VehicleMovement {
+    self: Vehicle with VariableVehicleMovement =>
+    def moveWithSchedule(currentTime: Timestamp,
+                         timeDelta: TimeDeltaSeconds): self.type
   }
 
 }

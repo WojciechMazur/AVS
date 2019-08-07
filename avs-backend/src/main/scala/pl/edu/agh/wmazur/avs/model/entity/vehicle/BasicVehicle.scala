@@ -1,10 +1,7 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle
 import akka.actor.typed.ActorRef
-import com.softwaremill.quicklens._
-import org.locationtech.spatial4j.shape.{Point, Shape}
+import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.model.entity.EntitySettings
-import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.PolygonFactory
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle.Vin
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
@@ -12,7 +9,10 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Velocity
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.{
+  AccelerationScheduleMovement,
+  VelocityReachingMovement
+}
 
 abstract class BasicVehicle(
     id: Vin,
@@ -21,7 +21,8 @@ abstract class BasicVehicle(
     targetVelocity: Velocity,
     spawnTime: Int
 ) extends Vehicle
-    with VelocityReachingMovement {
+    with VelocityReachingMovement
+    with AccelerationScheduleMovement {
 
   override type Self = BasicVehicle
   override def entitySettings: EntitySettings[BasicVehicle] = BasicVehicle

@@ -56,4 +56,10 @@ case class VirtualVehicle(
 
   override def withTargetVelocity(targetVelocity: Velocity): this.type =
     modify(this)(_.targetVelocity).setTo(targetVelocity).asInstanceOf[this.type]
+
+  override def accelerationSchedule: Option[AccelerationSchedule] = None
+
+  override def withAccelerationSchedule(
+      accelerationSchedule: Option[AccelerationSchedule])
+    : VirtualVehicle.this.type = this
 }
