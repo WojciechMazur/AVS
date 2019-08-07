@@ -32,7 +32,7 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
           .toUnit(TimeUnit.SECONDS)
         val endVelocity = velocity + acceleration * remainingDuration
         val distanceTotal = distance + remainingDuration * (velocity + endVelocity) / 2
-        (distanceTotal.fromMeters, endVelocity)
+        (distanceTotal.meters, endVelocity)
       } else {
         val currentEvent = remainingTimestamps.head
         val duration =
@@ -44,7 +44,7 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
           time = currentEvent.time,
           velocity = endVelocity,
           acceleration = currentEvent.acceleration,
-          distance = distanceTotal.fromMeters,
+          distance = distanceTotal.meters,
           remainingTimestamps = remainingTimestamps.tail
         )
       }

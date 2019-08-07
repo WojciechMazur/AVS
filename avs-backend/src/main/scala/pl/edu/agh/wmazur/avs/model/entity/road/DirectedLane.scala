@@ -24,7 +24,7 @@ case class DirectedLane(id: Lane#Id,
         middleLine.getEndPoint.getY - middleLine.getStartPoint.getY)
 
   lazy val squaredLaneLength: Dimension =
-    laneVector.dotProduct(laneVector).fromGeoDegrees
+    laneVector.dotProduct(laneVector).geoDegrees
   lazy val length: Dimension = middleLine.getStartPoint.distance(
     middleLine.getEndPoint) * DistanceUtils.DEG_TO_KM * 1000
 
@@ -32,9 +32,9 @@ case class DirectedLane(id: Lane#Id,
     MathUtils.boundedAngle(
       startPoint.angle(Point2(endPoint.getX, endPoint.getY)))
 
-  private val xDiff: Dimension = spec.halfWidth.fromMeters * Math.cos(
+  private val xDiff: Dimension = spec.halfWidth.meters * Math.cos(
     heading + Math.PI / 2)
-  private val yDiff: Dimension = spec.halfWidth.fromMeters * Math.sin(
+  private val yDiff: Dimension = spec.halfWidth.meters * Math.sin(
     heading + Math.PI / 2)
 
   lazy val area: Shape = {
@@ -64,19 +64,19 @@ case class DirectedLane(id: Lane#Id,
   lazy val exitPoint: Point = Point2(endPoint.getX, endPoint.getY)
 
   override def pointAtNormalizedDistance(normalizedDistance: Double): Point =
-    startPoint.move(normalizedDistance * laneVector.getX.fromGeoDegrees,
-                    normalizedDistance * laneVector.getY.fromGeoDegrees)
+    startPoint.move(normalizedDistance * laneVector.getX.geoDegrees,
+                    normalizedDistance * laneVector.getY.geoDegrees)
 
   override def distanceAlongLane(point: Point): Dimension = {
     val pointVector =
       Vector2.of(point.getX - startPoint.getX, point.getY - startPoint.getY)
-    ((pointVector dotProduct laneVector) / length).fromGeoDegrees
+    ((pointVector dotProduct laneVector) / length).geoDegrees
   }
 
   override def normalizedDistanceAlongLane(point: Point): Double = {
     val pointVector =
       Vector2.of(point.getX - startPoint.getX, point.getY - startPoint.getY)
-    (pointVector dotProduct laneVector) / squaredLaneLength.geoDegrees
+    (pointVector dotProduct laneVector) / squaredLaneLength.asGeoDegrees
   }
 
   override def headingAtNormalizedDistance(normalizedDistance: Double): Angle =
@@ -85,7 +85,8 @@ case class DirectedLane(id: Lane#Id,
   override def leadPointOf(point: Point, distance: Dimension): Point = {
     val fraction = normalizedDistanceAlongLane(point)
     val p = pointAtNormalizedDistance(fraction)
-    p.move(distance, heading)
+    val pp = p.moveRotate(distance, heading)
+    pp
   }
 
   override def getGeometryFraction(start: Double, end: Double): Geometry = {
@@ -130,12 +131,12 @@ case class DirectedLane(id: Lane#Id,
   override def entitySettings: EntitySettings[DirectedLane] = DirectedLane
 
   override val collectorPoint: Option[CollectorPoint] =
-    spec.leadsIntoLane match {
+    spec.leadsInto match {
       case Some(_) => None
       case None    => Some(CollectorPoint(this))
     }
 
-  override val spawnPoint: Option[SpawnPoint] = spec.leadsFromLane match {
+  override val spawnPoint: Option[SpawnPoint] = spec.leadsFrom match {
     case Some(_) => None
     //Todo Config
     case None => Some(SpawnPoint(this))
@@ -150,7 +151,7 @@ object DirectedLane extends EntitySettings[DirectedLane] {
              heading: Angle = 0d,
   ): DirectedLane = {
     val startPoint =
-      Point2(offStartX.geoDegrees, offStartY.geoDegrees)
+      Point2(offStartX.asGeoDegrees, offStartY.asGeoDegrees)
     val endPoint = startPoint.moveRotate(length, heading)
     DirectedLane(spec)(startPoint, endPoint)
   }

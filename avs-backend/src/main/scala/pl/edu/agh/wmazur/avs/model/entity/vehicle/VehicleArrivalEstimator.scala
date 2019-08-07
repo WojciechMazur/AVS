@@ -121,7 +121,7 @@ object VehicleArrivalEstimator {
     def case1(params: Parameters): Result = {
       //velocity == maxVelocity == finalVelocity
       val timeTotal =
-        (params.distanceTotal.meters / params.finalVelocity).seconds.toMillis
+        (params.distanceTotal.asMeters / params.finalVelocity).seconds.toMillis
 
       val finalTime = params.initialTime + timeTotal
       val schedule = AccelerationSchedule(
@@ -143,7 +143,7 @@ object VehicleArrivalEstimator {
 
       def case2a: Result = {
 
-        val distanceCruise = params.distanceTotal.meters - distanceAccel
+        val distanceCruise = params.distanceTotal.asMeters - distanceAccel
         val timeCruise = distanceCruise / params.maxVelocity
 
         val schedule = AccelerationProfile {
@@ -171,8 +171,8 @@ object VehicleArrivalEstimator {
       }
 
       None match {
-        case _ if distanceAccel < params.distanceTotal.meters => case2a
-        case _ if distanceAccel isEqual params.distanceTotal  => case2b
+        case _ if distanceAccel < params.distanceTotal.asMeters => case2a
+        case _ if distanceAccel isEqual params.distanceTotal    => case2b
         case _ =>
           estimateMaxFinalVelocity(params) //TODO maxVEndForCase2AndCase5
       }
@@ -189,7 +189,7 @@ object VehicleArrivalEstimator {
       val distanceDecel = timeDecel * (params.finalVelocity + params.maxVelocity) / 2
 
       def case3a: Result = {
-        val distanceCruise = params.distanceTotal.meters - distanceDecel
+        val distanceCruise = params.distanceTotal.asMeters - distanceDecel
         val timeCruise = distanceCruise / params.maxVelocity
         Result(
           params.initialTime + (timeCruise + timeDecel).seconds.toMillis,
@@ -214,9 +214,9 @@ object VehicleArrivalEstimator {
       }
 
       None match {
-        case _ if distanceDecel < params.distanceTotal.meters => case3a
-        case _ if distanceDecel isEqual params.distanceTotal  => case3b
-        case _                                                => sys.error("Distance to small")
+        case _ if distanceDecel < params.distanceTotal.asMeters => case3a
+        case _ if distanceDecel isEqual params.distanceTotal    => case3b
+        case _                                                  => sys.error("Distance to small")
       }
     }
 
@@ -236,7 +236,7 @@ object VehicleArrivalEstimator {
       val distanceDecel = timeDecel * (params.maxVelocity + params.finalVelocity) / 2
 
       def case4a = {
-        val distanceCruise = params.distanceTotal.meters - distanceAccel - distanceDecel
+        val distanceCruise = params.distanceTotal.asMeters - distanceAccel - distanceDecel
         val timeCruise = distanceCruise / params.maxVelocity
         Result(
           arrivalTime = params.initialTime + (timeAccel + timeCruise + timeDecel).seconds.toMillis,
@@ -251,7 +251,7 @@ object VehicleArrivalEstimator {
       }
 
       def case4b = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.meters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
         assert(delta >= 0.0)
         val velocity = Math.sqrt(delta)
         assert(velocity < params.maxVelocity)
@@ -275,7 +275,8 @@ object VehicleArrivalEstimator {
       }
 
       None match {
-        case _ if distanceAccel + distanceDecel < params.distanceTotal.meters =>
+        case _
+            if distanceAccel + distanceDecel < params.distanceTotal.asMeters =>
           case4a
         case _ => case4b
       }
@@ -297,7 +298,7 @@ object VehicleArrivalEstimator {
       val distanceDecel = timeDecel * (params.maxVelocity + params.finalVelocity) / 2
 
       def case5a = {
-        val distanceCruise = params.distanceTotal.meters - distanceAccel - distanceDecel
+        val distanceCruise = params.distanceTotal.asMeters - distanceAccel - distanceDecel
         val timeCruise = distanceCruise / params.maxVelocity
 
         Result(
@@ -313,7 +314,7 @@ object VehicleArrivalEstimator {
       }
 
       def case5bcd = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.meters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
         assert(delta >= 0.0)
         val velocity = Math.sqrt(delta)
         assert(velocity > params.velocity)
@@ -357,7 +358,8 @@ object VehicleArrivalEstimator {
       }
 
       None match {
-        case _ if distanceAccel + distanceDecel < params.distanceTotal.meters =>
+        case _
+            if distanceAccel + distanceDecel < params.distanceTotal.asMeters =>
           case5a
         case _ => case5bcd
       }
@@ -379,7 +381,7 @@ object VehicleArrivalEstimator {
       val distanceDecel = timeDecel * (params.maxVelocity + params.finalVelocity) / 2
 
       def case6a: Result = {
-        val distanceCruise = params.distanceTotal.meters - distanceAccel - distanceDecel
+        val distanceCruise = params.distanceTotal.asMeters - distanceAccel - distanceDecel
         val timeCruise = distanceCruise / params.maxVelocity
 
         Result(
@@ -395,7 +397,7 @@ object VehicleArrivalEstimator {
       }
 
       def case6bcd: Result = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.meters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
         assert(delta >= 0.0)
         val velocity = Math.sqrt(delta)
         assert(velocity < params.maxVelocity)
@@ -442,7 +444,8 @@ object VehicleArrivalEstimator {
       }
 
       None match {
-        case _ if distanceAccel + distanceDecel < params.distanceTotal.meters =>
+        case _
+            if distanceAccel + distanceDecel < params.distanceTotal.asMeters =>
           case6a
         case _ => case6bcd
       }
@@ -450,7 +453,7 @@ object VehicleArrivalEstimator {
 
     def estimateMaxFinalVelocity(params: Parameters): Result = {
       val estimatedEndVelocity = Math.sqrt(
-        2 * params.maxAcceleration * params.distanceTotal.meters + Math
+        2 * params.maxAcceleration * params.distanceTotal.asMeters + Math
           .pow(params.velocity, 2))
       val timeAccelerating = (estimatedEndVelocity - params.velocity) / params.velocity
       assert(estimatedEndVelocity < params.finalVelocity)

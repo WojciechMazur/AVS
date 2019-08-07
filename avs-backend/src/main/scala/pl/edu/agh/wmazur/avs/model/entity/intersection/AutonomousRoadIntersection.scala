@@ -57,7 +57,7 @@ case class AutonomousRoadIntersection(
 
     def lineStringLength(geometry: Geometry): Dimension = {
       geometry match {
-        case line: LineString => line.getLength.fromGeoDegrees
+        case line: LineString => line.getLength.geoDegrees
         case _                => sys.error("This should not happend")
       }
     }
@@ -65,7 +65,7 @@ case class AutonomousRoadIntersection(
     if (arrivalLane == departureLane) {
       (
         entryPoints(arrivalLane) distance exitPoints(departureLane)
-      ).fromGeoDegrees
+      ).geoDegrees
     } else {
       val arrivalLaneEnd = if (isExitedBy(arrivalLane)) {
         exitPoints(arrivalLane)
@@ -206,7 +206,7 @@ case class AutonomousRoadIntersection(
                                      outletHeadings),
             lane) =>
         //TODO czy na pewno powinno być zależne od długości pasa?
-        val expansionOffset = AutonomousRoadIntersection.expansionDistance.meters / lane.length.meters
+        val expansionOffset = AutonomousRoadIntersection.expansionDistance.asMeters / lane.length.asMeters
         val (entryFraction, newEntryPoints, newEntryHeadings) =
           if (intersectionShape.relate(lane.entryPoint).intersects()) {
             (0d, inletPoints, inletHeadings)
@@ -255,7 +255,7 @@ case class AutonomousRoadIntersection(
 object AutonomousRoadIntersection
     extends EntitySettings[AutonomousRoadIntersection] {
   //Offset for additional space at intersection, e.q crosswalks
-  val expansionDistance: Dimension = 2.0.fromMeters
+  val expansionDistance: Dimension = 2.0.meters
   private val shapeFactory = SpatialUtils.shapeFactory
 
 //  def apply(roads: Iterable[Road]): RoadIntersection =

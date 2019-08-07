@@ -11,8 +11,8 @@ class LaneSpec(
     _leftNeighbourLane: => Option[Lane] = None,
     _rightNeighbourLane: => Option[Lane] = None
 ) {
-  lazy val leadsIntoLane: Option[Lane] = _leadsIntoLane
-  lazy val leadsFromLane: Option[Lane] = _leadsFromLane
+  lazy val leadsInto: Option[Lane] = _leadsIntoLane
+  lazy val leadsFrom: Option[Lane] = _leadsFromLane
   lazy val leftNeighbourLane: Option[Lane] = _leftNeighbourLane
   lazy val rightNeighbourLane: Option[Lane] = _rightNeighbourLane
 
@@ -21,8 +21,8 @@ class LaneSpec(
   def copy(
       speedLimit: Velocity = this.speedLimit,
       width: Dimension = this.width,
-      leadsIntoLane: => Option[Lane] = this.leadsIntoLane,
-      leadsFromLane: => Option[Lane] = this.leadsFromLane,
+      leadsIntoLane: => Option[Lane] = this.leadsInto,
+      leadsFromLane: => Option[Lane] = this.leadsFrom,
       leftNeighbourLane: => Option[Lane] = this.leftNeighbourLane,
       rightNeighbourLane: => Option[Lane] = this.rightNeighbourLane): LaneSpec =
     new LaneSpec(

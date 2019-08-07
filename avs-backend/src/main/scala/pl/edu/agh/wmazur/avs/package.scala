@@ -9,8 +9,8 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
-package object avs {
 
+package object avs {
   object Services {
     val webSocketManager: ServiceKey[WebsocketManager.Protocol] =
       ServiceKey("http-endpoint")
@@ -35,28 +35,29 @@ package object avs {
     )
   }
 
-  implicit class Dimension(val meters: Double)
+  implicit class Dimension(val asMeters: Double)
       extends AnyVal
       with Ordered[Dimension] {
-    def fromGeoDegrees: Dimension =
-      Dimension(meters * DistanceUtils.DEG_TO_KM * 1000)
-    def fromMeters: Dimension = Dimension(meters)
+    def geoDegrees: Dimension =
+      Dimension(asMeters * DistanceUtils.DEG_TO_KM * 1000)
+    def meters: Dimension = Dimension(asMeters)
 
-    def geoDegrees: Double = meters / 1000 * DistanceUtils.KM_TO_DEG
+    def asGeoDegrees: Double = asMeters / 1000 * DistanceUtils.KM_TO_DEG
 
     //scalastyle:off
-    def unary_- : Dimension = Dimension(-meters)
-    def -(that: Dimension): Dimension = Dimension(this.meters - that.meters)
-    def +(that: Dimension): Dimension = Dimension(this.meters + that.meters)
-    def *(that: Dimension): Dimension = Dimension(this.meters * that.meters)
-    def /(that: Dimension): Dimension = Dimension(this.meters / that.meters)
-    def sqrt: Dimension = Math.sqrt(meters)
+    def unary_- : Dimension = Dimension(-asMeters)
+    def -(that: Dimension): Dimension = Dimension(this.asMeters - that.asMeters)
+    def +(that: Dimension): Dimension = Dimension(this.asMeters + that.asMeters)
+    def *(that: Dimension): Dimension = Dimension(this.asMeters * that.asMeters)
+    def /(that: Dimension): Dimension = Dimension(this.asMeters / that.asMeters)
+    def sqrt: Dimension = Math.sqrt(asMeters)
     //scalastyle:on
 
     def isEqual(that: Dimension): Boolean = {
-      this.meters isEqual that.meters
+      this.asMeters isEqual that.asMeters
     }
-    override def compare(that: Dimension): Int = this.meters compare that.meters
+    override def compare(that: Dimension): Int =
+      this.asMeters compare that.asMeters
   }
 
   case class Tick(seq: Long) extends AnyVal {

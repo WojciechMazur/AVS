@@ -2,21 +2,80 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import java.util.concurrent.TimeUnit
 
+import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{BasicVehicle, VehicleSpec}
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleArrivalEstimator.Parameters
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  AccelerationSchedule,
+  BasicVehicle,
+  VehicleArrivalEstimator
+}
 import pl.edu.agh.wmazur.avs.simulation.TickSource
+import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, _}
 
 trait VehiclePilot {
   self: VehicleDriver =>
   import VehiclePilot._
+
+  final val defaultLeadTime = 0.4.seconds
+  final val minimalLeadDistance = 0.2.meters
+
+  @tailrec
+  final protected def followCurrentLane(
+      leadTime: FiniteDuration = defaultLeadTime): self.type = {
+    val leadDistance = leadTime.toUnit(TimeUnit.SECONDS) * vehicle.velocity + minimalLeadDistance.asMeters
+    val remainingDistance =
+      currentLane.remainingDistanceAlongLane(vehicle.position)
+
+    if (leadDistance > remainingDistance.asMeters) {
+      currentLane.spec.leadsInto match {
+        case Some(nextLane) if remainingDistance <= 0.0 =>
+          setCurrentLane(nextLane)
+          followCurrentLane(leadTime)
+
+        case Some(nextLane) =>
+          turnTowardPoint {
+            nextLane.leadPointOf(
+              point = nextLane.entryPoint,
+              distance = leadDistance.asMeters - remainingDistance)
+          }
+      }
+    } else {
+      turnTowardPoint {
+        currentLane.leadPointOf(vehicle.position, leadDistance)
+      }
+    }
+  }
+
+  protected def hasClearLnaeToIntersection: Boolean = {
+    (driverGauges.distanceToNextIntersection, driverGauges.distanceToCarInFront) match {
+      case (Some(distI), Some(distV)) =>
+        distI - distV <= stopDistanceBeforeIntersection
+      case _ => true
+    }
+  }
+
+  protected def followNewLane(): self.type = {
+    val leadDistance = minimalLeadDistance * vehicle.velocity + minimalLeadDistance
+    turnTowardPoint {
+      currentLane.leadPointOf(vehicle.position, leadDistance)
+    }
+  }
+
+  protected def turnTowardPoint(point: Point): self.type = {
+    withVehicle {
+      vehicle.moveWheelsTowardPoint(point)
+    }
+  }
 
   protected def applyBasicThrothelling(): VehiclePilot.this.type = {
     cruise.stopBeforeVehicleInFront().stopBeforeIntersection()
@@ -29,9 +88,30 @@ trait VehiclePilot {
 
     applyIf(
       driverGauges.distanceToNextIntersection.exists(
-        _.meters < minDistanceToIntersection.meters)) {
+        _.asMeters < minDistanceToIntersection.asMeters)) {
       withVehicle(vehicle.stop)
     }
+  }
+
+  protected def stopBeforeIntersectionSchedule(
+      currentTime: Timestamp): Option[AccelerationSchedule] = {
+    for {
+      distanceToIntersection <- driverGauges.distanceToNextIntersection
+        .filter(_.asMeters > 0.0)
+      maxVelocity = calcMaxAllowedVelocity(vehicle, currentLane)
+      estimation <- VehicleArrivalEstimator
+        .estimate(
+          Parameters(
+            initialTime = currentTime,
+            velocity = vehicle.velocity,
+            distanceTotal = distanceToIntersection,
+            maxVelocity = maxVelocity,
+            finalVelocity = 0,
+            maxAcceleration = vehicle.spec.maxAcceleration,
+            maxDeceleration = vehicle.spec.maxDeceleration,
+          ))
+        .toOption
+    } yield estimation.accelerationSchedule
   }
 
   protected def stopBeforeVehicleInFront(): VehiclePilot.this.type = {
@@ -73,18 +153,18 @@ trait VehiclePilot {
     val distanceToStop =
       calcStoppingDistance(velocityNextFrame, vehicle.spec.maxDeceleration)
 
-    (distanceCovered + distanceToStop).fromMeters
+    (distanceCovered + distanceToStop).meters
   }
 
 }
 
 object VehiclePilot {
-  val minimumDistanceBetweenCars: Dimension = 6.0.fromMeters
-  val stopDistanceBeforeIntersection: Dimension = 1.0.fromMeters
+  val minimumDistanceBetweenCars: Dimension = 6.0.meters
+  val stopDistanceBeforeIntersection: Dimension = 1.0.meters
 
   def calcStoppingDistance(velocity: Velocity,
                            deceleration: Acceleration): Dimension = {
-    (-velocity * velocity / (2 * deceleration)).fromMeters
+    (-velocity * velocity / (2 * deceleration)).meters
   }
 
   def calcMaxAllowedVelocity(vehicle: BasicVehicle, lane: Lane): Velocity =
@@ -130,6 +210,6 @@ object VehiclePilot {
     } else {
       calcIfDecelerating
     }
-    distance.fromMeters
+    distance.meters
   }
 }

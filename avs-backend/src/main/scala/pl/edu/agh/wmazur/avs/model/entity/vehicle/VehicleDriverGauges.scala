@@ -19,7 +19,7 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
           geometry = vehicleInFront.geometry.getOrElse {
             SpatialUtils.shapeFactory.getGeometryFrom(vehicleInFront.position)
           }
-        } yield geometry.distance(vehicle.geometry).fromGeoDegrees
+        } yield geometry.distance(vehicle.geometry).geoDegrees
       }
   }
 
@@ -31,13 +31,13 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
       .setTo {
         next
           .map(SpatialUtils.shapeFactory.getGeometryFrom)
-          .map(_.distance(vehicle.geometry).fromGeoDegrees)
+          .map(_.distance(vehicle.geometry).geoDegrees)
       }
       .modify(_.distanceToPrevIntersection)
       .setTo {
         prev
           .map(SpatialUtils.shapeFactory.getGeometryFrom)
-          .map(_.distance(vehicle.geometry).fromGeoDegrees)
+          .map(_.distance(vehicle.geometry).geoDegrees)
       }
   }
 }

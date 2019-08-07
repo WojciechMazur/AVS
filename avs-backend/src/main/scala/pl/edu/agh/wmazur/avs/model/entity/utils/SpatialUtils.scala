@@ -56,7 +56,7 @@ object SpatialUtils {
       Math.sqrt {
         Math.pow(point.x - that.x, 2) + Math.pow(point.y - that.y, 2)
       }
-    }.fromGeoDegrees
+    }.geoDegrees
 
     def angle(that: Point): Angle = Math.atan2(
       that.y - point.y,
@@ -65,8 +65,8 @@ object SpatialUtils {
 
     def moveRotate(dimension: avs.Dimension, angle: Angle): Point = {
       Point2(
-        point.x + dimension.geoDegrees * Math.cos(angle),
-        point.y + dimension.geoDegrees * Math.sin(angle)
+        point.x + dimension.asGeoDegrees * Math.cos(angle),
+        point.y + dimension.asGeoDegrees * Math.sin(angle)
       )
     }
 
@@ -76,14 +76,14 @@ object SpatialUtils {
     )
 
     def move(xDelta: avs.Dimension, yDelta: avs.Dimension): Point =
-      moveInternal(xDelta.geoDegrees, yDelta.geoDegrees)
+      moveInternal(xDelta.asGeoDegrees, yDelta.asGeoDegrees)
 
     //scalastyle:off
     def +(dim: avs.Dimension): Point = {
-      Point2(point.x + dim.geoDegrees, point.y + dim.geoDegrees)
+      Point2(point.x + dim.asGeoDegrees, point.y + dim.asGeoDegrees)
     }
     def -(dim: avs.Dimension): Point = {
-      Point2(point.x - dim.geoDegrees, point.y - dim.geoDegrees)
+      Point2(point.x - dim.asGeoDegrees, point.y - dim.asGeoDegrees)
     }
 
     //scalastyle:on

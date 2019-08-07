@@ -13,9 +13,10 @@ case class SpawnPoint(lane: Lane) {
   val spawnGeometry: Geometry = {
     val maxVehicleLength = VehicleSpec.Predefined.values
       .map(_.length)
-      .maxBy(_.meters)
+      .maxBy(_.asMeters)
     lane
-      .getGeometryFraction(0, maxVehicleLength.meters * 2 / lane.length.meters)
+      .getGeometryFraction(0,
+                           maxVehicleLength.asMeters * 2 / lane.length.asMeters)
       .buffer(0.000001)
   }
   lazy val spawnArea: Shape =

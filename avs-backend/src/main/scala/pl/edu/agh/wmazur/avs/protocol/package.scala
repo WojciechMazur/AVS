@@ -4,14 +4,14 @@ import akka.actor.typed.ActorRef
 import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
 
 package object protocol {
-  trait Command[Protocol, ReplyProtocol] {
+  trait Request[Protocol, ReplyProtocol] {
     self: Protocol =>
 
-    val id: Long = Command.nextId
+    val id: Long = Request.nextId
     def replyTo: ActorRef[ReplyProtocol]
   }
 
-  object Command extends IdProvider[Command[_, _]]
+  object Request extends IdProvider[Request[_, _]]
 
   abstract class Ack[Protocol](commandId: Long) {
     self: Protocol =>

@@ -12,10 +12,11 @@ case class CollectorPoint(lane: Lane) {
   def collected: Int = collectedCounter.get()
   val collectGeometry: Geometry = {
     val maxVehicleLength =
-      VehicleSpec.Predefined.values.map(_.length).maxBy(_.meters)
+      VehicleSpec.Predefined.values.map(_.length).maxBy(_.asMeters)
 
     lane
-      .getGeometryFraction(1 - maxVehicleLength.meters / lane.length.meters, 1)
+      .getGeometryFraction(1 - maxVehicleLength.asMeters / lane.length.asMeters,
+                           1)
       .buffer(0.000001)
   }
   val collectArea: Shape =

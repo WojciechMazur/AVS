@@ -3,18 +3,15 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.locationtech.spatial4j.shape.Point
-import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.{
-  FindPrecedingVehicle,
-  VehicleLanesOccupation
-}
+import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.Protocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.{
   DriverConnectivity,
   Driving,
-  PreperingReservation,
-  OnTick
+  OnTick,
+  PreperingReservation
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   BasicVehicle,
@@ -46,7 +43,7 @@ class AutonomousVehicleDriver(
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior
-      .orElse(reservation)
+      .orElse(preperingReservation)
       .orElse(drive)
       .orElse(basicConnectivity)
       .orElse(onTickBehavior)

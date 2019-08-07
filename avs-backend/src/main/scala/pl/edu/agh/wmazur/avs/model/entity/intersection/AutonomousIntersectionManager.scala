@@ -125,10 +125,10 @@ object AutonomousIntersectionManager {
       }
     }
   val maximumFutureReservationTime: FiniteDuration = 10.seconds
-  val defaultACZSize: Dimension = 40.meters
+  val defaultACZSize: Dimension = 40.asMeters
 
-  val ACZDistanceShapeLength: Dimension = 1.meters
+  val ACZDistanceShapeLength: Dimension = 1.asMeters
   val transmitionInterval: FiniteDuration = 1.seconds
 
-  val maxTransmitionDistance: Dimension = 200.meters
+  val maxTransmitionDistance: Dimension = 200.asMeters
 }

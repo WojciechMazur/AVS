@@ -15,7 +15,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Velocity
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver
-import pl.edu.agh.wmazur.avs.protocol.{Ack, Command, SimulationProtocol}
+import pl.edu.agh.wmazur.avs.protocol.{Ack, Request, SimulationProtocol}
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 
@@ -51,7 +51,7 @@ object IntersectionManager {
         proposals: List[IntersectionCrossingRequest.Proposal],
         currentTime: Timestamp,
         replyTo: ActorRef[VehicleDriver.Protocol]
-    ) extends Command[Protocol, VehicleDriver.Protocol]
+    ) extends Request[Protocol, VehicleDriver.Protocol]
         with Protocol
 
     object IntersectionCrossingRequest {
@@ -100,13 +100,13 @@ object IntersectionManager {
     final case class CancelReservation(
         reservationId: Int,
         replyTo: ActorRef[VehicleDriver.Protocol])
-        extends Command[Protocol, VehicleDriver.Protocol]
+        extends Request[Protocol, VehicleDriver.Protocol]
         with Protocol
 
     final case class ExitedControlZone(
         vin: Vehicle.Vin,
         replyTo: ActorRef[VehicleDriver.Protocol])
-        extends Command[Protocol, VehicleDriver.Protocol]
+        extends Request[Protocol, VehicleDriver.Protocol]
         with Protocol
 
   }

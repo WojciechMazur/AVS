@@ -53,7 +53,7 @@ object DriversFetcherAgent {
   Behaviors.setup { ctx =>
     // format: on
     val transmitionArea = intersectionPosition.getBuffered(
-      transmitionDistance.geoDegrees,
+      transmitionDistance.asGeoDegrees,
       SpatialUtils.shapeFactory.getSpatialContext)
 
     val lanesOccupationAdapter =

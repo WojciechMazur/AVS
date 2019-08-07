@@ -35,7 +35,7 @@ case class VehicleSpec(
   val halfWidth: Dimension = width / 2.0
   val halfLength: Dimension = length / 2.0
   val radius: Dimension = Math.sqrt(
-    Math.pow(length.meters, 2) + Math.pow(width.meters, 2)) / 2
+    Math.pow(length.asMeters, 2) + Math.pow(width.asMeters, 2)) / 2
 
   def pointBetweenFrontWheels(position: Point, angle: Angle): Point =
     position.move(-frontAxleDisplacement, angle)
@@ -57,13 +57,13 @@ object VehicleSpec extends IdProvider[VehicleSpec] {
       maxDeceleration = -39.0,
       maxVelocity = 55.0,
       minVelocity = -15.0,
-      length = 5.0,
-      width = 1.85,
-      height = 1.5,
-      frontAxleDisplacement = 1.2,
-      rearAxleDisplacement = 4.0,
-      wheelRadius = 0.33,
-      wheelWidth = 0.25,
+      length = 5.0.meters,
+      width = 1.85.meters,
+      height = 1.5.meters,
+      frontAxleDisplacement = 1.2.meters,
+      rearAxleDisplacement = 4.0.meters,
+      wheelRadius = 0.33.meters,
+      wheelWidth = 0.25.meters,
       maxSteeringAngle = Math.PI / 3,
       maxTurnPerSecond = Math.PI / 3
     )
@@ -73,13 +73,13 @@ object VehicleSpec extends IdProvider[VehicleSpec] {
       maxDeceleration = -45.0,
       maxVelocity = 60.0,
       minVelocity = -17.0,
-      length = 4.0,
-      width = 1.85,
-      height = 1.65,
-      frontAxleDisplacement = 1.0,
-      rearAxleDisplacement = 3.5,
-      wheelRadius = 0.3,
-      wheelWidth = 0.25,
+      length = 4.0.meters,
+      width = 1.85.meters,
+      height = 1.65.meters,
+      frontAxleDisplacement = 1.0.meters,
+      rearAxleDisplacement = 3.5.meters,
+      wheelRadius = 0.3.meters,
+      wheelWidth = 0.25.meters,
       maxSteeringAngle = Math.PI / 3,
       maxTurnPerSecond = Math.PI / 2
     )

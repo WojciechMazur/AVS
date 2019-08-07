@@ -60,7 +60,7 @@ trait VehicleDriver {
   def distanceToPoint(point: Point): Dimension = {
     val here = Vector2.of(vehicle.position.getX, vehicle.position.getY)
     val there = Vector2.of(point.getX, point.getY)
-    here.distance(there).fromGeoDegrees
+    here.distance(there).geoDegrees
   }
 
   protected def setCurrentLane(lane: Lane): Lane = {
@@ -76,8 +76,8 @@ object VehicleDriver {
   object Protocol {
 
     final case class ReservationConfirmed(
-        reservationId: Int,
-        requestId: Int,
+        reservationId: Long,
+        requestId: Long,
         arrivalTime: Long,
         safetyBufferBefore: FiniteDuration,
         safetyBufferAfter: FiniteDuration,

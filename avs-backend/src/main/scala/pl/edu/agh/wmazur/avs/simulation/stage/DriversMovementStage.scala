@@ -46,7 +46,7 @@ object DriversMovementStage {
       case (ctx, Step(replyTo, _, driverRefs, _, tickDelta)) =>
         driverRefs.foreach { ref =>
           ctx.watchWith(ref, DriverLost(ref))
-          ref ! AutonomousVehicleDriver.MovementStep(ctx.self, tickDelta)
+          ref ! AutonomousVehicleDriver.Move(ctx.self, tickDelta)
         }
         waitForResponses(replyTo, driverRefs)
     }

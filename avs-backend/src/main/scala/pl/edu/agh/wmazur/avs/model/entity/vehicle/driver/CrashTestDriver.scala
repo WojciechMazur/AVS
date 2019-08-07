@@ -45,11 +45,11 @@ case class CrashTestDriver(var vehicle: BasicVehicle,
     val leadDistance = leadTime.toUnit(TimeUnit.SECONDS) * vehicle.velocity + CrashTestDriver.minimalLeadDistance
     val remainingDistance =
       currentLane.remainingDistanceAlongLane(vehicle.position)
-    val shouldAndCanUseNextLane = leadDistance > remainingDistance && currentLane.spec.leadsIntoLane.isDefined
+    val shouldAndCanUseNextLane = leadDistance > remainingDistance && currentLane.spec.leadsInto.isDefined
 
     def follow: CrashTestDriver = {
       val destinationPoint = if (shouldAndCanUseNextLane) {
-        currentLane.spec.leadsIntoLane.map { lane =>
+        currentLane.spec.leadsInto.map { lane =>
           lane.leadPointOf(lane.entryPoint, leadDistance - remainingDistance)
         }.get
       } else {
@@ -60,7 +60,7 @@ case class CrashTestDriver(var vehicle: BasicVehicle,
     }
 
     if (shouldAndCanUseNextLane && remainingDistance <= 0d) {
-      copy(currentLane = currentLane.spec.leadsIntoLane.get).followCurrentLane()
+      copy(currentLane = currentLane.spec.leadsInto.get).followCurrentLane()
     } else {
       follow
     }

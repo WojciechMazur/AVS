@@ -89,9 +89,9 @@ object SimulationStateUpdateEncoder
 
   def vehicleEncoder(vehicle: Vehicle): ProtoVehicle = {
     val spec = ProtoVehicleSpec(
-      width = vehicle.spec.width.meters.toFloat,
-      length = vehicle.spec.length.meters.toFloat,
-      height = vehicle.spec.height.meters.toFloat,
+      width = vehicle.spec.width.asMeters.toFloat,
+      length = vehicle.spec.length.asMeters.toFloat,
+      height = vehicle.spec.height.asMeters.toFloat,
       geometry = Some(geometryEncoder(vehicle.geometry))
     )
     ProtoVehicle(

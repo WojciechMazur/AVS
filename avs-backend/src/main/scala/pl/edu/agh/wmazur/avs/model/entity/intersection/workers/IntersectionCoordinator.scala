@@ -134,7 +134,7 @@ class IntersectionCoordinator(
           (arrivalLane.id, departureLane.id),
           intersection.calcTravelsalDistance(arrivalLane, departureLane)
         )
-      val maxTime = (travelsalDistance.meters / velocity).seconds
+      val maxTime = (travelsalDistance.asMeters / velocity).seconds
       val position = intersection.entryPoints(arrivalLane)
       val heading = intersection.entryHeadings(arrivalLane)
       val testDriver = CrashTestDriver(
@@ -199,7 +199,7 @@ class IntersectionCoordinator(
             case _ if tooBigSteeringAngleDelta => false
             case _ =>
               def minDistance: Double =
-                (departureLane.spec.width - testDriver.vehicle.spec.width).meters / 3
+                (departureLane.spec.width - testDriver.vehicle.spec.width).asMeters / 3
 
               def distanceToMiddleOfLane: Double =
                 departureLane.middleLine.distance(
