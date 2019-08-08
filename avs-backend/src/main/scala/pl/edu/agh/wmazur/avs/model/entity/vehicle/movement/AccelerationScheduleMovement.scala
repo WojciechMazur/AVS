@@ -55,23 +55,23 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
       (self.move(timeDelta), Some(schedule))
     } else {
       val next = events.head
-      if (next.time > currentTime) { //to early
-        val duration = next.time - currentTime
+      if (next.timeStart > currentTime) { //to early
+        val duration = next.timeStart - currentTime
         val durationSeconds = seconds(duration)
         if (duration < timeDelta) {
-          move(duration)
+          move(durationSeconds)
             .internalMoveWithSchedule(currentTime + duration,
                                       timeDelta - durationSeconds,
                                       schedule)
         } else {
-          (move(duration), Some(schedule))
+          (move(timeDelta), Some(schedule))
         }
-      } else if (next.time == currentTime) {
+      } else if (next.timeStart == currentTime) {
         val newSchedule = schedule.modify(_.timestamps).using(_.tail)
         val withAppliedAcceleration = withAcceleration(next.acceleration)
         if (newSchedule.timestamps.nonEmpty) {
           val next = newSchedule.timestamps.head
-          val duration = next.time - currentTime
+          val duration = next.timeStart - currentTime
           val durationSeconds = seconds(duration)
           if (durationSeconds < timeDelta) {
             withAppliedAcceleration
@@ -80,7 +80,7 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
                                         timeDelta - durationSeconds,
                                         newSchedule)
           } else {
-            (move(durationSeconds), Some(newSchedule))
+            (move(timeDelta), Some(newSchedule))
           }
         } else {
           (move(timeDelta), None)

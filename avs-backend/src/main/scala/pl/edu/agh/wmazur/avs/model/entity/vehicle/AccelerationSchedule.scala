@@ -17,7 +17,7 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
   def calculateFinalState(initialTime: Timestamp,
                           initialVelocity: Velocity,
                           finalTime: Timestamp): (Dimension, Velocity) = {
-    val nonExpiredEvents = timestamps.dropWhile(_.time < initialTime)
+    val nonExpiredEvents = timestamps.dropWhile(_.timeStart < initialTime)
 
     @tailrec
     def iterate(time: Timestamp,
@@ -27,21 +27,22 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
                 remainingTimestamps: List[AccelerationTimestamp])
       : (Dimension, Velocity) = {
 
-      if (remainingTimestamps.isEmpty || time > finalTime) {
-        val remainingDuration = (finalTime - time).millis
+      if (remainingTimestamps.isEmpty || remainingTimestamps.head.timeEnd > finalTime) {
+        val duration = (finalTime - time).millis
           .toUnit(TimeUnit.SECONDS)
-        val endVelocity = velocity + acceleration * remainingDuration
-        val distanceTotal = distance + remainingDuration * (velocity + endVelocity) / 2
+
+        val endVelocity = velocity + acceleration * duration
+        val distanceTotal = distance + duration * (velocity + endVelocity) / 2
         (distanceTotal.meters, endVelocity)
       } else {
         val currentEvent = remainingTimestamps.head
-        val duration =
-          (currentEvent.time - time).millis.toUnit(TimeUnit.SECONDS)
+        val duration = currentEvent.durationSeconds
+
         val endVelocity = velocity + acceleration * duration
-        val distanceTotal = distance + (velocity + endVelocity) / 2
+        val distanceTotal = distance + duration * (velocity + endVelocity) / 2
 
         iterate(
-          time = currentEvent.time,
+          time = currentEvent.timeEnd,
           velocity = endVelocity,
           acceleration = currentEvent.acceleration,
           distance = distanceTotal.meters,
@@ -50,14 +51,18 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
       }
     }
 
-    iterate(initialTime, initialVelocity, 0, 0.0, nonExpiredEvents)
+    iterate(initialTime,
+            initialVelocity,
+            nonExpiredEvents.headOption.map(_.acceleration).getOrElse(0),
+            0.0,
+            nonExpiredEvents)
   }
 
   def calcFinalVelocity(initialVelocity: Velocity): Velocity = {
     val (finalVelocity, _) =
       timestamps.tail.foldLeft((initialVelocity, timestamps.head)) {
         case ((velocity, prevTimestamp), currTimestamp) =>
-          val duration = currTimestamp.time - prevTimestamp.time
+          val duration = currTimestamp.timeStart - prevTimestamp.timeStart
           val accVelocity = velocity + duration * prevTimestamp.acceleration
           (accVelocity, currTimestamp)
       }
@@ -66,5 +71,11 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
 }
 
 object AccelerationSchedule {
-  case class AccelerationTimestamp(acceleration: Double, time: Timestamp)
+  case class AccelerationTimestamp(acceleration: Double,
+                                   timeStart: Timestamp,
+                                   timeEnd: Timestamp) {
+    def duration: FiniteDuration = (timeEnd - timeStart).millis
+    def durationSeconds: Double = duration.toUnit(TimeUnit.SECONDS)
+    def durationMillis: Long = duration.toMillis
+  }
 }

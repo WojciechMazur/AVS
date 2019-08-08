@@ -9,19 +9,22 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDeltaSeconds
+import pl.edu.agh.wmazur.avs.Dimension
 
 trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
   self: Vehicle =>
-  def moveWithConstantVelocity(tickDelta: TimeDeltaSeconds): self.type = {
+  def moveWithConstantVelocity(duration: TimeDeltaSeconds): self.type = {
     if (steeringAngle.abs < VehicleMovement.steeringAngleThreshold) {
-      moveStraight(tickDelta)
+      moveStraight(duration)
     } else {
-      moveByArc(tickDelta)
+      moveByArc(duration)
     }
   }
 
   private def moveStraight(timeDelta: TimeDeltaSeconds): self.type = {
-    val newPosition = position.moveRotate(velocity * timeDelta, heading)
+    val distance = (velocity * timeDelta).meters
+    println(distance.asMeters)
+    val newPosition = position.moveRotate(distance, heading)
     withPosition(newPosition)
   }
 

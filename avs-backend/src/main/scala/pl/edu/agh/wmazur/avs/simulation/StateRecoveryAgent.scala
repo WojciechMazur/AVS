@@ -69,21 +69,20 @@ object StateRecoveryAgent {
     }
 
   def spawnRoads(context: Context): Behavior[Protocol] = {
-    val laneSpec = new LaneSpec(30, 2.5)
+    val laneSpec = new LaneSpec(30, 2.5, canSpawn = false)
 
     val lane11 =
-      DirectedLane.simple(spec = laneSpec.withSpawnEnabled(false),
+      DirectedLane.simple(spec = laneSpec,
                           offStartX = -250.0.meters,
                           length = 500.0.meters)
 
-    val lane12 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 10).withSpawnEnabled(false),
-      offStartX = -250.0.meters,
-      offStartY = laneSpec.width + 0.5.meters,
-      length = 500.0.meters)
+    val lane12 = DirectedLane.simple(spec = laneSpec.copy(speedLimit = 10),
+                                     offStartX = -250.0.meters,
+                                     offStartY = laneSpec.width + 0.5.meters,
+                                     length = 500.0.meters)
 
     val lane13 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 14).withSpawnEnabled(false),
+      spec = laneSpec.copy(speedLimit = 15),
       offStartX = -250.0.meters,
       offStartY = 2 * laneSpec.width + 2 * 0.5.meters,
       length = 500.0.meters,
@@ -94,7 +93,7 @@ object StateRecoveryAgent {
                                      length = 200.0.meters,
                                      heading = Math.PI / 2)
 
-    val lane22 = DirectedLane.simple(spec = laneSpec,
+    val lane22 = DirectedLane.simple(spec = laneSpec.withSpawnEnabled(true),
                                      offStartY = -100d,
                                      offStartX = laneSpec.width + 0.5,
                                      length = 250.0,

@@ -92,7 +92,7 @@ object VehicleArrivalEstimator {
         case ((velocity, prev, wasValid), curr) =>
           if (wasValid) {
 
-            val newVelocity = velocity + (curr.time - prev.time).millis
+            val newVelocity = velocity + (curr.timeStart - prev.timeStart).millis
               .toUnit(TimeUnit.SECONDS) * prev.acceleration
             val isValid = !newVelocity.isEqual(params.maxVelocity) &&
               newVelocity > params.maxVelocity
@@ -114,7 +114,7 @@ object VehicleArrivalEstimator {
         params.initialTime,
         params.velocity,
         AccelerationSchedule {
-          AccelerationTimestamp(0.0, params.initialTime) :: Nil
+          AccelerationTimestamp(0.0, params.initialTime, params.initialTime) :: Nil
         }
       )
     }
@@ -126,8 +126,8 @@ object VehicleArrivalEstimator {
       val finalTime = params.initialTime + timeTotal
       val schedule = AccelerationSchedule(
         List(
-          AccelerationTimestamp(0.0, params.initialTime),
-          AccelerationTimestamp(0.0, finalTime)
+          AccelerationTimestamp(0.0, params.initialTime, finalTime),
+          AccelerationTimestamp(0.0, finalTime, finalTime)
         ))
       Result(finalTime, params.finalVelocity, schedule)
     }
@@ -148,9 +148,9 @@ object VehicleArrivalEstimator {
 
         val schedule = AccelerationProfile {
           List(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(0, timeAccel.seconds),
-            AccelerationEvent(0, timeCruise.seconds)
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(0, timeCruise.seconds),
+            AccelerationEvent(0, Duration.Zero)
           )
         }.toAccelerationSchedule(params.initialTime)
         Result(
@@ -161,8 +161,8 @@ object VehicleArrivalEstimator {
       def case2b: Result = {
         val schedule = AccelerationProfile {
           List(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(0, timeAccel.seconds),
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(0, Duration.Zero),
           )
         }.toAccelerationSchedule(params.initialTime)
         Result(arrivalTime = params.initialTime + timeAccel.seconds.toMillis,
@@ -195,9 +195,9 @@ object VehicleArrivalEstimator {
           params.initialTime + (timeCruise + timeDecel).seconds.toMillis,
           params.finalVelocity,
           AccelerationProfile(
-            AccelerationEvent(0.0, Duration.Zero),
-            AccelerationEvent(params.maxDeceleration, timeCruise.seconds),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(0.0, timeCruise.seconds),
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -207,8 +207,8 @@ object VehicleArrivalEstimator {
           params.initialTime + timeDecel.seconds.toMillis,
           params.finalVelocity,
           AccelerationProfile(
-            AccelerationEvent(params.maxDeceleration, Duration.Zero),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -242,10 +242,10 @@ object VehicleArrivalEstimator {
           arrivalTime = params.initialTime + (timeAccel + timeCruise + timeDecel).seconds.toMillis,
           arrivalVelocity = params.finalVelocity,
           accelerationSchedule = AccelerationProfile(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(0.0, timeAccel.seconds),
-            AccelerationEvent(params.maxDeceleration, timeCruise.seconds),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(0.0, timeCruise.seconds),
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -267,9 +267,9 @@ object VehicleArrivalEstimator {
           params.initialTime + (timeAccel + timeDecel).seconds.toMillis,
           params.finalVelocity,
           AccelerationProfile(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(params.maxDeceleration, timeAccel.seconds),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -305,10 +305,10 @@ object VehicleArrivalEstimator {
           params.initialTime + (timeAccel + timeCruise + timeDecel).seconds.toMillis,
           params.finalVelocity,
           AccelerationProfile(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(0.0, timeAccel.seconds),
-            AccelerationEvent(params.maxDeceleration, timeCruise.seconds),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(0.0, timeCruise.seconds),
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -331,9 +331,9 @@ object VehicleArrivalEstimator {
             params.initialTime + (timeAccel + timeDecel).seconds.toMillis,
             params.finalVelocity,
             AccelerationProfile(
-              AccelerationEvent(params.maxAcceleration, Duration.Zero),
-              AccelerationEvent(params.maxDeceleration, timeAccel.seconds),
-              AccelerationEvent(0.0, timeDecel.seconds)
+              AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+              AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+              AccelerationEvent(0.0, Duration.Zero)
             ).toAccelerationSchedule(params.initialTime)
           )
         }
@@ -344,8 +344,8 @@ object VehicleArrivalEstimator {
             params.initialTime + timeAccel.seconds.toMillis,
             params.finalVelocity,
             AccelerationProfile(
-              AccelerationEvent(params.maxAcceleration, Duration.Zero),
-              AccelerationEvent(0.0, timeAccel.seconds)
+              AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+              AccelerationEvent(0.0, Duration.Zero)
             ).toAccelerationSchedule(params.initialTime)
           )
         }
@@ -388,10 +388,10 @@ object VehicleArrivalEstimator {
           params.initialTime + (timeAccel + timeCruise + timeDecel).seconds.toMillis,
           params.finalVelocity,
           AccelerationProfile(
-            AccelerationEvent(params.maxAcceleration, Duration.Zero),
-            AccelerationEvent(0.0, timeAccel.seconds),
-            AccelerationEvent(params.maxDeceleration, timeCruise.seconds),
-            AccelerationEvent(0.0, timeDecel.seconds)
+            AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+            AccelerationEvent(0.0, timeCruise.seconds),
+            AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+            AccelerationEvent(0.0, Duration.Zero)
           ).toAccelerationSchedule(params.initialTime)
         )
       }
@@ -417,9 +417,9 @@ object VehicleArrivalEstimator {
             params.initialTime + (timeAccel + timeDecel).seconds.toMillis,
             params.finalVelocity,
             AccelerationProfile(
-              AccelerationEvent(params.maxAcceleration, Duration.Zero),
-              AccelerationEvent(params.maxDeceleration, timeAccel.seconds),
-              AccelerationEvent(0.0, timeDecel.seconds)
+              AccelerationEvent(params.maxAcceleration, timeAccel.seconds),
+              AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+              AccelerationEvent(0.0, Duration.Zero)
             ).toAccelerationSchedule(params.initialTime)
           )
         }
@@ -430,8 +430,8 @@ object VehicleArrivalEstimator {
             params.initialTime + timeDecel.seconds.toMillis,
             params.finalVelocity,
             AccelerationProfile(
-              AccelerationEvent(params.maxDeceleration, Duration.Zero),
-              AccelerationEvent(0.0, timeDecel.seconds)
+              AccelerationEvent(params.maxDeceleration, timeDecel.seconds),
+              AccelerationEvent(0.0, Duration.Zero)
             ).toAccelerationSchedule(params.initialTime)
           )
         }
@@ -462,8 +462,8 @@ object VehicleArrivalEstimator {
         params.initialTime + timeAccelerating.seconds.toMillis,
         estimatedEndVelocity,
         AccelerationProfile(
-          AccelerationEvent(params.maxAcceleration, Duration.Zero),
-          AccelerationEvent(0.0, timeAccelerating.seconds)
+          AccelerationEvent(params.maxAcceleration, timeAccelerating.seconds),
+          AccelerationEvent(0.0, Duration.Zero)
         ).toAccelerationSchedule(params.initialTime)
       )
     }

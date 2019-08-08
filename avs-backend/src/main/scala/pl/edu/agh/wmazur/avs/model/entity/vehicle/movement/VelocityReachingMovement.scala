@@ -93,11 +93,11 @@ trait VelocityReachingMovement
     }
   }
 
-  override def move(tickDelta: TimeDeltaSeconds): self.type =
+  override def move(duration: TimeDeltaSeconds): self.type =
     acceleration match {
-      case acc if acc.isZero => moveWithConstantVelocity(tickDelta)
-      case acc if acc > 0    => moveWhenAccelerating(tickDelta)
-      case _                 => moveWhenDeaccelerating(tickDelta)
+      case acc if acc.isZero => moveWithConstantVelocity(duration)
+      case acc if acc > 0    => moveWhenAccelerating(duration)
+      case _                 => moveWhenDeaccelerating(duration)
     }
 
   def withSteadyVelocity: self.type =
