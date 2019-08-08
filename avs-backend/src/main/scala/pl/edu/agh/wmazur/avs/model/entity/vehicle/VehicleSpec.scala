@@ -38,10 +38,10 @@ case class VehicleSpec(
     Math.pow(length.asMeters, 2) + Math.pow(width.asMeters, 2)) / 2
 
   def pointBetweenFrontWheels(position: Point, angle: Angle): Point =
-    position.move(-frontAxleDisplacement, angle)
+    position.moveRotate(-frontAxleDisplacement, angle)
 
   def pointBetweenBackWheels(position: Point, angle: Angle): Point =
-    position.move(rearAxleDisplacement, angle)
+    position.moveRotate(rearAxleDisplacement, angle)
 
 }
 

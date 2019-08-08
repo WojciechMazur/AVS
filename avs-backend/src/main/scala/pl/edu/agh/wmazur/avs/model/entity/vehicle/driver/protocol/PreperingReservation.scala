@@ -65,6 +65,7 @@ trait PreperingReservation {
             cachedMaxVelocities.getOrElseUpdate(intersectionRef,
                                                 mutable.Map.empty)
           arrivalLaneVelocities.update(arrivalLaneId, maxVelocities)
+          context.self ! TrySendReservationRequest
         }
         Behaviors.same
 

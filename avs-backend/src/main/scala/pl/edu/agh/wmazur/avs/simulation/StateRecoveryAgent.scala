@@ -72,17 +72,18 @@ object StateRecoveryAgent {
     val laneSpec = new LaneSpec(30, 2.5)
 
     val lane11 =
-      DirectedLane.simple(spec = laneSpec,
+      DirectedLane.simple(spec = laneSpec.withSpawnEnabled(false),
                           offStartX = -250.0.meters,
                           length = 500.0.meters)
 
-    val lane12 = DirectedLane.simple(spec = laneSpec.copy(speedLimit = 10),
-                                     offStartX = -250.0.meters,
-                                     offStartY = laneSpec.width + 0.5.meters,
-                                     length = 500.0.meters)
+    val lane12 = DirectedLane.simple(
+      spec = laneSpec.copy(speedLimit = 10).withSpawnEnabled(false),
+      offStartX = -250.0.meters,
+      offStartY = laneSpec.width + 0.5.meters,
+      length = 500.0.meters)
 
     val lane13 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 10),
+      spec = laneSpec.copy(speedLimit = 14).withSpawnEnabled(false),
       offStartX = -250.0.meters,
       offStartY = 2 * laneSpec.width + 2 * 0.5.meters,
       length = 500.0.meters,

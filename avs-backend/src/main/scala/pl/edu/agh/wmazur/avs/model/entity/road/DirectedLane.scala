@@ -137,9 +137,8 @@ case class DirectedLane(id: Lane#Id,
     }
 
   override val spawnPoint: Option[SpawnPoint] = spec.leadsFrom match {
-    case Some(_) => None
-    //Todo Config
-    case None => Some(SpawnPoint(this))
+    case None if spec.canSpawn => Some(SpawnPoint(this))
+    case _                     => None
   }
 }
 
