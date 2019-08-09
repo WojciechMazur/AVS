@@ -78,15 +78,20 @@ object VehicleDriver {
     final case class ReservationConfirmed(
         reservationId: Long,
         requestId: Long,
+        reservationDetails: ReservationDetails
+    ) extends Response[Protocol](requestId)
+        with Protocol
+
+    case class ReservationDetails(
+        intersectionManagerRef: ActorRef[IntersectionManager.Protocol],
         arrivalTime: Long,
         safetyBufferBefore: FiniteDuration,
         safetyBufferAfter: FiniteDuration,
         arrivalVelocity: Velocity,
         arrivalLaneId: Lane#Id,
         departureLaneId: Lane#Id,
-        accelerationProfile: AccelerationSchedule,
-    ) extends Response[Protocol](requestId)
-        with Protocol
+        accelerationSchedule: AccelerationSchedule
+    )
 
     final case class ReservationRejected(
         requestId: Long,

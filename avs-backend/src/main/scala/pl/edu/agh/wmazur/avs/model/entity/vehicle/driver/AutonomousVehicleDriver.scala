@@ -43,10 +43,16 @@ class AutonomousVehicleDriver(
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior
-      .orElse(preperingReservation)
-      .orElse(drive)
-      .orElse(basicConnectivity)
       .orElse(onTickBehavior)
+      .orElse(basicConnectivity)
+      .orElse(drive)
+      .orElse(preperingReservation)
+      .orElse {
+        Behaviors.receiveMessage { msg =>
+          context.log.error("Unhanded message: ", { msg })
+          Behaviors.same
+        }
+      }
 
   override protected val initialBehaviour: Behavior[Protocol] = switchTo(drive)
 

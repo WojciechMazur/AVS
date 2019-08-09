@@ -93,12 +93,12 @@ object IntersectionManager {
       }
     }
 
-    final case class ReservationCompleted(reservationId: Int)
+    final case class ReservationCompleted(reservationId: Long)
         extends Ack[Protocol](reservationId)
         with Protocol
 
     final case class CancelReservation(
-        reservationId: Int,
+        reservationId: Long,
         replyTo: ActorRef[VehicleDriver.Protocol])
         extends Request[Protocol, VehicleDriver.Protocol]
         with Protocol

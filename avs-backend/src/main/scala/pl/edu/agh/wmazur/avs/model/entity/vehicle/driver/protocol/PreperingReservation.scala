@@ -3,19 +3,26 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import com.softwaremill.quicklens._
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousIntersectionManager,
   IntersectionManager
 }
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
-import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleArrivalEstimator
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  MaxAccelerationReservationChecker,
+  VehicleArrivalEstimator
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.ExtendedProtocol
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason._
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.{
+  ReservationConfirmed,
+  ReservationDetails,
+  ReservationRejected
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
   VehiclePilot
@@ -31,15 +38,16 @@ trait PreperingReservation {
   import AutonomousVehicleDriver._
   import PreperingReservation._
 
-  var lastReservationRequest
-    : Option[IntersectionManager.Protocol.IntersectionCrossingRequest] = None
-  var hasOngoingRequest: Boolean = false
-
   type ArrivalToDeperatureLanesVelocities =
     mutable.Map[Lane#Id, Map[Lane, Velocity]]
   type IntersectionToLaneVelocities =
     mutable.Map[ActorRef[AutonomousIntersectionManager.Protocol],
                 ArrivalToDeperatureLanesVelocities]
+
+  var lastReservationRequest
+    : Option[IntersectionManager.Protocol.IntersectionCrossingRequest] = None
+  var hasOngoingRequest: Boolean = false
+  var reservationDetails: Option[ReservationDetails] = None
 
   val cachedMaxVelocities: IntersectionToLaneVelocities = mutable.Map.empty
 
@@ -145,6 +153,40 @@ trait PreperingReservation {
           }
         }
         Behaviors.same
+
+      case ReservationConfirmed(reservationId, _, details) =>
+        timers.cancel(ReservationRequestTimeout)
+        hasOngoingRequest = false
+
+        MaxAccelerationReservationChecker
+          .check(
+            time = currentTime,
+            timeEnd = details.arrivalTime,
+            velocity = vehicle.velocity,
+            velocityEnd = details.arrivalVelocity,
+            velocityMax =
+              VehiclePilot.calcMaxAllowedVelocity(vehicle, currentLane),
+            distanceTotal = driverGauges.distanceToNextIntersection.get,
+            acceleration = vehicle.spec.maxAcceleration,
+            deceleration = vehicle.spec.maxDeceleration
+          )
+          .map { schedule =>
+            reservationDetails = Some(details)
+            context.self ! MaintainReservation
+            withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
+          }
+          .recover {
+            case err =>
+              context.log.error("Reservation check failed: {}", err.getMessage)
+              details.intersectionManagerRef ! IntersectionManager.Protocol
+                .CancelReservation(reservationId, context.self)
+              reservationDetails = None
+              withVehicle(vehicle.withAccelerationSchedule(None))
+          }
+          .get
+
+        Behaviors.same
+
     }
 
   def estimateArrival(
@@ -238,6 +280,7 @@ object PreperingReservation {
   trait Protocol {
     case object TrySendReservationRequest extends ExtendedProtocol
     case object ReservationRequestTimeout extends ExtendedProtocol
+    case object MaintainReservation extends ExtendedProtocol
 
     case class MaxCrossingVelocities(
         intersectionRef: ActorRef[IntersectionManager.Protocol],

@@ -11,6 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
@@ -71,6 +72,33 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
 }
 
 object AccelerationSchedule {
+  private case class SimpleEvent(acceleration: Acceleration,
+                                 timestamp: Timestamp)
+
+  case class Builder() {
+    private val events: ListBuffer[SimpleEvent] = ListBuffer.empty
+
+    def add(acceleration: Acceleration, time: Timestamp): Builder = {
+      events += SimpleEvent(acceleration, time)
+      this
+    }
+
+    def build: AccelerationSchedule = {
+      AccelerationSchedule(
+        (events :+ events.last)
+          .sliding(2, 1)
+          .map(_.toList)
+          .map {
+            case List(current, next) =>
+              AccelerationTimestamp(current.acceleration,
+                                    current.timestamp,
+                                    next.timestamp)
+          }
+          .toList
+      )
+    }
+  }
+
   case class AccelerationTimestamp(acceleration: Double,
                                    timeStart: Timestamp,
                                    timeEnd: Timestamp) {

@@ -23,7 +23,6 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
 
   private def moveStraight(timeDelta: TimeDeltaSeconds): self.type = {
     val distance = (velocity * timeDelta).meters
-    println(distance.asMeters)
     val newPosition = position.moveRotate(distance, heading)
     withPosition(newPosition)
   }
