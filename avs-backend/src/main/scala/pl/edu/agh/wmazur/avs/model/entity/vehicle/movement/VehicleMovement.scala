@@ -11,7 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDeltaSeconds
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
 import scala.concurrent.duration.FiniteDuration
 

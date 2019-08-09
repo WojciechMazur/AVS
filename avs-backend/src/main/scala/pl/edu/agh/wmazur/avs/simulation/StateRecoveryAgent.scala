@@ -48,7 +48,7 @@ object StateRecoveryAgent {
 
   def init(
       entityManagerRef: ActorRef[EntityManager.Protocol]): Behavior[Protocol] =
-    Behaviors.receive {
+    Behaviors.receivePartial {
       case (ctx, StartRecovery(simManagerRef)) =>
         ctx.log.info("Starting recovery")
 
@@ -124,7 +124,7 @@ object StateRecoveryAgent {
     if (awaiting == 0) {
       spawnIntersections(context, roads)
     } else {
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case RoadSpawned(road, ref) =>
           waitForRoadsSpawn(context, awaiting - 1, roads + (road -> ref))
       }
@@ -168,7 +168,7 @@ object StateRecoveryAgent {
         .RecoveryFinished(roads, intersections)
       Behaviors.stopped
     } else {
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case IntersectionSpawned(entity, ref) =>
           waitForIntersectionsSpawn(context,
                                     roads,

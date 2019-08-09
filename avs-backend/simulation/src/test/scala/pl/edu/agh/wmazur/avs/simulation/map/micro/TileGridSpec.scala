@@ -1,8 +1,9 @@
-package pl.edu.agh.wmazur.avs.simulation.map.micro
+package pl.edu.agh.wmazur.avs.model.entity.intersection.micro
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import org.scalatest.FlatSpec
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.TilesGrid
 import pl.edu.agh.wmazur.avs.utils.{East, North, South, West}
 
 class TileGridSpec extends FlatSpec {

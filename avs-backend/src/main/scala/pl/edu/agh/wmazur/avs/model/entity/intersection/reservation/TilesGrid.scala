@@ -1,12 +1,18 @@
-package pl.edu.agh.wmazur.avs.simulation.map.micro
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import org.locationtech.spatial4j.shape.{Rectangle, Shape, SpatialRelation}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.TileId
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.TileId
 import pl.edu.agh.wmazur.avs.simulation.utils.BasicDirection
-import BasicDirection._
+import pl.edu.agh.wmazur.avs.simulation.utils.BasicDirection.{
+  East,
+  North,
+  South,
+  West
+}
+
 case class TilesGrid(area: Shape, granularity: Double) {
   val shape: Rectangle = area.getBoundingBox
   val (cellsX, cellWidth) = calcTileSpec(shape.getWidth)

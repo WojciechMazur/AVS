@@ -58,6 +58,35 @@ package object avs {
     }
     override def compare(that: Dimension): Int =
       this.asMeters compare that.asMeters
+
+  }
+
+  object Dimension {
+    implicit val numeric: Numeric[Dimension] = new Numeric[Dimension] {
+      override def plus(x: Dimension, y: Dimension): Dimension =
+        Dimension(x.asMeters + y.asMeters)
+
+      override def minus(x: Dimension, y: Dimension): Dimension =
+        Dimension(x.asMeters - y.asMeters)
+
+      override def times(x: Dimension, y: Dimension): Dimension =
+        Dimension(x.asMeters * y.asMeters)
+
+      override def negate(x: Dimension): Dimension = Dimension(-x.asMeters)
+
+      override def fromInt(x: Int): Dimension = Dimension(x.toDouble)
+
+      override def toInt(x: Dimension): Int = x.asMeters.toInt
+
+      override def toLong(x: Dimension): Long = x.asMeters.toLong
+
+      override def toFloat(x: Dimension): Float = x.asMeters.toFloat
+
+      override def toDouble(x: Dimension): Double = x.asMeters
+
+      override def compare(x: Dimension, y: Dimension): Int =
+        x.asMeters compare y.asMeters
+    }
   }
 
   case class Tick(seq: Long) extends AnyVal {

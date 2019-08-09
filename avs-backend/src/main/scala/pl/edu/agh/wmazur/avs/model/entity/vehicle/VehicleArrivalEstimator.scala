@@ -9,7 +9,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 
 import scala.concurrent.duration._

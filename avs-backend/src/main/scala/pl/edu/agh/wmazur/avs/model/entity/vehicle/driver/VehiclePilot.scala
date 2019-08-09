@@ -17,7 +17,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   VehicleArrivalEstimator
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{FiniteDuration, _}

@@ -112,7 +112,7 @@ trait PreperingReservation {
             }
 
             val request = IntersectionCrossingRequest(
-              vehicle.id,
+              context.self,
               IntersectionCrossingRequest.CrossingVehicleSpec(vehicle.spec),
               proposals.toList,
               currentTime,

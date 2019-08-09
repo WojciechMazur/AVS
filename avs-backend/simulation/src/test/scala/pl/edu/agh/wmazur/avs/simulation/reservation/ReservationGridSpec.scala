@@ -1,10 +1,9 @@
-package pl.edu.agh.wmazur.avs.simulation.reservation
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import org.scalatest.FlatSpec
-import pl.edu.agh.wmazur.avs.simulation.map.micro.TilesGrid
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.TimeTile
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.TimeTile
 
 import scala.concurrent.duration._
 class ReservationGridSpec extends FlatSpec {

@@ -5,10 +5,13 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Protocol.FetchDrivers
 import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Workers
-import pl.edu.agh.wmazur.avs.model.entity.intersection.policy.{
+import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.policy.{
   ClosedIntersectionPolicy,
-  DefaultPolicy,
+  DefaultPolicy
+}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.{
   IntersectionConnectivity,
+  ReservationSystem,
   Routing
 }
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
@@ -18,34 +21,41 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
 
 import scala.concurrent.duration._
 
 class AutonomousIntersectionManager(
     val intersection: Intersection,
-    gridManagerConfig: GridReservationManager.ManagerConfig,
+    val gridManagerConfig: GridReservationManager.ManagerConfig,
     val roads: List[Road],
     val context: ActorContext[IntersectionManager.Protocol],
     val timers: TimerScheduler[IntersectionManager.Protocol],
     val workers: Workers
 ) extends Agent[IntersectionManager.Protocol]
     with IntersectionManager
+    with IntersectionConnectivity
+    with ReservationSystem
     with ClosedIntersectionPolicy
     with DefaultPolicy
-    with IntersectionConnectivity
     with Routing {
-  // TODO ACZs
 
-  val reservationManager = GridReservationManager(
-    gridManagerConfig,
-    intersection
-  )
+  var currentTime: Timestamp = 0L
 
   def switchBehavior(behavior: Behavior[IntersectionManager.Protocol])
     : Behavior[IntersectionManager.Protocol] = {
-    behavior.orElse(basicConnectivity).orElse(routing)
+    behavior
+      .orElse(basicConnectivity)
+      .orElse(reservationsManagement)
+      .orElse(routing)
+      .orElse {
+        Behaviors.receiveMessage { msg =>
+          context.log.warning("Unhandled message: {}", msg)
+          Behaviors.same
+        }
+      }
   }
 
   override protected val initialBehaviour
@@ -84,10 +94,6 @@ object AutonomousIntersectionManager {
         ctx.self)
 
       Behaviors.withTimers { timers =>
-        timers.startPeriodicTimer(FetchDrivers,
-                                  FetchDrivers,
-                                  transmitionInterval)
-
         val driversFetcherManager: ActorRef[DriversFetcherAgent.Protocol] =
           ctx.spawn(
             DriversFetcherAgent.init(
@@ -97,7 +103,7 @@ object AutonomousIntersectionManager {
               entryPoints = intersection.entryPoints,
               exitPoints = intersection.exitPoints,
               transmitionDistance =
-                AutonomousIntersectionManager.maxTransmitionDistance,
+                IntersectionConnectivity.maxTransmitionDistance,
               intersectionManager = ctx.self
             ),
             "drivers-fetcher"
@@ -124,11 +130,5 @@ object AutonomousIntersectionManager {
                                           workers = workers)
       }
     }
-  val maximumFutureReservationTime: FiniteDuration = 10.seconds
-  val defaultACZSize: Dimension = 40.asMeters
 
-  val ACZDistanceShapeLength: Dimension = 1.asMeters
-  val transmitionInterval: FiniteDuration = 1.seconds
-
-  val maxTransmitionDistance: Dimension = 200.asMeters
 }

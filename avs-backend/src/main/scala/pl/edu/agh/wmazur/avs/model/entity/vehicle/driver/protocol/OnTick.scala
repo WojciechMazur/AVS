@@ -8,7 +8,7 @@ import pl.edu.agh.wmazur.avs.EntityRefsGroup
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
 trait OnTick {
   self: AutonomousVehicleDriver =>

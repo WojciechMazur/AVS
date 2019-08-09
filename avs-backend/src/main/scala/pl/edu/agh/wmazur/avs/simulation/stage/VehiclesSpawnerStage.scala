@@ -8,7 +8,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.simulation.SimulationManager.Protocol.SpawnResult
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.{EntityManager, SimulationManager}
 
 object VehiclesSpawnerStage {
@@ -44,7 +44,7 @@ object VehiclesSpawnerStage {
 
   private def idle(
       entityManagerRef: ActorRef[EntityManager.Protocol]): Behavior[Protocol] =
-    Behaviors.receive {
+    Behaviors.receivePartial {
       case (ctx, TrySpawn(replyTo, roadRefs, currentTime, tick)) =>
         ctx.children
           .filter(_.path.name.contains("spawner"))
@@ -84,7 +84,7 @@ object VehiclesSpawnerStage {
       }
     }
 
-    Behaviors.receiveMessage[Protocol] {
+    Behaviors.receiveMessagePartial[Protocol] {
       case EntityManagerListing(refs) =>
         awaitResponses(refs.head, replyTo, awaiting, results)
       case RoadSpawnResult(roadRef, roadResults) =>

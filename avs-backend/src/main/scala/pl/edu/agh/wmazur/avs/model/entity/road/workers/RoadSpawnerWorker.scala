@@ -6,7 +6,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesSpawnerStage
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesSpawnerStage.RoadSpawnResult
 

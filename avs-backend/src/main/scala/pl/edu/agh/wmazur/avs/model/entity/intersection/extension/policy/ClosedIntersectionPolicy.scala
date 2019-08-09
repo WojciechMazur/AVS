@@ -1,7 +1,8 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.policy
+package pl.edu.agh.wmazur.avs.model.entity.intersection.extension.policy
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.IntersectionConnectivity
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousIntersectionManager,
   IntersectionManager
@@ -29,5 +30,4 @@ trait ClosedIntersectionPolicy {
 
           Behaviors.same
       }
-      .orElse(basicConnectivity)
 }

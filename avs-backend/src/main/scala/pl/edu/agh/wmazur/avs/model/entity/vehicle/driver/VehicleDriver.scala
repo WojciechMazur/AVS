@@ -8,13 +8,16 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
-  AccelerationSchedule,
+  AccelerationProfile,
   BasicVehicle,
   Vehicle,
   VehicleDriverGauges
 }
 import pl.edu.agh.wmazur.avs.protocol.{Response, SimulationProtocol}
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.{
+  ReservationId,
+  Timestamp
+}
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -76,7 +79,7 @@ object VehicleDriver {
   object Protocol {
 
     final case class ReservationConfirmed(
-        reservationId: Long,
+        reservationId: ReservationId,
         requestId: Long,
         reservationDetails: ReservationDetails
     ) extends Response[Protocol](requestId)
@@ -90,7 +93,7 @@ object VehicleDriver {
         arrivalVelocity: Velocity,
         arrivalLaneId: Lane#Id,
         departureLaneId: Lane#Id,
-        accelerationSchedule: AccelerationSchedule
+        accelerationProfile: AccelerationProfile
     )
 
     final case class ReservationRejected(

@@ -1,7 +1,7 @@
 package pl.edu.agh.wmazur.avs.protocol
 
 import akka.actor.typed.ActorRef
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
 import scala.concurrent.duration.FiniteDuration
 

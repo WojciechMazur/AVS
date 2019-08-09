@@ -13,7 +13,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.{
   ScheduledVehicleMovement,
   TimeDeltaSeconds
 }
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
 import scala.annotation.tailrec
 

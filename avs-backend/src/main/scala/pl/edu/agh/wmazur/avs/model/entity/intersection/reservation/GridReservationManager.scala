@@ -1,11 +1,18 @@
-package pl.edu.agh.wmazur.avs.simulation.reservation
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import java.util.concurrent.TimeUnit
 
-import com.softwaremill.quicklens._
-import pl.edu.agh.wmazur.avs
+import akka.actor.typed.ActorRef
 import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager.ManagerConfig
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.{
+  ReservationId,
+  TimeTile,
+  Timestamp
+}
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
+import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
@@ -16,23 +23,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   VehicleDriver
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
-  BasicVehicle,
-  Vehicle,
-  VehicleGauges,
-  VehicleSpec,
-  VirtualVehicle
-}
-import pl.edu.agh.wmazur.avs.simulation.map.micro.{Tile, TilesGrid}
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.{
-  ManagerConfig,
-  ReservationQuery,
-  ReservationSchedule
-}
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.{
-  TimeTile,
-  Timestamp
-}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle._
 
 import scala.annotation.tailrec
 import scala.collection._
@@ -40,6 +31,7 @@ import scala.concurrent.duration._
 
 case class GridReservationManager(config: ManagerConfig,
                                   intersection: Intersection) {
+  import GridReservationManager._
 
   private val tilesGrid = TilesGrid(
     intersection.area,
@@ -47,8 +39,16 @@ case class GridReservationManager(config: ManagerConfig,
   )
   private val reservationGrid = ReservationGrid(tilesGrid, 10.seconds)
 
-  //acceptPlan
-  //cancelPlan
+  def cancel(reservationId: ReservationId): Unit = {
+    reservationGrid.cancel(reservationId)
+  }
+
+  def accept(reservationSchedule: ReservationSchedule): Option[Long] = {
+    val ticket = reservationsIdProvider.nextId
+    val wasAccepted =
+      reservationGrid.reserve(ticket, reservationSchedule.tilesCovered)
+    if (wasAccepted) Some(ticket) else None
+  }
 
   def scheduleTrajectory(
       query: ReservationQuery): Option[ReservationSchedule] = {
@@ -56,7 +56,7 @@ case class GridReservationManager(config: ManagerConfig,
     val departueLane = intersection.lanesById(query.departureLaneId)
 
     val driver = {
-      val v = createTestVehicle(vehicleSpec = query.vehicleSpec,
+      val v = createTestVehicle(requestVehicleSpec = query.vehicleSpec,
                                 arrivalVelocity = query.arrivalVelocity,
                                 maxVelocity = query.maxTurnVelocity,
                                 arrivalLane = arrivalLane)
@@ -78,11 +78,11 @@ case class GridReservationManager(config: ManagerConfig,
           )
 
           ReservationSchedule(
-            vin = query.vin,
+            driverRef = query.driverRef,
             exitTime = exitTime,
             exitVelocity = exitVelocity,
             tilesCovered = tiles.toList,
-            accelerationSchedule = accelerationProfile
+            accelerationProfile = accelerationProfile
           )
       }
   }
@@ -185,20 +185,22 @@ case class GridReservationManager(config: ManagerConfig,
       }
   }
 
-  private def createTestVehicle(vehicleSpec: VehicleSpec,
-                                arrivalVelocity: Velocity,
-                                maxVelocity: Velocity,
-                                arrivalLane: Lane): BasicVehicle = {
+  private def createTestVehicle(
+      requestVehicleSpec: IntersectionCrossingRequest.CrossingVehicleSpec,
+      arrivalVelocity: Velocity,
+      maxVelocity: Velocity,
+      arrivalLane: Lane): BasicVehicle = {
     val position = intersection.entryPoints(arrivalLane)
     val heading = intersection.entryHeadings(arrivalLane)
+    val spec = requestVehicleSpec.toVehicleSpec(maxVelocity)
     VirtualVehicle(
       gauges = VehicleGauges(position,
                              arrivalVelocity,
                              0,
                              0,
                              heading,
-                             Vehicle.calcArea(position, heading, vehicleSpec)),
-      spec = vehicleSpec,
+                             Vehicle.calcArea(position, heading, spec)),
+      spec = spec,
       targetVelocity = 0,
       spawnTime = -1
     )
@@ -218,10 +220,10 @@ case class GridReservationManager(config: ManagerConfig,
       maxVelocity: Velocity,
       maxAcceleration: Acceleration,
       exitTime: Timestamp,
-      isAccelerating: Boolean): List[AccelerationEvent] = {
+      isAccelerating: Boolean): AccelerationProfile = {
     val travelsalTime = exitTime - arrivalTime
     assert(travelsalTime > 0)
-    if (isAccelerating && (arrivalVelocity < maxVelocity)) {
+    val events = if (isAccelerating && (arrivalVelocity < maxVelocity)) {
       val accelerationDuration =
         Math.min((maxVelocity - arrivalVelocity) / maxAcceleration,
                  travelsalTime)
@@ -237,15 +239,14 @@ case class GridReservationManager(config: ManagerConfig,
     } else {
       AccelerationEvent(0d, travelsalTime.millis) :: Nil
     }
-
+    AccelerationProfile(events)
   }
 
 }
 
 object GridReservationManager {
-  type Vin = Int
-  type LaneId = Int
-
+  val reservationsIdProvider: IdProvider[ReservationId] =
+    new IdProvider[ReservationId] {}
   case class ManagerConfig(timeStep: FiniteDuration,
                            granularity: Float,
                            enableEdgeTimeBuffer: Boolean = true)(
@@ -258,13 +259,13 @@ object GridReservationManager {
   }
 
   case class ReservationQuery(
-      vin: Vin,
+      driverRef: ActorRef[VehicleDriver.Protocol],
       arrivalTime: Timestamp,
       arrivalVelocity: Velocity,
       maxTurnVelocity: Velocity,
-      arrivalLaneId: LaneId,
-      departureLaneId: LaneId,
-      vehicleSpec: VehicleSpec,
+      arrivalLaneId: Lane#Id,
+      departureLaneId: Lane#Id,
+      vehicleSpec: IntersectionCrossingRequest.CrossingVehicleSpec,
       isAccelerating: Boolean
   ) {
     require(arrivalVelocity != 0f || isAccelerating,
@@ -272,11 +273,11 @@ object GridReservationManager {
   }
 
   case class ReservationSchedule(
-      vin: Vin,
+      driverRef: ActorRef[VehicleDriver.Protocol],
       exitTime: Timestamp,
       exitVelocity: Velocity,
       tilesCovered: List[TimeTile],
-      accelerationSchedule: List[AccelerationEvent]
+      accelerationProfile: AccelerationProfile
   )
 
 }

@@ -1,7 +1,6 @@
-package pl.edu.agh.wmazur.avs.simulation.reservation
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
-import pl.edu.agh.wmazur.avs.simulation.map.micro.TilesGrid
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.{
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.{
   TileId,
   Timestamp
 }

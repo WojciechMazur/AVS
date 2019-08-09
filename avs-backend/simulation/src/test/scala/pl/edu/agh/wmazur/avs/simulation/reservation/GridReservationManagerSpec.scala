@@ -1,4 +1,4 @@
-package pl.edu.agh.wmazur.avs.simulation.reservation
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.scalatest.{FlatSpec, WordSpec}
@@ -7,7 +7,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.{DirectedLane, LaneSpec, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.BasicVehicle
 import pl.edu.agh.wmazur.avs.simulation.driver.CrashTestDriver
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager.ManagerConfig
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager.ManagerConfig
 
 import scala.concurrent.duration._
 

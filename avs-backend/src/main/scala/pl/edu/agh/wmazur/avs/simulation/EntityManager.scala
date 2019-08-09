@@ -23,7 +23,7 @@ import pl.edu.agh.wmazur.avs.simulation.EntityManager.{
   SpawnProtocol,
   TerminationWatcher
 }
-import pl.edu.agh.wmazur.avs.simulation.reservation.GridReservationManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage.Done
 import pl.edu.agh.wmazur.avs.{Agent, Services}

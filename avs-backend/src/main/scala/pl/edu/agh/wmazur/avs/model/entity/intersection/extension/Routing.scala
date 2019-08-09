@@ -1,4 +1,4 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.policy
+package pl.edu.agh.wmazur.avs.model.entity.intersection.extension
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors

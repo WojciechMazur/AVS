@@ -16,7 +16,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.{Ack, Request, SimulationProtocol}
-import pl.edu.agh.wmazur.avs.simulation.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 
 trait IntersectionManager {
@@ -46,7 +46,7 @@ object IntersectionManager {
 
   object Protocol {
     final case class IntersectionCrossingRequest(
-        vin: Vehicle#Id,
+        driverRef: ActorRef[VehicleDriver.Protocol],
         spec: IntersectionCrossingRequest.CrossingVehicleSpec,
         proposals: List[IntersectionCrossingRequest.Proposal],
         currentTime: Timestamp,
@@ -74,7 +74,25 @@ object IntersectionManager {
           rearAxleDisplacement: Dimension,
           maxSteeringAngle: Angle,
           maxTurnPerSecond: Angle
-      )
+      ) {
+        def toVehicleSpec(maxVelocity: Velocity): VehicleSpec =
+          VehicleSpec(
+            maxAcceleration = maxAcceleration,
+            maxDeceleration = maxDeceleration,
+            maxVelocity = maxVelocity,
+            minVelocity = minVelocity,
+            length = length,
+            width = width,
+            height = 0.meters,
+            frontAxleDisplacement = frontAxleDisplacement,
+            rearAxleDisplacement = rearAxleDisplacement,
+            wheelRadius = 0.meters,
+            wheelWidth = 0.meters,
+            maxSteeringAngle = maxSteeringAngle,
+            maxTurnPerSecond = maxTurnPerSecond,
+            id = -1L
+          )
+      }
 
       object CrossingVehicleSpec {
         def apply(vehicleSpec: VehicleSpec): CrossingVehicleSpec = {
@@ -93,7 +111,9 @@ object IntersectionManager {
       }
     }
 
-    final case class ReservationCompleted(reservationId: Long)
+    final case class ReservationCompleted(
+        driverRef: ActorRef[VehicleDriver.Protocol],
+        reservationId: Long)
         extends Ack[Protocol](reservationId)
         with Protocol
 
@@ -101,13 +121,17 @@ object IntersectionManager {
         reservationId: Long,
         replyTo: ActorRef[VehicleDriver.Protocol])
         extends Request[Protocol, VehicleDriver.Protocol]
-        with Protocol
+        with Protocol {
+      val driverRef: ActorRef[VehicleDriver.Protocol] = replyTo
+    }
 
     final case class ExitedControlZone(
-        vin: Vehicle.Vin,
-        replyTo: ActorRef[VehicleDriver.Protocol])
+        reservationId: Long,
+        driverRef: ActorRef[VehicleDriver.Protocol])
         extends Request[Protocol, VehicleDriver.Protocol]
-        with Protocol
+        with Protocol {
+      override val replyTo: ActorRef[VehicleDriver.Protocol] = driverRef
+    }
 
   }
 

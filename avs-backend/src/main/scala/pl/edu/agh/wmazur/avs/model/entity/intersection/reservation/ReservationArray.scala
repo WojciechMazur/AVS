@@ -1,4 +1,4 @@
-package pl.edu.agh.wmazur.avs.simulation.reservation
+package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import scala.collection._
 
@@ -124,7 +124,7 @@ class ReservationArray(arraySize: Int) {
 
 object ReservationArray {
   import scala.concurrent.duration._
-  type ReservationId = Int
+  type ReservationId = Long
   type Timestamp = Long
   type TileId = Int
 

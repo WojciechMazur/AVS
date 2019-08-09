@@ -46,7 +46,7 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
             managerRef: ActorRef[RoadManager.Protocol]): Road = {
     val lanesWithNeighbourhood = lanes.tail
       .foldLeft(lanes.head :: Nil) {
-        case (acc, current: DirectedLane) =>
+        case (acc, current: DirectedLane @unchecked) =>
           lazy val left: Option[DirectedLane] = acc.last match {
             case lane: DirectedLane =>
               Some(
