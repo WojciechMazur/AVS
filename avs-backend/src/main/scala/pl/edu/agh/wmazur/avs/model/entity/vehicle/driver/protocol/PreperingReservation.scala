@@ -12,7 +12,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
-  MaxAccelerationReservationChecker,
+  ReservationChecker,
   VehicleArrivalEstimator
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
@@ -83,16 +83,19 @@ trait PreperingReservation {
           .flatMap(_.get(currentLane.id)) match {
           case None =>
           case Some(maxVelocities) =>
-            val withUpdatedMovement = withVehicle {
-              stopBeforeIntersectionSchedule(currentTime) match {
-                case optSchedule @ Some(_) =>
-                  vehicle.withAccelerationSchedule(optSchedule)
-                case None => followCurrentLane().vehicle.stop
-              }
-            }
+            val withUpdatedMovement =
+              updateGauges
+                .withVehicle {
+                  stopBeforeIntersectionSchedule(currentTime) match {
+                    case optSchedule @ Some(_) =>
+                      vehicle.withAccelerationSchedule(optSchedule)
+                    case None => followCurrentLane().vehicle.stop
+                  }
+                }
 
             val estimations = maxVelocities
               .mapValues(withUpdatedMovement.estimateArrival)
+              .filterKeys(_ == currentLane)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation
               }
@@ -157,8 +160,12 @@ trait PreperingReservation {
       case ReservationConfirmed(reservationId, _, details) =>
         timers.cancel(ReservationRequestTimeout)
         hasOngoingRequest = false
+        val updatedGauges = updateGauges
+        assert(
+          driverGauges.distanceToNextIntersection.get isEqual driverGauges
+            .calcDistance(nextIntersectionPosition.get, vehicle))
 
-        MaxAccelerationReservationChecker
+        ReservationChecker
           .check(
             time = currentTime,
             timeEnd = details.arrivalTime,
@@ -166,13 +173,15 @@ trait PreperingReservation {
             velocityEnd = details.arrivalVelocity,
             velocityMax =
               VehiclePilot.calcMaxAllowedVelocity(vehicle, currentLane),
-            distanceTotal = driverGauges.distanceToNextIntersection.get,
+            distanceTotal =
+              updatedGauges.driverGauges.distanceToNextIntersection.get,
             acceleration = vehicle.spec.maxAcceleration,
             deceleration = vehicle.spec.maxDeceleration
           )
           .map { schedule =>
             reservationDetails = Some(details)
             context.self ! MaintainReservation
+            context.log.debug("Reservation accepted")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
           }
           .recover {
@@ -180,6 +189,9 @@ trait PreperingReservation {
               context.log.error("Reservation check failed: {}", err.getMessage)
               details.intersectionManagerRef ! IntersectionManager.Protocol
                 .CancelReservation(reservationId, context.self)
+              timers.startSingleTimer(Timer.RetryReservationRequest,
+                                      TrySendReservationRequest,
+                                      TickSource.timeStep)
               reservationDetails = None
               withVehicle(vehicle.withAccelerationSchedule(None))
           }
@@ -229,7 +241,7 @@ trait PreperingReservation {
     val timeAtExpectedReplyTime = params.initialTime + maxExpectedIntersectionManagerReplyTime.toMillis
 
     val (distanceTraveled, finalVelocity) =
-      accelerationSchedule.calculateFinalState(
+      accelerationSchedule.calculateFinalStateAtTime(
         initialTime = params.initialTime,
         initialVelocity = params.velocity,
         finalTime = timeAtExpectedReplyTime)

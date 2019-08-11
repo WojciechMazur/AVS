@@ -21,7 +21,8 @@ trait ClosedIntersectionPolicy {
               _,
               timestamp,
               replyTo) =>
-          context.log.info("reservation request")
+          context.log.warning(
+            "Reservation request to closed intersection rejected")
           replyTo ! ReservationRejected(
             requestId = req.id,
             nextAllowedCommunicationTimestamp = timestamp,

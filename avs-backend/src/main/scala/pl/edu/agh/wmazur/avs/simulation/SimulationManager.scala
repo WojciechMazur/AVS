@@ -78,10 +78,10 @@ class SimulationManager(context: ActorContext[Protocol],
                                                             lastTickDelta,
                                                             tick.seq)
           cachedTickSubscribersRefs.foreach(_ ! tickMessage)
-          context.log.debug(
-            s"Tick - {} @ {}, ups: ${1.seconds / tickContext.timeDelta}",
-            tick,
-            currentTime)
+//          context.log.debug(
+//            s"Tick - {} @ {}, ups: ${1.seconds / tickContext.timeDelta}",
+//            tick,
+//            currentTime)
           if (tickContext.externalChanges.nonEmpty) {
             applyExternalCommands(tickContext.externalChanges)
           } else {

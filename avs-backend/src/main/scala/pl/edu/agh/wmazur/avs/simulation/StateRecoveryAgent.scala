@@ -89,20 +89,20 @@ object StateRecoveryAgent {
     )
 
     val lane21 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -100.0.meters,
-                                     length = 200.0.meters,
+                                     offStartY = -250.0.meters,
+                                     length = 400.0.meters,
                                      heading = Math.PI / 2)
 
     val lane22 = DirectedLane.simple(spec = laneSpec.withSpawnEnabled(true),
-                                     offStartY = -100d,
+                                     offStartY = -250d,
                                      offStartX = laneSpec.width + 0.5,
-                                     length = 250.0,
+                                     length = 450.0,
                                      heading = Math.PI / 2)
 
     val lane23 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -100d,
+                                     offStartY = -250d,
                                      offStartX = 2 * laneSpec.width + 2 * 0.5,
-                                     length = 300.0,
+                                     length = 500.0,
                                      heading = Math.PI / 2)
 
     val roadLanes1 = lane11 :: lane12 :: lane13 :: Nil

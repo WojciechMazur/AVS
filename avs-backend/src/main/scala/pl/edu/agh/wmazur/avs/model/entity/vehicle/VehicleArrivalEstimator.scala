@@ -3,17 +3,17 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle
 import java.util.concurrent.TimeUnit
 
 import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationSchedule.AccelerationTimestamp
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 object VehicleArrivalEstimator {
   case class Result(arrivalTime: Timestamp,
@@ -62,18 +62,19 @@ object VehicleArrivalEstimator {
       } else {
         if (v <= vEnd) {
           EdgeCases.case0(params)
+        } else {
+          sys.error(
+            "distance is zero and the current velocity is larger than the maximum final velocity")
         }
-        sys.error(
-          "distance is zero and the current velocity is larger than the maximum final velocity")
       }
     }
   }
 
   def isValid(params: Parameters, result: Result): Boolean = {
     val (finalDistance, finalVelocity) = result.accelerationSchedule
-      .calculateFinalState(params.initialTime,
-                           params.velocity,
-                           result.arrivalTime)
+      .calculateFinalStateAtTime(params.initialTime,
+                                 params.velocity,
+                                 result.arrivalTime)
 
     def check1 = finalVelocity.isEqual(result.arrivalVelocity)
 
@@ -294,7 +295,7 @@ object VehicleArrivalEstimator {
       val timeAccel = (params.maxVelocity - params.velocity) / params.maxAcceleration
       val distanceAccel = timeAccel * (params.maxVelocity + params.velocity) / 2
 
-      val timeDecel = (params.finalVelocity - params.velocity) / params.maxDeceleration
+      val timeDecel = (params.finalVelocity - params.maxVelocity) / params.maxDeceleration
       val distanceDecel = timeDecel * (params.maxVelocity + params.finalVelocity) / 2
 
       def case5a = {
@@ -314,8 +315,11 @@ object VehicleArrivalEstimator {
       }
 
       def case5bcd = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * Math.pow(params.finalVelocity, 2)
+          - params.maxDeceleration * Math.pow(params.velocity, 2)
+          - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
         assert(delta >= 0.0)
+
         val velocity = Math.sqrt(delta)
         assert(velocity > params.velocity)
 
@@ -327,6 +331,7 @@ object VehicleArrivalEstimator {
           val timeDecel = (params.finalVelocity - velocity) / params.maxDeceleration
           val distanceDecel = timeDecel * (params.finalVelocity + velocity) / 2
           assert(distanceDecel > 0.0)
+
           Result(
             params.initialTime + (timeAccel + timeDecel).seconds.toMillis,
             params.finalVelocity,
@@ -377,7 +382,7 @@ object VehicleArrivalEstimator {
       val timeAccel = (params.maxVelocity - params.velocity) / params.maxAcceleration
       val distanceAccel = timeAccel * (params.maxVelocity + params.velocity) / 2
 
-      val timeDecel = (params.finalVelocity - params.velocity) / params.maxDeceleration
+      val timeDecel = (params.finalVelocity - params.maxVelocity) / params.maxDeceleration
       val distanceDecel = timeDecel * (params.maxVelocity + params.finalVelocity) / 2
 
       def case6a: Result = {
@@ -397,8 +402,12 @@ object VehicleArrivalEstimator {
       }
 
       def case6bcd: Result = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * Math.pow(params.finalVelocity, 2) - params.maxDeceleration * Math.pow(
+          params.velocity,
+          2) - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
+
         assert(delta >= 0.0)
+
         val velocity = Math.sqrt(delta)
         assert(velocity < params.maxVelocity)
         assert(velocity > params.finalVelocity)
@@ -453,9 +462,10 @@ object VehicleArrivalEstimator {
 
     def estimateMaxFinalVelocity(params: Parameters): Result = {
       val estimatedEndVelocity = Math.sqrt(
-        2 * params.maxAcceleration * params.distanceTotal.asMeters + Math
-          .pow(params.velocity, 2))
-      val timeAccelerating = (estimatedEndVelocity - params.velocity) / params.velocity
+        2 * params.maxAcceleration * params.distanceTotal.asMeters
+          + Math.pow(params.velocity, 2)
+      )
+      val timeAccelerating = (estimatedEndVelocity - params.velocity) / params.maxAcceleration
       assert(estimatedEndVelocity < params.finalVelocity)
 
       Result(

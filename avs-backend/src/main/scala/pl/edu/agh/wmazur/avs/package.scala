@@ -54,7 +54,7 @@ package object avs {
     //scalastyle:on
 
     def isEqual(that: Dimension): Boolean = {
-      this.asMeters isEqual that.asMeters
+      (this.asMeters - that.asMeters).abs < 0.01
     }
     override def compare(that: Dimension): Int =
       this.asMeters compare that.asMeters

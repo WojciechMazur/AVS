@@ -16,8 +16,8 @@ case class AdmissionControlZone(
   def isAdmissible(driverRef: DriverRef,
                    vehicleLength: Dimension,
                    stoppingDistance: Dimension): Boolean = {
-    val wasNotRegistered = admittedDriversLength.contains(driverRef)
     val spaceNeeded = currentSize + vehicleLength + stoppingDistance
+    val wasNotRegistered = !admittedDriversLength.contains(driverRef)
     val enoughFreeSpace = spaceNeeded <= controlledDistance
 
     wasNotRegistered && enoughFreeSpace

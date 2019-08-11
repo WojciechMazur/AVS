@@ -29,7 +29,6 @@ trait OnTick {
     Behaviors.receiveMessagePartial {
       case Tick(time) =>
         currentTime = time
-
         List(
           driverInFront
         ).flatten

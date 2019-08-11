@@ -3,7 +3,6 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
-import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Protocol.FetchDrivers
 import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Workers
 import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.policy.{
   ClosedIntersectionPolicy,
@@ -14,6 +13,8 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.{
   ReservationSystem,
   Routing
 }
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
   DriversFetcherAgent,
   IntersectionCoordinator
@@ -21,11 +22,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
-
-import scala.concurrent.duration._
+import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
 
 class AutonomousIntersectionManager(
     val intersection: Intersection,
@@ -60,7 +57,7 @@ class AutonomousIntersectionManager(
 
   override protected val initialBehaviour
     : Behavior[IntersectionManager.Protocol] =
-    switchBehavior(closedIntersection)
+    switchBehavior(defaultPolicy)
 }
 
 object AutonomousIntersectionManager {

@@ -15,49 +15,47 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
-  def calculateFinalState(initialTime: Timestamp,
-                          initialVelocity: Velocity,
-                          finalTime: Timestamp): (Dimension, Velocity) = {
+  def calculateFinalStateAtTime(initialTime: Timestamp,
+                                initialVelocity: Velocity,
+                                finalTime: Timestamp): (Dimension, Velocity) = {
     val nonExpiredEvents = timestamps.dropWhile(_.timeStart < initialTime)
 
     @tailrec
     def iterate(time: Timestamp,
                 velocity: Velocity,
-                acceleration: Acceleration,
                 distance: Dimension,
                 remainingTimestamps: List[AccelerationTimestamp])
       : (Dimension, Velocity) = {
 
-      if (remainingTimestamps.isEmpty || remainingTimestamps.head.timeEnd > finalTime) {
-        val duration = (finalTime - time).millis
-          .toUnit(TimeUnit.SECONDS)
+      remainingTimestamps match {
+        case Nil => (distance, velocity)
+        case current :: _ if current.timeEnd > finalTime =>
+          val duration = (finalTime - time).millis
+            .toUnit(TimeUnit.SECONDS)
 
-        val endVelocity = velocity + acceleration * duration
-        val distanceTotal = distance + duration * (velocity + endVelocity) / 2
-        (distanceTotal.meters, endVelocity)
-      } else {
-        val currentEvent = remainingTimestamps.head
-        val duration = currentEvent.durationSeconds
+          val endVelocity = velocity + current.acceleration * duration
+          val distanceTotal = distance + (duration * (velocity + endVelocity) / 2)
+            .meters
+          (distanceTotal, endVelocity)
+        case current :: remaining =>
+          val duration = current.durationSeconds
 
-        val endVelocity = velocity + acceleration * duration
-        val distanceTotal = distance + duration * (velocity + endVelocity) / 2
+          val endVelocity = velocity + current.acceleration * duration
+          val distanceTotal = distance + (duration * (velocity + endVelocity) / 2).meters
 
-        iterate(
-          time = currentEvent.timeEnd,
-          velocity = endVelocity,
-          acceleration = currentEvent.acceleration,
-          distance = distanceTotal.meters,
-          remainingTimestamps = remainingTimestamps.tail
-        )
+          iterate(
+            time = current.timeEnd,
+            velocity = endVelocity,
+            distance = distanceTotal,
+            remainingTimestamps = remaining
+          )
       }
     }
 
-    iterate(initialTime,
-            initialVelocity,
-            nonExpiredEvents.headOption.map(_.acceleration).getOrElse(0),
-            0.0,
-            nonExpiredEvents)
+    iterate(initialTime, initialVelocity, 0.0, nonExpiredEvents)
   }
+
+//  def calcFinalDistance(initialVelocity: Velocity): Velocity = {}
 
   def calcFinalVelocity(initialVelocity: Velocity): Velocity = {
     val (finalVelocity, _) =

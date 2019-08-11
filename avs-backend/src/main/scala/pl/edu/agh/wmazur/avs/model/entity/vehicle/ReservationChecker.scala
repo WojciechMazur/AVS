@@ -16,7 +16,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationAr
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
-object MaxAccelerationReservationChecker {
+object ReservationChecker {
 
   def check(time: Timestamp,
             timeEnd: Timestamp,
@@ -27,14 +27,16 @@ object MaxAccelerationReservationChecker {
             acceleration: Acceleration,
             deceleration: Acceleration): Try[AccelerationSchedule] = {
 
-    val params = Params(time,
-                        timeEnd,
-                        velocity,
-                        velocityEnd,
-                        velocityMax,
-                        distanceTotal,
-                        acceleration,
-                        deceleration)
+    val params = Params(
+      currentTime = time,
+      arrivalTime = timeEnd,
+      velocity = velocity,
+      velocityEnd = velocityEnd,
+      velocityMax = velocityMax,
+      distanceTotal = distanceTotal,
+      acceleration = acceleration,
+      deceleration = deceleration
+    )
 
     Try(makeCheck(params))
       .filter(isScheduleValid(params, _))
@@ -56,18 +58,10 @@ object MaxAccelerationReservationChecker {
     */
   private def makeCheck(p: Params): AccelerationSchedule = {
     None match {
-      case _ if p.time < p.timeEnd => whenAfterEndTime(p)
-      case _                       => whenBeforeEndTime(p)
+      case _ if p.currentTime < p.arrivalTime => whenBeforeEndTime(p)
+      case _                                  => whenOnEndTime(p)
     }
   }
-
-  private case class pParams(t14: Double,
-                             t15: Double,
-                             t24: Double,
-                             t25: Double,
-                             vDown: Double,
-                             vUp: Double,
-                             tTotal: Double)
 
   private def whenBeforeEndTime(p: Params): AccelerationSchedule = {
     None match {
@@ -75,24 +69,23 @@ object MaxAccelerationReservationChecker {
         assert(p.velocity isEqual p.vDown)
         assert(p.velocityEnd isEqual p.vUp)
         assert(p.t14.isZero && p.t25.isZero)
-
-        val areaRec = p.timeTotal * (p.velocity + p.velocityEnd) / 2
-        if (p.distanceTotal.asMeters isEqual areaRec) {
+        val areaR = p.durationTotal * (p.velocity + p.velocityEnd) / 2
+        if (p.distanceTotal.asMeters isEqual areaR) {
           AccelerationProfile(
-            AccelerationEvent(p.acceleration, p.timeTotal.millis)
-          ).toAccelerationSchedule(p.time)
+            AccelerationEvent(p.acceleration, p.durationTotal.millis)
+          ).toAccelerationSchedule(p.currentTime)
         } else {
           sys.error(
             "Reservation check failed: can't accelerate linearly to meet the arrival time and the arrival velocity ")
         }
 
       case _ if p.t14 > 0.0 && p.t24.isZero =>
-        val areaL = p.timeTotal * (p.velocity + p.velocityEnd) / 2
+        val areaL = p.durationTotal * (p.velocity + p.velocityEnd) / 2
 
         if (p.distanceTotal.asMeters isEqual areaL) {
           AccelerationProfile(
-            AccelerationEvent(p.deceleration, p.timeTotal.millis)
-          ).toAccelerationSchedule(p.time)
+            AccelerationEvent(p.deceleration, p.durationTotal.millis)
+          ).toAccelerationSchedule(p.currentTime)
         } else {
           sys.error(
             "Reservation check failed: can't decelerate linearly to meet the arrival time and the arrival velocity (Case 2)")
@@ -102,9 +95,9 @@ object MaxAccelerationReservationChecker {
       case _ if p.t14 > 0.0 && p.t24 < 0 =>
         sys.error(
           "Reservation check failed: can't decelerate to final velocity (Case 7)")
-      case _ =>
+      case _ if p.t14 < 0.0 =>
         sys.error(
-          " Reservation check failed: can't accelerate to final velocity (Case 6)")
+          s"Reservation check failed: can't accelerate to final velocity (Case 6): t14 = ${p.t14}")
     }
   }
 
@@ -115,7 +108,7 @@ object MaxAccelerationReservationChecker {
       case _                               => whenNeedToMaintainSpeed(p)
     }
 
-    findPartialTrapezoid(trapezoids, remainingArea)
+    findPartialTrapezoid(p, trapezoids, remainingArea)
       .map(makeAccelerationSchedule(p, _))
       .getOrElse(
         sys.error("Reservation check failed: distance too large (Case 3,4,5)"))
@@ -123,9 +116,7 @@ object MaxAccelerationReservationChecker {
 
   private def whenNeedToSlowDown(p: Params): (Double, List[Trapezoid]) = {
     val t3x = (p.velocityEnd - p.velocity) / p.deceleration
-    val t3 = p.timeTotal - t3x
-
-    val area = p.area0
+    val t3 = p.durationTotal - t3x
 
     val (remainingArea, lowerTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
@@ -133,39 +124,39 @@ object MaxAccelerationReservationChecker {
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
         val remainingArea =
-          calcRemainingArea(area, areaL + areaR, "distance to small (Case 5a)")
+          calcRemainingArea(
+            p.area0,
+            areaL + areaR,
+            s"distance to small (Case 5a), distance to intersection = ${p.area0}, needed distance : ${areaL + areaR}")
 
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t14, p.vDown),
                                   height = p.velocityEnd - p.vDown,
                                   widthLower = 0.0,
                                   widthUpper = t3,
                                   refDelta = p.t14 - t3x)
-        (remainingArea, trapezoid)
+        (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
         val remainingArea =
-          calcRemainingArea(area, areaL + areaR, "distance to small (Case 5b)")
+          calcRemainingArea(
+            p.area0,
+            areaL + areaR,
+            s"distance to small (Case 5b), distance to intersection = ${p.area0}, needed distance : ${areaL + areaR}")
 
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t11, 0.0),
                                   height = p.velocityEnd,
                                   widthLower = p.t12,
                                   widthUpper = t3,
                                   refDelta = p.t11 - t3x)
-        (remainingArea, trapezoid)
+        (remainingArea, Some(trapezoid))
       case _ =>
         val areaL = p.t11 * p.velocity / 2
         val remainingArea =
-          calcRemainingArea(area, areaL, "distance to small (Case 5c)")
-
-        val trapezoid = Trapezoid(Vector2.of(p.time + t3x, p.velocityEnd),
-                                  height = p.velocity - p.velocityEnd,
-                                  widthLower = t3,
-                                  widthUpper = t3,
-                                  refDelta = t3x)
-        (remainingArea, trapezoid)
+          calcRemainingArea(p.area0, areaL, "distance to small (Case 5c)")
+        (remainingArea, None)
     }
 
     val middleTrapezoid = Trapezoid(Vector2.of(p.time + t3x, p.velocityEnd),
@@ -184,6 +175,7 @@ object MaxAccelerationReservationChecker {
                     refDelta = -p.t24)
         }
       case _ if p.velocityEnd < p.velocityMax =>
+        assert(p.t22 > 0.0)
         Some {
           Trapezoid(Vector2.of(p.time, p.velocity),
                     height = p.velocityMax - p.velocity,
@@ -194,57 +186,57 @@ object MaxAccelerationReservationChecker {
       case _ => None
     }
 
-    val trapezoids = Some(lowerTrapezoid) :: Some(middleTrapezoid) :: upperOptTrapezoid :: Nil
+    val trapezoids = lowerTrapezoid :: Some(middleTrapezoid) :: upperOptTrapezoid :: Nil
     (remainingArea, trapezoids.flatten)
   }
 
   private def whenNeedToSpeedUp(p: Params): (Double, List[Trapezoid]) = {
     val t3x = (p.velocityEnd - p.velocity) / p.acceleration
-    val t3 = p.timeTotal - t3x
+    val t3 = p.durationTotal - t3x
 
-    val (remainingArea, lowerTrapezoid) = None match {
+    val (remainingArea, lowerOptTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
         val remainingArea =
-          calcRemainingArea(p.area0,
-                            areaL + areaR,
-                            "distance to small (Case 4a)")
+          calcRemainingArea(
+            p.area0,
+            areaL + areaR,
+            s"distance to small (Case 4a), distance to intersection = ${p.area0}, needed distance : ${areaL + areaR}")
 
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t14, p.vDown),
                                   height = p.velocity - p.vDown,
                                   widthLower = 0.0,
                                   widthUpper = t3,
                                   refDelta = p.t14)
-        (remainingArea, trapezoid)
+        (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
-        val remainingArea = calcRemainingArea(p.area0,
-                                              areaL + areaR,
-                                              "distance to small (Case 4b)")
-
+        val remainingArea = calcRemainingArea(
+          p.area0,
+          areaL + areaR,
+          s"distance to small (Case 4b), distance to intersection = ${p.area0}, needed distance : ${areaL + areaR}")
+        assert(p.t12 > 0.0)
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t11, 0.0),
                                   height = p.velocity,
                                   widthLower = p.t12,
                                   widthUpper = t3,
                                   refDelta = p.t11)
-        (remainingArea, trapezoid)
+        (remainingArea, Some(trapezoid))
 
       case _ =>
         val areaR = p.t13 * p.velocityEnd / 2
         val remainingArea =
-          calcRemainingArea(p.area0, areaR, "distance to small (Case 4c)")
+          calcRemainingArea(
+            p.area0,
+            areaR,
+            s"distance to small (Case 4c), distance to intersection = ${p.area0}, needed distance : $areaR")
 
-        val trapezoid = Trapezoid(Vector2.of(p.time + p.t11, 0.0),
-                                  height = p.velocity,
-                                  widthLower = p.t12,
-                                  widthUpper = t3,
-                                  refDelta = p.t11)
-        (remainingArea, trapezoid)
+        (remainingArea, None)
     }
 
     val middleTrapezoid = Trapezoid(Vector2.of(p.time, p.velocity),
@@ -263,9 +255,10 @@ object MaxAccelerationReservationChecker {
                     refDelta = t3x - p.t24)
         }
       case _ if p.velocityEnd < p.velocityMax =>
+        assert(p.t22 > 0.0)
         Some {
           Trapezoid(Vector2.of(p.time + t3x, p.velocityEnd),
-                    height = p.vUp - p.velocityEnd,
+                    height = p.velocityMax - p.velocityEnd,
                     widthLower = t3,
                     widthUpper = p.t22,
                     refDelta = t3x - p.t21)
@@ -273,7 +266,7 @@ object MaxAccelerationReservationChecker {
       case _ => None
     }
 
-    val trapezoids = Some(lowerTrapezoid) :: Some(middleTrapezoid) :: upperOptTrapezoid :: Nil
+    val trapezoids = lowerOptTrapezoid :: Some(middleTrapezoid) :: upperOptTrapezoid :: Nil
     (remainingArea, trapezoids.flatten)
   }
 
@@ -292,7 +285,7 @@ object MaxAccelerationReservationChecker {
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t14, p.vDown),
                                   height = p.velocity - p.vDown,
                                   widthLower = 0.0,
-                                  widthUpper = p.timeTotal,
+                                  widthUpper = p.durationTotal,
                                   refDelta = p.t14)
         (remainingArea, Some(trapezoid))
 
@@ -303,16 +296,15 @@ object MaxAccelerationReservationChecker {
         val remainingArea = calcRemainingArea(p.area0,
                                               areaL + areaR,
                                               "distance to small (Case 3b)")
-
+        assert(p.t12 > 0.0, "t12 negative or zero (case 3b)")
         val trapezoid = Trapezoid(Vector2.of(p.time + p.t11, 0.0),
                                   height = p.velocity,
                                   widthLower = p.t12,
-                                  widthUpper = p.timeTotal,
+                                  widthUpper = p.durationTotal,
                                   refDelta = p.t11)
         (remainingArea, Some(trapezoid))
 
-      case _ =>
-        (p.area0, None)
+      case _ => (p.area0, None)
     }
 
     val upperOptTrapezoid = None match {
@@ -320,15 +312,16 @@ object MaxAccelerationReservationChecker {
         Some {
           Trapezoid(Vector2.of(p.time, p.velocity),
                     height = p.vUp - p.velocity,
-                    widthLower = p.timeTotal,
+                    widthLower = p.durationTotal,
                     widthUpper = 0.0,
                     refDelta = -p.t24)
         }
       case _ if p.velocityEnd < p.velocityMax =>
+        assert(p.t22 > 0.0)
         Some {
           Trapezoid(Vector2.of(p.time, p.velocity),
                     height = p.velocityMax - p.velocity,
-                    widthLower = p.timeTotal,
+                    widthLower = p.durationTotal,
                     widthUpper = p.t22,
                     refDelta = -p.t21)
         }
@@ -339,8 +332,8 @@ object MaxAccelerationReservationChecker {
     (remainingArea, trapezoids.flatten)
   }
 
-  private def whenAfterEndTime(p: Params): AccelerationSchedule = {
-    assert(p.time != p.timeEnd)
+  private def whenOnEndTime(p: Params): AccelerationSchedule = {
+//    assert(p.time == p.timeEnd)
     if (p.distanceTotal > 0.0) {
       sys.error(
         "Reservation check failed: distance is not zero when there is no time to move")
@@ -348,7 +341,7 @@ object MaxAccelerationReservationChecker {
       assert(p.distanceTotal.asMeters.isZero)
       if (p.velocity isEqual p.velocityEnd) {
         AccelerationSchedule(
-          AccelerationTimestamp(0.0, p.time, p.time) :: Nil
+          AccelerationTimestamp(0.0, p.currentTime, p.arrivalTime) :: Nil
         )
       } else {
         sys.error(
@@ -357,41 +350,67 @@ object MaxAccelerationReservationChecker {
     }
   }
 
+  private def isPartialTrapezoidValid(p: Params,
+                                      vec: (Vector2, Vector2)): Boolean = {
+    val (p1, p2) = vec
+    val velocity = (if (p.velocity <= p1.y) p.acceleration else p.deceleration) * (p1.x - p.time) + p.velocity
+
+    val p1Valid = velocity isEqual p1.y
+    if (!p1Valid) {
+      System.err.println(
+        s"Partial trapezoid validation :: p1 y is incorrect, expected $velocity, actual ${p1.y}")
+    }
+
+// format: off
+    val velocity2 = p.velocityEnd - (if (p2.y <= p.velocityEnd) p.acceleration else p.deceleration) * (p.timeEnd - p2.x)
+// format: on
+    val p2Valid = velocity2 isEqual p2.y
+    if (!p2Valid) {
+      System.err.println(
+        s"Partial trapezoid validation :: p2 y is incorrect, expected $velocity, actual ${p2.y}")
+    }
+
+    p1Valid && p2Valid
+  }
+
   private def findPartialTrapezoid(
+      params: Params,
       trapezoids: List[Trapezoid],
-      remainingArea: Acceleration): Option[(Vector2, Vector2)] = {
+      initialArea: Acceleration): Option[(Vector2, Vector2)] = {
 
     val (_, solution) =
-      trapezoids.foldLeft((remainingArea, Option.empty[(Vector2, Vector2)])) {
-        case ((area, res @ Some(_)), _) => (area, res)
+      trapezoids.foldLeft((initialArea, Option.empty[(Vector2, Vector2)])) {
+        case ((remainingArea, res @ Some(_)), _) => (remainingArea, res)
 
-        case ((area, None), trapezoid: Trapezoid)
+        case ((remainingArea, None), trapezoid: Trapezoid)
             if remainingArea.isEqual(trapezoid.area) ||
               remainingArea < trapezoid.area =>
-          val optSolution = Try(calcPartialTrapezoid(trapezoid, area)) match {
-            case Success(value) => Some(value)
-            case Failure(exception) =>
-              System.err.println(exception.getMessage)
-              None
-          }
-          (area, optSolution)
+          val optSolution =
+            Try(calcPartialTrapezoid(trapezoid, remainingArea))
+              .filter(isPartialTrapezoidValid(params, _)) match {
+              case Success(value) => Some(value)
+              case Failure(exception) =>
+                System.err.println(exception.getMessage)
+                None
+            }
+          (remainingArea, optSolution)
 
-        case ((area, None), trapezoid) =>
-          (area - trapezoid.area, None)
+        case ((remainingArea, None), trapezoid) =>
+          (remainingArea - trapezoid.area, None)
       }
 
     solution
   }
 
-  private def calcPartialTrapezoid(
-      p: MaxAccelerationReservationChecker.Trapezoid,
-      area: Double): (Vector2, Vector2) = {
+  private def calcPartialTrapezoid(p: ReservationChecker.Trapezoid,
+                                   area: Double): (Vector2, Vector2) = {
     assert(p.height >= 0.0)
     assert(
       p.widthLower >= 0.0 && p.widthUpper > 0 ||
         p.widthLower > 0.0 && p.widthUpper >= 0.0
     )
-    assert(area isEqual (p.height * (p.widthLower + p.widthUpper) / 2))
+    assert(p.area isEqual (p.height * (p.widthLower + p.widthUpper) / 2),
+           "Trapezoid area was malformed")
 
     def buildLine(w: Double,
                   h: Double,
@@ -412,20 +431,18 @@ object MaxAccelerationReservationChecker {
       case _ if area isEqual p.area =>
         buildLine(p.widthUpper, p.height, p.refDelta, p.referencePoint)
 
-      case _ if area >= 0.0 && p.area >= 0.0 =>
-        if (p.widthUpper == p.widthLower) {
+      case _ if area >= 0.0 && area <= p.area =>
+        if (p.widthUpper isEqual p.widthLower) {
           val h0 = area / p.widthLower
           buildLine(p.widthLower,
-                    area / p.widthLower,
+                    h0,
                     h0 * p.refDelta / p.height,
                     p.referencePoint)
         } else {
           val h0 = Math.sqrt(
-            Math.pow(p.widthLower, 2) *
-              Math.pow(p.height, 2) + {
-              (p.widthUpper - p.widthLower) * (2 * area * p.height) -
-                (p.widthLower * p.height)
-            })
+            Math.pow(p.widthLower, 2) * Math.pow(p.height, 2) +
+              (p.widthUpper - p.widthLower) * (2 * area * p.height) - (p.widthLower * p.height)
+          ) / (p.widthUpper - p.widthLower)
           val w0 = (p.widthUpper - p.widthLower) * h0 / p.height + p.widthLower
           val x0 = h0 * p.refDelta / p.height
           buildLine(w0, h0, x0, p.referencePoint)
@@ -440,38 +457,34 @@ object MaxAccelerationReservationChecker {
       vec: (Vector2, Vector2)): AccelerationSchedule = {
     val (p1, p2) = vec
 
-    val has2ndPhase = p1.x isEqual p2.x
+    val hasCruisingPhase = !(p1.x isEqual p2.x)
     val p1Time = p1.x.seconds.toMillis
     val p2Time = p2.x.seconds.toMillis
 
     val builder = AccelerationSchedule.Builder()
 
-    if (p1Time == p.time) {
+    if (p1Time == p.currentTime) {
       assert(p1.y isEqual p.velocity)
+    } else if (p1.y < p.velocity) {
+      builder.add(p.deceleration, p.currentTime)
     } else {
-
-      if (p1.y < p.velocity) {
-        builder.add(p.deceleration, p.time)
-      } else {
-        builder.add(p.deceleration, p.time)
-      }
+      assert(p.velocity < p1.y, "invalid p1 velocity")
+      builder.add(p.acceleration, p.currentTime)
     }
 
-    if (has2ndPhase) {
+    if (hasCruisingPhase) {
       builder.add(0.0, p1Time)
     }
 
-    if (p2Time == p.timeEnd) {
+    if (p2Time == p.arrivalTime) {
       assert(p2.y isEqual p.velocityEnd)
+    } else if (p2.y < p.velocityEnd) {
+      builder.add(p.acceleration, p2Time)
     } else {
-      if (p2.y < p.velocityEnd) {
-        builder.add(p.acceleration, p2Time)
-      } else {
-        assert(p.velocityEnd < p2.y)
-        builder.add(p.deceleration, p2Time)
-      }
+      assert(p.velocityEnd < p2.y, "invalid p2 velocity")
+      builder.add(p.deceleration, p2Time)
     }
-    builder.add(0.0, p.timeEnd)
+    builder.add(0.0, p.arrivalTime)
 
     builder.build
   }
@@ -497,12 +510,13 @@ object MaxAccelerationReservationChecker {
     }
 
     val hasValidSize = schedule.timestamps.nonEmpty && schedule.timestamps.size <= 4
-
-    val correctInititalTime = schedule.timestamps.head.timeStart == params.time
-
+    val correctInititalTime = schedule.timestamps.head.timeStart == params.currentTime
     val hasNonNegetiveDurations: Boolean = schedule.timestamps
       .forall(_.duration.length >= 0)
 
+    val s = schedule.calculateFinalStateAtTime(params.currentTime,
+                                               params.velocity,
+                                               schedule.timestamps.last.timeEnd)
     val (finalVelocity, finalDistance, hasValidVelocities) = schedule.timestamps
       .foldLeft((params.velocity, 0.0, true)) {
         case ((velocity, distance, isValid), event) =>
@@ -515,19 +529,27 @@ object MaxAccelerationReservationChecker {
           (newVelocity, newDistance, isValid && result)
       }
 
-    val correctTime = schedule.timestamps.last.timeEnd == params.timeEnd
+    val correctTime = schedule.timestamps.last.timeEnd == params.arrivalTime
+    val correctEndingVelocity = (finalVelocity - params.velocityEnd).abs < 0.5
 
-    val correctEndingVelocity = finalVelocity.isEqual(params.velocityEnd)
-
-    val corectFinalDistance = finalDistance.isEqual(params.distanceTotal)
+    val corectFinalDistance = (finalDistance - params.distanceTotal.asMeters).abs < 0.5
 
     check(hasValidSize, "Invalid acceleration schedule size")
-    check(correctInititalTime, "Invalid acceleration initial time")
+    check(
+      correctInititalTime,
+      s"Invalid acceleration initial time, actual:${schedule.timestamps.head.timeStart}, expected:${params.currentTime}")
     check(hasNonNegetiveDurations, "Duration cannot be negative")
-    check(hasValidVelocities, "Velocity is greater then maximal velocity")
-    check(correctTime, "Incorect ending time")
-    check(correctEndingVelocity, "Invalid end velocity")
-    check(corectFinalDistance, "Incorect total distance")
+    check(hasValidVelocities,
+          "Exists velocity with greater then maximal velocity")
+    check(
+      correctTime,
+      s"Incorect ending time, expected: ${params.arrivalTime}, actual: ${schedule.timestamps.last.timeEnd}")
+    check(
+      correctEndingVelocity,
+      s"Invalid end velocity, expected ${params.velocityEnd}, actual $finalVelocity")
+    check(
+      corectFinalDistance,
+      s"Incorect total distance, expected: ${params.distanceTotal.asMeters}, actual: $finalDistance")
 
     hasValidSize &&
     correctInititalTime &&
@@ -539,8 +561,8 @@ object MaxAccelerationReservationChecker {
   }
 
   private case class Params(
-      time: Timestamp,
-      timeEnd: Timestamp,
+      currentTime: Timestamp,
+      arrivalTime: Timestamp,
       velocity: Velocity,
       velocityEnd: Velocity,
       velocityMax: Velocity,
@@ -549,7 +571,7 @@ object MaxAccelerationReservationChecker {
       deceleration: Acceleration
   ) {
     // format: off
-    assert(time < timeEnd)
+//    assert(time <= timeEnd, s"Current time: $time, Arrival time: $timeEnd")
     assert(velocity >= 0.0)
     assert(velocity.isEqual(velocityMax) || velocity < velocityMax)
     assert(velocityEnd >= 0.0)
@@ -558,21 +580,23 @@ object MaxAccelerationReservationChecker {
     assert(acceleration > 0)
     assert(deceleration < 0)
 
-    val timeTotal: Double = (timeEnd - time).millis.toUnit(TimeUnit.SECONDS)
+    val time: Double = currentTime.millis.toUnit(TimeUnit.SECONDS)
+    val timeEnd: Double = arrivalTime.millis.toUnit(TimeUnit.SECONDS)
+    val durationTotal: Double = timeEnd - time
 
-    lazy val t11: Double = -velocity / deceleration
-    lazy val t12: Double = timeTotal - t11 - t13
-    lazy val t13: Double = velocityEnd / acceleration
-    lazy val t14: Double = (velocityEnd - acceleration * timeTotal - velocity) / (deceleration - acceleration)
-    lazy val t15: Double = timeTotal - t14
-    lazy val vDown: Double = velocity + deceleration * t14
+    val t11: Double = -velocity / deceleration   //time decelerating
+    val t13: Double = velocityEnd / acceleration //time accelerating
+    val t12: Double = durationTotal - t11 - t13  //time maintaining velocity
+    val t14: Double = (velocityEnd - acceleration * durationTotal - velocity) / (deceleration - acceleration)
+    val t15: Double = durationTotal - t14
+    val vDown: Double = velocity + deceleration * t14
 
-    lazy val t21: Double = (velocityMax - velocity) / acceleration
-    lazy val t22: Double = timeTotal - t21 - t23
-    lazy val t23: Double = (velocityEnd - velocityMax) / deceleration
-    lazy val t24: Double = (velocityEnd - deceleration * timeTotal - velocity) / (deceleration - acceleration)
-    lazy val t25: Double = timeTotal - t24
-    lazy val vUp: Double = velocity + deceleration * t24
+    val t21: Double = (velocityMax - velocity) / acceleration
+    val t23: Double = (velocityEnd - velocityMax) / deceleration
+    val t22: Double = durationTotal - t21 - t23
+    val t24: Double = (velocityEnd - deceleration * durationTotal - velocity) / (acceleration - deceleration)
+    val t25: Double = durationTotal - t24
+    val vUp: Double = velocity + acceleration * t24
 
     val area0: Double = distanceTotal.asMeters
 

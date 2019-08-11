@@ -35,10 +35,10 @@ trait VehicleDriver {
   def destination: Option[Road]
 
   def prepareToMove(): VehicleDriver = {
-    updateGauges()
+    updateGauges
   }
 
-  def updateGauges(): this.type = {
+  def updateGauges: this.type = {
     driverGauges = driverGauges.updateDistanceToIntersections(
       nextIntersectionPosition,
       previousIntersectionPosition,

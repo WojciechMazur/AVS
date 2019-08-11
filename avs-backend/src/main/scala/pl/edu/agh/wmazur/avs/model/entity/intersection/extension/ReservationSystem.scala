@@ -248,7 +248,7 @@ object ReservationSystem {
       override val isRejected: Boolean = true
     }
     case class AcceptedResult(proposal: Proposal) extends ProposalFilterResult {
-      override val isRejected: Boolean = true
+      override val isRejected: Boolean = false
     }
   }
 

@@ -39,7 +39,6 @@ case class CollectorPoint(lane: Lane) {
   def checkToRemove(vehicles: Iterable[Vehicle]): Iterable[Vehicle] = {
     vehicles.collect {
       case vehicle if shouldBeRemoved(vehicle) =>
-        println(s"Marking vehicle ${vehicle.id} to removal")
         collectedCounter.incrementAndGet()
         vehicle
     }

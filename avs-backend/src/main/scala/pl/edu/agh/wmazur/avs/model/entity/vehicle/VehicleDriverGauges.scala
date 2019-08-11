@@ -9,6 +9,13 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnecti
 case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
                                distanceToNextIntersection: Option[Dimension],
                                distanceToPrevIntersection: Option[Dimension]) {
+
+  def calcDistance(point: Point, vehicle: Vehicle): Dimension =
+    SpatialUtils.shapeFactory
+      .getGeometryFrom(point)
+      .distance(vehicle.geometry)
+      .geoDegrees
+
   def updateVehicleInFront(optVehicleInFront: Option[VehicleCachedReadings],
                            vehicle: Vehicle): VehicleDriverGauges = {
     this
