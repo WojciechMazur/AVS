@@ -36,22 +36,28 @@ trait DefaultPolicy {
               nextAllowedCommunicationTimestamp = timestamp,
               reason = reason,
             )
+            context.log.debug("Request {} rejected, reason {}", req.id, reason)
 
           case (_, validProposals) =>
             val optAcceptance = for {
               reservationParameters <- calcReservationParamaters(
                 req,
                 validProposals.map(_.proposal))
-              acceptance = buildReservationAcceptance(req.id,
-                                                      reservationParameters)
+              acceptance <- buildReservationAcceptance(req.id,
+                                                       reservationParameters)
               _ = driverRef ! acceptance
+              _ = context.log.debug("Request {} confirmed", req.id)
             } yield acceptance
 
             if (optAcceptance.isEmpty) {
+              val reason = Reason.NoClearPath
+              context.log.debug("Request {} rejected, reason {}",
+                                req.id,
+                                reason)
               driverRef ! ReservationRejected(
                 requestId = req.id,
                 nextAllowedCommunicationTimestamp = timestamp,
-                reason = Reason.Dropped,
+                reason = reason,
               )
             }
         }

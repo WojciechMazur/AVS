@@ -13,6 +13,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   ReservationChecker,
+  Vehicle,
   VehicleArrivalEstimator
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
@@ -125,7 +126,7 @@ trait PreperingReservation {
             hasOngoingRequest = true
             lastReservationRequest = Some(request)
             nextIntersectionManager.get ! request
-            timers.startSingleTimer(ReservationRequestTimeout,
+            timers.startSingleTimer(Timer.ReservationRequestTimeout(request.id),
                                     ReservationRequestTimeout,
                                     reservationRequestTimeout)
         }
@@ -140,7 +141,7 @@ trait PreperingReservation {
       case ReservationRejected(requestId,
                                nextAllowedCommunicationTimestamp,
                                reason) =>
-        timers.cancel(ReservationRequestTimeout)
+        timers.cancel(Timer.ReservationRequestTimeout(requestId))
         hasOngoingRequest = false
         if (lastReservationRequest.map(_.id).contains(requestId)) {
           reason match {
@@ -148,7 +149,7 @@ trait PreperingReservation {
               val delay =
                 (nextAllowedCommunicationTimestamp - currentTime).millis
                   .max(sendingRequestDelay)
-              timers.startSingleTimer(Timer.RetryReservationRequest,
+              timers.startSingleTimer(Timer.RetryReservationRequest(requestId),
                                       TrySendReservationRequest,
                                       delay)
             case rejection =>
@@ -157,8 +158,8 @@ trait PreperingReservation {
         }
         Behaviors.same
 
-      case ReservationConfirmed(reservationId, _, details) =>
-        timers.cancel(ReservationRequestTimeout)
+      case ReservationConfirmed(reservationId, requestId, details) =>
+        timers.cancel(Timer.ReservationRequestTimeout(requestId))
         hasOngoingRequest = false
         val updatedGauges = updateGauges
         assert(
@@ -189,9 +190,10 @@ trait PreperingReservation {
               context.log.error("Reservation check failed: {}", err.getMessage)
               details.intersectionManagerRef ! IntersectionManager.Protocol
                 .CancelReservation(reservationId, context.self)
-              timers.startSingleTimer(Timer.RetryReservationRequest,
+              timers.startSingleTimer(Timer.RetryReservationRequest(requestId),
                                       TrySendReservationRequest,
                                       TickSource.timeStep)
+//              context.self ! TrySendReservationRequest
               reservationDetails = None
               withVehicle(vehicle.withAccelerationSchedule(None))
           }
@@ -287,7 +289,8 @@ object PreperingReservation {
   final val sendingRequestDelay = 20.millis
   final val reservationRequestTimeout = 1.seconds
   object Timer {
-    case object RetryReservationRequest
+    case class RetryReservationRequest(requestId: Vehicle#Id)
+    case class ReservationRequestTimeout(requestId: Long)
   }
   trait Protocol {
     case object TrySendReservationRequest extends ExtendedProtocol

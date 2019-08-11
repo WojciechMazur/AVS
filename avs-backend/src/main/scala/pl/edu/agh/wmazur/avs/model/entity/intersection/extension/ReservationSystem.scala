@@ -180,41 +180,51 @@ trait ReservationSystem {
 
   def buildReservationAcceptance(
       requestId: Long,
-      params: ReservationParameters): ReservationConfirmed = {
-    val acceptance = for {
-      admissionZoneManager <- admissionControlZonesManagers.get(
-        params.admissionControlZoneId)
-      reservationId <- mainReservationManager.accept(params.gridSchedule)
-      admissionId <- admissionZoneManager.accept(
-        params.admissionControlZonePlan)
+      params: ReservationParameters): Option[ReservationConfirmed] = {
+    val reservationId = mainReservationManager.accept(params.gridSchedule)
+    val admissionId = admissionControlZonesManagers
+      .get(params.admissionControlZoneId)
+      .flatMap(_.accept(params.admissionControlZonePlan))
 
-      details = ReservationDetails(
-        intersectionManagerRef = context.self,
-        arrivalTime = params.successfulProposal.arrivalTime,
-        safetyBufferBefore = ReservationSystem.earlyArrivalThreshold,
-        safetyBufferAfter = ReservationSystem.lateArrivalThreshold,
-        arrivalVelocity = params.successfulProposal.arrivalVelocity,
-        arrivalLaneId = params.successfulProposal.arrivalLaneId,
-        departureLaneId = params.successfulProposal.departureLaneId,
-        accelerationProfile = params.gridSchedule.accelerationProfile,
-      )
+    (reservationId, admissionId) match {
+      case (Some(rId), Some(_)) =>
+        val details = ReservationDetails(
+          intersectionManagerRef = context.self,
+          arrivalTime = params.successfulProposal.arrivalTime,
+          safetyBufferBefore = ReservationSystem.earlyArrivalThreshold,
+          safetyBufferAfter = ReservationSystem.lateArrivalThreshold,
+          arrivalVelocity = params.successfulProposal.arrivalVelocity,
+          arrivalLaneId = params.successfulProposal.arrivalLaneId,
+          departureLaneId = params.successfulProposal.departureLaneId,
+          accelerationProfile = params.gridSchedule.accelerationProfile,
+        )
 
-      confirmMsg = ReservationConfirmed(
-        reservationId,
-        requestId,
-        details
-      )
+        val reservationRecord = ReservationRecord(
+          params.driverRef,
+          params.successfulProposal.departureLaneId)
 
-      reservationRecord = ReservationRecord(
-        params.driverRef,
-        params.successfulProposal.departureLaneId)
+        reservationRegistry.update(rId, reservationRecord)
+        driverReservation.update(params.driverRef, rId)
 
-      _ = reservationRegistry.update(reservationId, reservationRecord)
-      _ = driverReservation.update(params.driverRef, reservationId)
+        Some {
+          ReservationConfirmed(
+            rId,
+            requestId,
+            details
+          )
+        }
+      case _ =>
+        reservationId.foreach(mainReservationManager.cancel)
+        for {
+          _ <- admissionId
+          admissionZoneManager <- admissionControlZonesManagers.get(
+            params.admissionControlZoneId)
+        } {
+          admissionZoneManager.cancel(params.driverRef)
+        }
 
-    } yield confirmMsg
-
-    acceptance.get
+        None
+    }
   }
 
   def hasReservation(driverRef: DriverRef): Boolean = {

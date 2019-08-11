@@ -117,9 +117,9 @@ object ReservationChecker {
   private def whenNeedToSlowDown(p: Params): (Double, List[Trapezoid]) = {
     val t3x = (p.velocityEnd - p.velocity) / p.deceleration
     val t3 = p.durationTotal - t3x
-
     val (remainingArea, lowerTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
+        println("case 5a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
@@ -137,6 +137,8 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
+        println("case 5b")
+
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -153,6 +155,8 @@ object ReservationChecker {
                                   refDelta = p.t11 - t3x)
         (remainingArea, Some(trapezoid))
       case _ =>
+        println("case 5c")
+
         val areaL = p.t11 * p.velocity / 2
         val remainingArea =
           calcRemainingArea(p.area0, areaL, "distance to small (Case 5c)")
@@ -196,6 +200,7 @@ object ReservationChecker {
 
     val (remainingArea, lowerOptTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
+        println("case 4a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
@@ -213,6 +218,8 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
+        println("case 4b")
+
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -229,6 +236,8 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ =>
+        println("case 4c")
+
         val areaR = p.t13 * p.velocityEnd / 2
         val remainingArea =
           calcRemainingArea(
@@ -273,7 +282,9 @@ object ReservationChecker {
   private def whenNeedToMaintainSpeed(p: Params): (Double, List[Trapezoid]) = {
 
     val (remainingArea, lowerOptTrapezoid) = None match {
+
       case _ if p.vDown >= 0.0 =>
+        println("case 3a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
@@ -290,6 +301,8 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
+        println("case 3b")
+
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -304,7 +317,10 @@ object ReservationChecker {
                                   refDelta = p.t11)
         (remainingArea, Some(trapezoid))
 
-      case _ => (p.area0, None)
+      case _ =>
+        println("case 3c")
+
+        (p.area0, None)
     }
 
     val upperOptTrapezoid = None match {
@@ -367,7 +383,7 @@ object ReservationChecker {
     val p2Valid = velocity2 isEqual p2.y
     if (!p2Valid) {
       System.err.println(
-        s"Partial trapezoid validation :: p2 y is incorrect, expected $velocity, actual ${p2.y}")
+        s"Partial trapezoid validation :: p2 y is incorrect, expected $velocity2, actual ${p2.y}")
     }
 
     p1Valid && p2Valid
@@ -439,9 +455,12 @@ object ReservationChecker {
                     h0 * p.refDelta / p.height,
                     p.referencePoint)
         } else {
-          val h0 = Math.sqrt(
-            Math.pow(p.widthLower, 2) * Math.pow(p.height, 2) +
-              (p.widthUpper - p.widthLower) * (2 * area * p.height) - (p.widthLower * p.height)
+          val h0 = (
+            Math.sqrt(
+              Math.pow(p.widthLower, 2) * Math.pow(p.height, 2)
+                + (p.widthUpper - p.widthLower)
+                  * (2 * area * p.height)
+            ) - (p.widthLower * p.height)
           ) / (p.widthUpper - p.widthLower)
           val w0 = (p.widthUpper - p.widthLower) * h0 / p.height + p.widthLower
           val x0 = h0 * p.refDelta / p.height
@@ -514,9 +533,6 @@ object ReservationChecker {
     val hasNonNegetiveDurations: Boolean = schedule.timestamps
       .forall(_.duration.length >= 0)
 
-    val s = schedule.calculateFinalStateAtTime(params.currentTime,
-                                               params.velocity,
-                                               schedule.timestamps.last.timeEnd)
     val (finalVelocity, finalDistance, hasValidVelocities) = schedule.timestamps
       .foldLeft((params.velocity, 0.0, true)) {
         case ((velocity, distance, isValid), event) =>
@@ -530,9 +546,9 @@ object ReservationChecker {
       }
 
     val correctTime = schedule.timestamps.last.timeEnd == params.arrivalTime
-    val correctEndingVelocity = (finalVelocity - params.velocityEnd).abs < 0.5
+    val correctEndingVelocity = (finalVelocity - params.velocityEnd).abs < 1
 
-    val corectFinalDistance = (finalDistance - params.distanceTotal.asMeters).abs < 0.5
+    val corectFinalDistance = (finalDistance - params.distanceTotal.asMeters).abs < 1
 
     check(hasValidSize, "Invalid acceleration schedule size")
     check(
