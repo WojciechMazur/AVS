@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.EntityRefsGroup
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
@@ -12,6 +13,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationAr
 
 trait OnTick {
   self: AutonomousVehicleDriver =>
+
   import AutonomousVehicleDriver._
 
   var currentTime: Timestamp = 0L
@@ -34,7 +36,10 @@ trait OnTick {
         ).flatten
           .foreach(_.ref ! GetPositionReading(context.self.narrow))
 
-        Behaviors.same
+        reservationDetails
+          .flatMap(_ => maintainReservation)
+          .getOrElse(Behaviors.same)
+
       case reading: BasicReading =>
         val driverRef = reading.driverRef
         if (driverInFront.exists(_.ref == driverRef)) {
@@ -57,8 +62,30 @@ trait OnTick {
       .setTo(reading.position)
       .modify(_.velocity)
       .setTo(reading.velocity)
-
   }
+
+  private def maintainReservation
+    : Option[Behavior[AutonomousVehicleDriver.Protocol]] = {
+    if (driverGauges.isWithinIntersection) {
+      if (!canArriveInTime) {
+        context.log.error("The arrival time is incorrect")
+      }
+      if (!canArriveWithValidVelocity) {
+        context.log.error("The arrival velocity is incorrect")
+      }
+      context.log.debug("Starting traversing")
+      None
+    } else if (!hasClearLnaeToIntersection) {
+      nextIntersectionManager.get ! IntersectionManager.Protocol
+        .CancelReservation(reservationDetails.get.reservationId, context.self)
+      withVehicle(vehicle.withAccelerationSchedule(None))
+      context.self ! TrySendReservationRequest
+      Some(switchTo(preperingReservation))
+    } else {
+      None
+    }
+  }
+
 }
 
 object OnTick {

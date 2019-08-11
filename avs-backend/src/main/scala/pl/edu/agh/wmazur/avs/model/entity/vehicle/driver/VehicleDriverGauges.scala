@@ -1,14 +1,17 @@
-package pl.edu.agh.wmazur.avs.model.entity.vehicle
+package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import com.softwaremill.quicklens._
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 
 case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
                                distanceToNextIntersection: Option[Dimension],
-                               distanceToPrevIntersection: Option[Dimension]) {
+                               distanceToPrevIntersection: Option[Dimension],
+                               isWithinIntersection: Boolean) {
 
   def calcDistance(point: Point, vehicle: Vehicle): Dimension =
     SpatialUtils.shapeFactory
@@ -47,10 +50,22 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
           .map(_.distance(vehicle.geometry).geoDegrees)
       }
   }
+
+  def updateIsWithinIntersection(intersectionGeometry: Option[Geometry],
+                                 vehicle: Vehicle): VehicleDriverGauges = {
+    this
+      .modify(_.isWithinIntersection)
+      .setTo {
+        intersectionGeometry
+          .map(_.buffer(1.meters.asGeoDegrees))
+          .exists(_.relate(vehicle.geometry).isIntersects)
+      }
+  }
 }
 
 object VehicleDriverGauges {
   val empty = VehicleDriverGauges(distanceToCarInFront = None,
                                   distanceToNextIntersection = None,
-                                  distanceToPrevIntersection = None)
+                                  distanceToPrevIntersection = None,
+                                  isWithinIntersection = false)
 }

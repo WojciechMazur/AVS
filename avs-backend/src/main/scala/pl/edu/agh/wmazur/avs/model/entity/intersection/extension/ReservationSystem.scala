@@ -187,8 +187,10 @@ trait ReservationSystem {
       .flatMap(_.accept(params.admissionControlZonePlan))
 
     (reservationId, admissionId) match {
-      case (Some(rId), Some(_)) =>
+      case (Some(rId), Some(aId)) =>
         val details = ReservationDetails(
+          rId,
+          aId,
           intersectionManagerRef = context.self,
           arrivalTime = params.successfulProposal.arrivalTime,
           safetyBufferBefore = ReservationSystem.earlyArrivalThreshold,

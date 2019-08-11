@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import akka.actor.typed.ActorRef
 import mikera.vectorz.Vector2
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
@@ -10,8 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   AccelerationProfile,
   BasicVehicle,
-  Vehicle,
-  VehicleDriverGauges
+  Vehicle
 }
 import pl.edu.agh.wmazur.avs.protocol.{Response, SimulationProtocol}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.{
@@ -39,10 +39,10 @@ trait VehicleDriver {
   }
 
   def updateGauges: this.type = {
-    driverGauges = driverGauges.updateDistanceToIntersections(
-      nextIntersectionPosition,
-      previousIntersectionPosition,
-      vehicle)
+    driverGauges = driverGauges
+      .updateDistanceToIntersections(nextIntersectionPosition,
+                                     previousIntersectionPosition,
+                                     vehicle)
 
     this
   }
@@ -86,6 +86,8 @@ object VehicleDriver {
         with Protocol
 
     case class ReservationDetails(
+        reservationId: ReservationId,
+        admissionId: ReservationId,
         intersectionManagerRef: ActorRef[IntersectionManager.Protocol],
         arrivalTime: Long,
         safetyBufferBefore: FiniteDuration,
@@ -117,7 +119,8 @@ object VehicleDriver {
 
     final case class IntersectionManagerInRange(
         ref: ActorRef[IntersectionManager.Protocol],
-        position: Point)
+        position: Point,
+        geometry: Geometry)
         extends Protocol
   }
 

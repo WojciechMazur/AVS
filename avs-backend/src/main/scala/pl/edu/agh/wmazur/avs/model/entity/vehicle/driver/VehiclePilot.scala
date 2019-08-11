@@ -6,18 +6,18 @@ import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleArrivalEstimator.Parameters
+import VehicleArrivalEstimator.Parameters
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   AccelerationSchedule,
-  BasicVehicle,
-  VehicleArrivalEstimator
+  BasicVehicle
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationDetails
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -54,6 +54,31 @@ trait VehiclePilot {
         currentLane.leadPointOf(vehicle.position, leadDistance)
       }
     }
+  }
+
+  protected def takeSteeringActiorsForTraversing(
+      details: ReservationDetails): self.type = {
+    //TODO zmiana jezdni na włąściwą
+    followCurrentLane()
+  }
+
+  protected def followAccelerationProfile(
+      details: ReservationDetails): self.type = {
+    val accelerationProfile = details.accelerationProfile
+    if (accelerationProfile.events.isEmpty) {
+      //Todo obliczenie target velocity!!!
+      withVehicle(
+        vehicle.maxAccelerationWithTargetVelocity(vehicle.spec.maxVelocity))
+    } else {
+      val current = accelerationProfile.events.head
+
+      if (current.duration > TickSource.timeStep) {
+        withVehicle(
+          vehicle.maxVelocityWithAcceleration(current.acceleration)
+        )
+      } else if (current.duration < TickSource.timeStep) {}
+    }
+    ???
   }
 
   protected def hasClearLnaeToIntersection: Boolean = {

@@ -157,7 +157,8 @@ object DriversFetcherAgent {
               driverRef
                 .unsafeUpcast[VehicleDriver.Protocol] ! VehicleDriver.Protocol
                 .IntersectionManagerInRange(context.intersectionManagerRef,
-                                            position)
+                                            position,
+                                            context.intersectionGeometry)
             }
 
             context.context.unwatch(driverRef)

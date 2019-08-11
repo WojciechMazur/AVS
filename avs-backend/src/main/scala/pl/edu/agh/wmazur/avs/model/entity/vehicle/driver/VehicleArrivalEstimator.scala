@@ -1,18 +1,22 @@
-package pl.edu.agh.wmazur.avs.model.entity.vehicle
+package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import java.util.concurrent.TimeUnit
 
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationSchedule.AccelerationTimestamp
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  AccelerationProfile,
+  AccelerationSchedule
+}
 
 import scala.concurrent.duration._
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils._
 import scala.util.Try
 
 object VehicleArrivalEstimator {

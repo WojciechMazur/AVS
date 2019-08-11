@@ -34,6 +34,8 @@ trait DriverConnectivity {
                             NeighbourFetchingInterval.whenNone)
 
   var driverInFront: Option[VehicleCachedReadings] = None
+  var nextIntersectionGeometry: Option[Geometry] = None
+  var prevIntersectionGeometry: Option[Geometry] = None
 
   lazy val basicConnectivity: Behavior[Protocol] = Behaviors
     .receiveMessagePartial[Protocol] {
@@ -53,18 +55,24 @@ trait DriverConnectivity {
                                                                 vehicle)
         Behaviors.same
 
-      case IntersectionManagerInRange(ref, position) =>
+      case IntersectionManagerInRange(ref, position, geometry) =>
         if (nextIntersectionManager.isEmpty) {
           nextIntersectionManager = Some(ref)
           nextIntersectionPosition = Some(position)
+          nextIntersectionGeometry = Some(geometry)
 
           driverGauges = driverGauges
-            .modify(_.distanceToNextIntersection)
-            .setTo(Some(distanceToPoint(position)))
+            .updateDistanceToIntersections(nextIntersectionPosition,
+                                           previousIntersectionPosition,
+                                           vehicle)
+            .updateIsWithinIntersection(nextIntersectionGeometry, vehicle)
 
           context.self ! AskForMaximalCrossingVelocities
+          context.log.debug("Switching to preparing reservation")
+          switchTo(preperingReservation)
+        } else {
+          Behaviors.same
         }
-        Behaviors.same
 
       case FetchNeighbourVehicles =>
         currentLane.spec.road.get.managerRef ! RoadManager.FindPrecedingVehicle(

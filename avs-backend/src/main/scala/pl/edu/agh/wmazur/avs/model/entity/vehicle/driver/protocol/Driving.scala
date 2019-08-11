@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.ExtendedProtocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
@@ -11,6 +12,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource.TickDelta
 import pl.edu.agh.wmazur.avs.simulation.stage.DriversMovementStage
+import protobuf.pl.edu.agh.wmazur.avs.model.intersection.Intersection
 
 trait Driving extends VehiclePilot {
   self: AutonomousVehicleDriver with PreperingReservation =>
@@ -56,12 +58,28 @@ trait Driving extends VehiclePilot {
     }
   }
 
+  def traverseIntersection(): self.type = {
+    if (driverGauges.isWithinIntersection) {
+      takeSteeringActiorsForTraversing(reservationDetails.get)
+        .followAccelerationProfile(reservationDetails.get)
+    } else {
+      reservationDetails.get.intersectionManagerRef ! IntersectionManager.Protocol
+        .ReservationCompleted(context.self,
+                              reservationDetails.get.reservationId)
+      withoutChange
+    }
+  }
+
   lazy val drive: Behavior[Protocol] = Behaviors.receiveMessagePartial {
     case Move(replyTo, tickDelta)
         if hasOngoingRequest &&
           vehicle.accelerationSchedule.isDefined =>
       move(replyTo, tickDelta) {
         controlScheduler
+      }
+    case Move(replyTo, tickDelta) if driverGauges.isWithinIntersection =>
+      move(replyTo, tickDelta) {
+        traverseIntersection
       }
     case Move(replyTo, tickDelta) =>
       move(replyTo, tickDelta) {

@@ -11,11 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
-  ReservationChecker,
-  Vehicle,
-  VehicleArrivalEstimator
-}
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.ExtendedProtocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason._
@@ -26,6 +22,8 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
+  ReservationChecker,
+  VehicleArrivalEstimator,
   VehiclePilot
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
@@ -84,18 +82,16 @@ trait PreperingReservation {
           .flatMap(_.get(currentLane.id)) match {
           case None =>
           case Some(maxVelocities) =>
-            val withUpdatedMovement =
-              updateGauges
-                .withVehicle {
-                  stopBeforeIntersectionSchedule(currentTime) match {
-                    case optSchedule @ Some(_) =>
-                      vehicle.withAccelerationSchedule(optSchedule)
-                    case None => followCurrentLane().vehicle.stop
-                  }
-                }
+            withVehicle {
+              stopBeforeIntersectionSchedule(currentTime) match {
+                case optSchedule @ Some(_) =>
+                  vehicle.withAccelerationSchedule(optSchedule)
+                case None => followCurrentLane().vehicle.stop
+              }
+            }
 
             val estimations = maxVelocities
-              .mapValues(withUpdatedMovement.estimateArrival)
+              .mapValues(estimateArrival)
               .filterKeys(_ == currentLane)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation
@@ -236,6 +232,27 @@ trait PreperingReservation {
     }
   }
 
+  def canArriveInTime: Boolean = {
+    val reservationParams = reservationDetails.get
+    val a1 = currentTime - TickSource.timeStep.toMillis
+    val a2 = currentTime
+    val b1 = reservationParams.arrivalTime - reservationParams.safetyBufferBefore.toMillis
+    val b2 = reservationParams.arrivalTime + reservationParams.safetyBufferAfter.toMillis
+
+    def valid1 = a1 < b1 && b1 <= a2
+    def valid2 = a1 < b2 && b2 <= a2
+    def valid3 = b1 <= a1 && a2 < b2
+
+    List(valid1, valid2, valid3).contains(true)
+  }
+
+  def canArriveWithValidVelocity: Boolean = {
+    val reservationParams = reservationDetails.get
+    val v1 = reservationParams.arrivalVelocity
+    val v2 = vehicle.velocity
+    (v1 - v2).abs <= arrivalVelocityThreshold
+  }
+
   private def buildEstimationParamsWithAcclerationSchedule(
       params: VehicleArrivalEstimator.Parameters)
     : VehicleArrivalEstimator.Parameters = {
@@ -288,6 +305,8 @@ object PreperingReservation {
   final val arrivalEstimationAccelerationReduction = 1.0
   final val sendingRequestDelay = 20.millis
   final val reservationRequestTimeout = 1.seconds
+  final val arrivalVelocityThreshold = 3.0
+
   object Timer {
     case class RetryReservationRequest(requestId: Vehicle#Id)
     case class ReservationRequestTimeout(requestId: Long)

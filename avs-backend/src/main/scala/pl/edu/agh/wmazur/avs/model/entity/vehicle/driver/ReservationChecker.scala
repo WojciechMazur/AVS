@@ -1,18 +1,21 @@
-package pl.edu.agh.wmazur.avs.model.entity.vehicle
+package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import java.util.concurrent.TimeUnit
 
 import mikera.vectorz.Vector2
 import pl.edu.agh.wmazur.avs.Dimension
-import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationSchedule.AccelerationTimestamp
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
+  AccelerationProfile,
+  AccelerationSchedule
+}
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 

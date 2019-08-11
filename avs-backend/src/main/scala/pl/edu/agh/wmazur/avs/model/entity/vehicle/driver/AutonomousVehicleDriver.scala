@@ -54,6 +54,16 @@ class AutonomousVehicleDriver(
         }
       }
 
+  override def updateGauges: AutonomousVehicleDriver.this.type = {
+    driverGauges = driverGauges
+      .updateDistanceToIntersections(nextIntersectionPosition,
+                                     previousIntersectionPosition,
+                                     vehicle)
+      .updateIsWithinIntersection(nextIntersectionGeometry, vehicle)
+
+    this
+  }
+
   override protected val initialBehaviour: Behavior[Protocol] = switchTo(drive)
 
   override protected def setCurrentLane(lane: Lane): Lane = {
