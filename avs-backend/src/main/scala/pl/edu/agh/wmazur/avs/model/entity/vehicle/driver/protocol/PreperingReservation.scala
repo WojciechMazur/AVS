@@ -45,7 +45,7 @@ trait PreperingReservation {
 
   var lastReservationRequest
     : Option[IntersectionManager.Protocol.IntersectionCrossingRequest] = None
-  var hasOngoingRequest: Boolean = false
+  var isAwaitingForAcceptance: Boolean = false
   var reservationDetails: Option[ReservationDetails] = None
 
   val cachedMaxVelocities: IntersectionToLaneVelocities = mutable.Map.empty
@@ -119,7 +119,7 @@ trait PreperingReservation {
               context.self
             )
 
-            hasOngoingRequest = true
+            isAwaitingForAcceptance = true
             lastReservationRequest = Some(request)
             nextIntersectionManager.get ! request
             timers.startSingleTimer(Timer.ReservationRequestTimeout(request.id),
@@ -130,7 +130,7 @@ trait PreperingReservation {
 
       case ReservationRequestTimeout =>
         withVehicle(vehicle.withAccelerationSchedule(None))
-        hasOngoingRequest = false
+        isAwaitingForAcceptance = false
         context.self ! TrySendReservationRequest
         Behaviors.same
 
@@ -138,7 +138,7 @@ trait PreperingReservation {
                                nextAllowedCommunicationTimestamp,
                                reason) =>
         timers.cancel(Timer.ReservationRequestTimeout(requestId))
-        hasOngoingRequest = false
+        isAwaitingForAcceptance = false
         if (lastReservationRequest.map(_.id).contains(requestId)) {
           reason match {
             case NoClearPath | ConfirmedAnotherRequest | Dropped =>
@@ -156,7 +156,7 @@ trait PreperingReservation {
 
       case ReservationConfirmed(reservationId, requestId, details) =>
         timers.cancel(Timer.ReservationRequestTimeout(requestId))
-        hasOngoingRequest = false
+        isAwaitingForAcceptance = false
         val updatedGauges = updateGauges
         assert(
           driverGauges.distanceToNextIntersection.get isEqual driverGauges
@@ -176,9 +176,10 @@ trait PreperingReservation {
             deceleration = vehicle.spec.maxDeceleration
           )
           .map { schedule =>
+            isMaintaingReservation = true
             reservationDetails = Some(details)
-            context.self ! MaintainReservation
-            context.log.debug("Reservation accepted")
+//            context.self ! MaintainReservation
+//            context.log.debug("Reservation accepted")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
           }
           .recover {
@@ -232,25 +233,32 @@ trait PreperingReservation {
     }
   }
 
-  def canArriveInTime: Boolean = {
-    val reservationParams = reservationDetails.get
-    val a1 = currentTime - TickSource.timeStep.toMillis
-    val a2 = currentTime
-    val b1 = reservationParams.arrivalTime - reservationParams.safetyBufferBefore.toMillis
-    val b2 = reservationParams.arrivalTime + reservationParams.safetyBufferAfter.toMillis
+  def hasArrivedInTime: Boolean = {
+    reservationDetails.exists { reservationParams =>
+      val a1 = currentTime - 2 * TickSource.timeStep.toMillis
+      val a2 = currentTime
+      val b1 = reservationParams.arrivalTime - reservationParams.safetyBufferBefore.toMillis
+      val b2 = reservationParams.arrivalTime + reservationParams.safetyBufferAfter.toMillis
 
-    def valid1 = a1 < b1 && b1 <= a2
-    def valid2 = a1 < b2 && b2 <= a2
-    def valid3 = b1 <= a1 && a2 < b2
+      val valid1 = a1 < b1 && b1 <= a2
+      val valid2 = a1 < b2 && b2 <= a2
+      val valid3 = b1 <= a1 && a2 < b2
 
-    List(valid1, valid2, valid3).contains(true)
+      val result = List(valid1, valid2, valid3).contains(true)
+      if (!result) {
+        context.log.error(
+          s"arrival time check failed, earliest $b1, current: $currentTime, lastest: $b2")
+      }
+      result
+    }
   }
 
-  def canArriveWithValidVelocity: Boolean = {
-    val reservationParams = reservationDetails.get
-    val v1 = reservationParams.arrivalVelocity
-    val v2 = vehicle.velocity
-    (v1 - v2).abs <= arrivalVelocityThreshold
+  def hasArrivedWithExpectedVelocity: Boolean = {
+    reservationDetails.exists { reservationParams =>
+      val v1 = reservationParams.arrivalVelocity
+      val v2 = vehicle.velocity
+      (v1 - v2).abs <= arrivalVelocityThreshold
+    }
   }
 
   private def buildEstimationParamsWithAcclerationSchedule(

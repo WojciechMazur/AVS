@@ -264,9 +264,9 @@ object ReservationSystem {
     }
   }
 
-  val maximumFutureReservationTime: FiniteDuration = 10.seconds
+  val maximumFutureReservationTime: FiniteDuration = 30.seconds
   val defaultACZSize: Dimension = 40.asMeters
   val admissionControlZoneLength: Dimension = 40.meters
-  val earlyArrivalThreshold: FiniteDuration = 0.05.seconds
-  val lateArrivalThreshold: FiniteDuration = 0.05.seconds
+  val earlyArrivalThreshold: FiniteDuration = 0.5.seconds
+  val lateArrivalThreshold: FiniteDuration = 0.5.seconds
 }

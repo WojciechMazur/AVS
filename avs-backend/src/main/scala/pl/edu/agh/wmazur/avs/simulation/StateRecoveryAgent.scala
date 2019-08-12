@@ -69,7 +69,7 @@ object StateRecoveryAgent {
     }
 
   def spawnRoads(context: Context): Behavior[Protocol] = {
-    val laneSpec = new LaneSpec(30, 2.5, canSpawn = false)
+    val laneSpec = new LaneSpec(30, 2.5, canSpawn = true)
 
     val lane11 =
       DirectedLane.simple(spec = laneSpec,

@@ -51,11 +51,11 @@ case class SpawnPoint(lane: Lane) {
 
 object SpawnPoint {
   val specDistributionStacked: Map[Double, VehicleSpec] = Map(
-    0.4 -> VehicleSpec.Predefined.Sedan,
-    0.8 -> VehicleSpec.Predefined.Coupe,
-    1.0 -> VehicleSpec.Predefined.Van
+    1.0 -> VehicleSpec.Predefined.Sedan,
+//    0.8 -> VehicleSpec.Predefined.Coupe,
+//    1.0 -> VehicleSpec.Predefined.Van
   )
-  val maxVehiclesPerHour = 240
+  val maxVehiclesPerHour = 2400
   val spawnInterval: FiniteDuration = {
     import scala.concurrent.duration._
     1.hour / maxVehiclesPerHour

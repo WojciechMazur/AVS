@@ -57,7 +57,7 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
       .modify(_.isWithinIntersection)
       .setTo {
         intersectionGeometry
-          .map(_.buffer(1.meters.asGeoDegrees))
+          .map(_.buffer(0.1.meters.asGeoDegrees))
           .exists(_.relate(vehicle.geometry).isIntersects)
       }
   }

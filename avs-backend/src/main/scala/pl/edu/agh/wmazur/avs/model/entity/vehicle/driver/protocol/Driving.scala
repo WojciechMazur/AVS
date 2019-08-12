@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol
 
 import java.util.concurrent.TimeUnit
 
+import com.softwaremill.quicklens._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
@@ -10,14 +11,16 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
   VehiclePilot
 }
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.simulation.TickSource.TickDelta
 import pl.edu.agh.wmazur.avs.simulation.stage.DriversMovementStage
-import protobuf.pl.edu.agh.wmazur.avs.model.intersection.Intersection
 
 trait Driving extends VehiclePilot {
   self: AutonomousVehicleDriver with PreperingReservation =>
 
   import AutonomousVehicleDriver._
+  var isTraversing = false
+  var isMaintaingReservation = false
 
   private def withoutChange: self.type = this
 
@@ -58,28 +61,70 @@ trait Driving extends VehiclePilot {
     }
   }
 
-  def traverseIntersection(): self.type = {
+  def traverseIntersection(tickDelta: TickDelta)(): self.type = {
     if (driverGauges.isWithinIntersection) {
-      takeSteeringActiorsForTraversing(reservationDetails.get)
-        .followAccelerationProfile(reservationDetails.get)
+      val reservationDetails = this.reservationDetails.get
+      val (_, maxCrossingVelociy) =
+        cachedMaxVelocities(reservationDetails.intersectionManagerRef)(
+          reservationDetails.arrivalLaneId)
+          .find(_._1.id == reservationDetails.departureLaneId)
+          .get
+
+      val (updatedDetails, updatedSelf) =
+        takeSteeringActiorsForTraversing(reservationDetails)
+          .followAccelerationProfile(reservationDetails,
+                                     tickDelta,
+                                     maxCrossingVelociy)
+      this.reservationDetails = Some(updatedDetails)
+      updatedSelf.asInstanceOf[self.type]
     } else {
       reservationDetails.get.intersectionManagerRef ! IntersectionManager.Protocol
         .ReservationCompleted(context.self,
                               reservationDetails.get.reservationId)
+      isTraversing = false
       withoutChange
     }
   }
 
   lazy val drive: Behavior[Protocol] = Behaviors.receiveMessagePartial {
-    case Move(replyTo, tickDelta)
-        if hasOngoingRequest &&
-          vehicle.accelerationSchedule.isDefined =>
+    case Move(replyTo, tickDelta) if isAwaitingForAcceptance =>
       move(replyTo, tickDelta) {
         controlScheduler
       }
-    case Move(replyTo, tickDelta) if driverGauges.isWithinIntersection =>
+    case msg @ Move(_, _)
+        if isMaintaingReservation &&
+          driverGauges.isWithinIntersection =>
+      val x = self
+      println(driverGauges.distanceToNextIntersection.map(_.asMeters))
+      assert(hasArrivedInTime)
+      assert(hasArrivedWithExpectedVelocity)
+      context.self ! msg
+      isMaintaingReservation = false
+      isTraversing = true
+      context.log.info("Starting traversing")
+      Behaviors.same
+
+    case msg if isMaintaingReservation && !hasClearLnaeToIntersection =>
+      nextIntersectionManager.get ! IntersectionManager.Protocol
+        .CancelReservation(reservationDetails.get.reservationId, context.self)
+      timers.startSingleTimer(
+        PreperingReservation.Timer.RetryReservationRequest,
+        TrySendReservationRequest,
+        TickSource.timeStep)
+      reservationDetails = None
+      withVehicle(vehicle.withAccelerationSchedule(None))
+      context.self ! msg
+      isMaintaingReservation = false
+      Behaviors.same
+
+    case Move(replyTo, tickDelta) if isMaintaingReservation =>
+      assert(!isTraversing)
+      move(replyTo, tickDelta) { () =>
+        followCurrentLane()
+      }
+    case Move(replyTo, tickDelta) if isTraversing =>
       move(replyTo, tickDelta) {
-        traverseIntersection
+        traverseIntersection(tickDelta)
       }
     case Move(replyTo, tickDelta) =>
       move(replyTo, tickDelta) {

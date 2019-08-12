@@ -10,6 +10,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 
 trait OnTick {
   self: AutonomousVehicleDriver =>
@@ -35,10 +36,7 @@ trait OnTick {
           driverInFront
         ).flatten
           .foreach(_.ref ! GetPositionReading(context.self.narrow))
-
-        reservationDetails
-          .flatMap(_ => maintainReservation)
-          .getOrElse(Behaviors.same)
+        Behaviors.same
 
       case reading: BasicReading =>
         val driverRef = reading.driverRef
@@ -62,28 +60,6 @@ trait OnTick {
       .setTo(reading.position)
       .modify(_.velocity)
       .setTo(reading.velocity)
-  }
-
-  private def maintainReservation
-    : Option[Behavior[AutonomousVehicleDriver.Protocol]] = {
-    if (driverGauges.isWithinIntersection) {
-      if (!canArriveInTime) {
-        context.log.error("The arrival time is incorrect")
-      }
-      if (!canArriveWithValidVelocity) {
-        context.log.error("The arrival velocity is incorrect")
-      }
-      context.log.debug("Starting traversing")
-      None
-    } else if (!hasClearLnaeToIntersection) {
-      nextIntersectionManager.get ! IntersectionManager.Protocol
-        .CancelReservation(reservationDetails.get.reservationId, context.self)
-      withVehicle(vehicle.withAccelerationSchedule(None))
-      context.self ! TrySendReservationRequest
-      Some(switchTo(preperingReservation))
-    } else {
-      None
-    }
   }
 
 }

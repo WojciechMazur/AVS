@@ -2,11 +2,13 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.driver
 
 import java.util.concurrent.TimeUnit
 
+import com.softwaremill.quicklens._
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
 import VehicleArrivalEstimator.Parameters
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
@@ -17,6 +19,8 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationDetails
 
 import scala.annotation.tailrec
@@ -62,23 +66,67 @@ trait VehiclePilot {
     followCurrentLane()
   }
 
-  protected def followAccelerationProfile(
-      details: ReservationDetails): self.type = {
-    val accelerationProfile = details.accelerationProfile
-    if (accelerationProfile.events.isEmpty) {
-      //Todo obliczenie target velocity!!!
-      withVehicle(
-        vehicle.maxAccelerationWithTargetVelocity(vehicle.spec.maxVelocity))
-    } else {
-      val current = accelerationProfile.events.head
+  protected def followAccelerationProfile(details: ReservationDetails,
+                                          timeDelta: FiniteDuration,
+                                          maxCrossingVelocity: Velocity)
+    : (ReservationDetails, VehiclePilot.this.type) = {
 
-      if (current.duration > TickSource.timeStep) {
-        withVehicle(
-          vehicle.maxVelocityWithAcceleration(current.acceleration)
-        )
-      } else if (current.duration < TickSource.timeStep) {}
+    @tailrec
+    def iterate(events: List[AccelerationEvent],
+                totalAcceleration: Acceleration,
+                remainingTime: FiniteDuration)
+      : (Acceleration, List[AccelerationEvent]) = {
+      val remainingSeconds = remainingTime.toUnit(TimeUnit.SECONDS)
+      events match {
+        case current :: remaining if current.duration > remainingTime =>
+          val finalAcceleration = remainingSeconds * current.acceleration
+          val updatedEvent = current.modify(_.duration).using(_ - remainingTime)
+          (finalAcceleration, updatedEvent :: remaining)
+        case current :: remaining if current.duration < remainingTime =>
+          val accAcceleration = totalAcceleration + current.duration.toUnit(
+            TimeUnit.SECONDS) * current.acceleration
+          val updatedRemainingTime = remainingTime - current.duration
+          iterate(remaining, accAcceleration, updatedRemainingTime)
+        case current :: remaining =>
+          val finalAcceleration = totalAcceleration + current.acceleration * current.duration
+            .toUnit(TimeUnit.SECONDS)
+          (finalAcceleration, remaining)
+        case Nil if remainingTime > Duration.Zero =>
+          val finalAcceleration = totalAcceleration + remainingSeconds * events.headOption
+            .map(_.acceleration)
+            .getOrElse(0.0)
+          (finalAcceleration, Nil)
+        case Nil => (totalAcceleration, Nil)
+      }
+
     }
-    ???
+    val events = details.accelerationProfile.events
+    val (updatedVehicle, remainingEvents) = events match {
+      case Nil =>
+        (vehicle.maxAccelerationWithTargetVelocity(maxCrossingVelocity), Nil)
+      case current :: remaining if current.duration > timeDelta =>
+        val updatedVehicle =
+          vehicle.maxVelocityWithAcceleration(current.acceleration)
+        val updatedEvent = current.modify(_.duration).using(_ - timeDelta)
+        (updatedVehicle, updatedEvent :: remaining)
+      case current :: _ if current.duration < timeDelta =>
+        val (acceleration, remainingEvents) = iterate(events = events,
+                                                      totalAcceleration = 0.0,
+                                                      remainingTime = timeDelta)
+        val updatedVehicle = vehicle.maxVelocityWithAcceleration(
+          acceleration = acceleration / timeDelta.toUnit(TimeUnit.SECONDS)
+        )
+        (updatedVehicle, remainingEvents)
+
+      case current :: remaining =>
+        (vehicle.maxVelocityWithAcceleration(current.acceleration), remaining)
+    }
+
+    val updatedDetails =
+      details
+        .modify(_.accelerationProfile.events)
+        .setTo(remainingEvents)
+    (updatedDetails, withVehicle(updatedVehicle))
   }
 
   protected def hasClearLnaeToIntersection: Boolean = {

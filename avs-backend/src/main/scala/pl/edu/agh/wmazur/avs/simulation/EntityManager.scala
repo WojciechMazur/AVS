@@ -64,9 +64,9 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
         val intersectionId = Intersection.nextId
         val managerConfig = GridReservationManager.ManagerConfig(
           timeStep = TickSource.timeStep,
-          granularity = 1f
-        )(_internalTimeBuffer = TickSource.timeStep,
-          _edgeTimeBuffer = 2 * TickSource.timeStep)
+          granularity = 2.5f
+        )(_internalTimeBuffer = 5 * TickSource.timeStep,
+          _edgeTimeBuffer = 2 * 5 * TickSource.timeStep)
 
         context.spawn(
           AutonomousIntersectionManager.init(Some(intersectionId),
