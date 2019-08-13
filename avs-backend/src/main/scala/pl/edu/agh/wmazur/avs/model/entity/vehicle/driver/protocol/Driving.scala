@@ -94,8 +94,6 @@ trait Driving extends VehiclePilot {
     case msg @ Move(_, _)
         if isMaintaingReservation &&
           driverGauges.isWithinIntersection =>
-      val x = self
-      println(driverGauges.distanceToNextIntersection.map(_.asMeters))
       assert(hasArrivedInTime)
       assert(hasArrivedWithExpectedVelocity)
       context.self ! msg

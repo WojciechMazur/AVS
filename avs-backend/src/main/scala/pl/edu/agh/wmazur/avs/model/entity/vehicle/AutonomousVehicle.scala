@@ -63,8 +63,9 @@ case class AutonomousVehicle(
 
   override def withAccelerationSchedule(
       accelerationSchedule: Option[AccelerationSchedule])
-    : AutonomousVehicle.this.type =
+    : AutonomousVehicle.this.type = {
     modify(this)(_.accelerationSchedule)
       .setTo(accelerationSchedule)
       .asInstanceOf[this.type]
+  }
 }

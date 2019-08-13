@@ -55,7 +55,7 @@ object SpawnPoint {
 //    0.8 -> VehicleSpec.Predefined.Coupe,
 //    1.0 -> VehicleSpec.Predefined.Van
   )
-  val maxVehiclesPerHour = 2400
+  val maxVehiclesPerHour = 240
   val spawnInterval: FiniteDuration = {
     import scala.concurrent.duration._
     1.hour / maxVehiclesPerHour

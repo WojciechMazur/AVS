@@ -45,21 +45,32 @@ object VehicleArrivalEstimator {
         if (vEnd < vMax) {
           if (v < vMax) {
             if (v > vEnd) {
+              println("Estimation case 6")
               EdgeCases.case6(params)
             } else {
               if (v < vEnd) {
+                println("Estimation case 5")
+
                 EdgeCases.case5(params)
               } else {
+                println("Estimation case 4")
+
                 EdgeCases.case4(params)
               }
             }
           } else {
+            println("Estimation case 3")
+
             EdgeCases.case3(params)
           }
         } else {
           if (v < vMax) {
+            println("Estimation case 2")
+
             EdgeCases.case2(params)
           } else {
+            println("Estimation case 1")
+
             EdgeCases.case1(params)
           }
         }

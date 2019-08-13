@@ -176,10 +176,12 @@ trait PreperingReservation {
             deceleration = vehicle.spec.maxDeceleration
           )
           .map { schedule =>
+            assert(schedule.timestamps.last.timeEnd == details.arrivalTime)
             isMaintaingReservation = true
             reservationDetails = Some(details)
 //            context.self ! MaintainReservation
-//            context.log.debug("Reservation accepted")
+            context.log.info(
+              s"Reservation accepted - currentTime: $currentTime arrivalTime: ${details.arrivalTime}, velocity: ${details.arrivalVelocity}")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
           }
           .recover {
@@ -222,6 +224,8 @@ trait PreperingReservation {
     VehicleArrivalEstimator.estimate(estimationParams) match {
       case Success(result)
           if VehicleArrivalEstimator.isValid(estimationParams, result) =>
+        println(
+          s"Estimation: currentTime: ${currentTime} arrivalTime: ${result.arrivalTime}, arrivalVelocity: ${result.arrivalVelocity}")
         Some(result)
       case Success(_) =>
         context.log.error("Estimation failed validity checks")
@@ -281,7 +285,7 @@ trait PreperingReservation {
 
     params
       .modify(_.initialTime)
-      .using(_ + timeAtExpectedReplyTime)
+      .setTo(timeAtExpectedReplyTime)
       .modify(_.velocity)
       .setTo(finalVelocity)
       .modify(_.velocity)

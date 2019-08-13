@@ -14,10 +14,13 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
-case class AccelerationSchedule(timestamps: List[AccelerationTimestamp]) {
-  def calculateFinalStateAtTime(initialTime: Timestamp,
-                                initialVelocity: Velocity,
-                                finalTime: Timestamp): (Dimension, Velocity) = {
+case class AccelerationSchedule(timestamps: List[AccelerationTimestamp],
+                                isBeingFollowed: Boolean = false) {
+  def calculateFinalStateAtTime(
+      initialTime: Timestamp,
+      initialVelocity: Velocity,
+      finalTime: Timestamp
+  ): (Dimension, Velocity) = {
     val nonExpiredEvents = timestamps.dropWhile(_.timeStart < initialTime)
 
     @tailrec

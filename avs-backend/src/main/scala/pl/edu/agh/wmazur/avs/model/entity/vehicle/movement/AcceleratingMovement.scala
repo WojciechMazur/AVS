@@ -15,8 +15,8 @@ trait AcceleratingMovement extends VehicleMovement.VariableVehicleMovement {
       val velocityDelta = acceleration * timeDelta
       val initialVelocity = velocity
       this
-        .withAcceleration(initialVelocity + velocityDelta / 2)
+        .withVelocity(initialVelocity + velocityDelta / 2)
         .move(timeDelta)
-        .withAcceleration(initialVelocity + velocityDelta)
+        .withVelocity(initialVelocity + velocityDelta)
     }
 }
