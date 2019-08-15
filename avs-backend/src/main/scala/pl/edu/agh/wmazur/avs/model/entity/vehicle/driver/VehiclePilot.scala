@@ -5,23 +5,20 @@ import java.util.concurrent.TimeUnit
 import com.softwaremill.quicklens._
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.Point2
-import VehicleArrivalEstimator.Parameters
-import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleArrivalEstimator.Parameters
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationDetails
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{
   AccelerationSchedule,
   BasicVehicle
 }
 import pl.edu.agh.wmazur.avs.simulation.TickSource
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationDetails
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -129,10 +126,15 @@ trait VehiclePilot {
     (updatedDetails, withVehicle(updatedVehicle))
   }
 
-  protected def hasClearLnaeToIntersection: Boolean = {
+  protected def hasClearLaneToIntersection: Boolean = {
     (driverGauges.distanceToNextIntersection, driverGauges.distanceToCarInFront) match {
-      case (Some(distI), Some(distV)) =>
-        distI - distV <= stopDistanceBeforeIntersection
+      case (Some(distI), Some(distV)) if distV < distI =>
+        val stoppingDistance = calcStoppingDistance(
+          vehicle.velocity,
+          vehicle.spec.maxDeceleration) + minimumDistanceBetweenCars
+        val result = driverGauges.distanceToCollisionWithCarInFront.forall(
+          _ > stoppingDistance)
+        result
       case _ => true
     }
   }
@@ -170,8 +172,9 @@ trait VehiclePilot {
       currentTime: Timestamp): Option[AccelerationSchedule] = {
     for {
       distanceToIntersection <- driverGauges.distanceToNextIntersection
-        .filter(_.asMeters > 0.0)
+        .filter(_ > VehiclePilot.stopDistanceBeforeIntersection)
       maxVelocity = calcMaxAllowedVelocity(vehicle, currentLane)
+//      _ = print("Estimating to stop before intersection ::")
       estimation <- VehicleArrivalEstimator
         .estimate(
           Parameters(
@@ -233,7 +236,7 @@ trait VehiclePilot {
 
 object VehiclePilot {
   val minimumDistanceBetweenCars: Dimension = 6.0.meters
-  val stopDistanceBeforeIntersection: Dimension = 1.0.meters
+  val stopDistanceBeforeIntersection: Dimension = 3.0.meters
 
   def calcStoppingDistance(velocity: Velocity,
                            deceleration: Acceleration): Dimension = {

@@ -122,7 +122,6 @@ object ReservationChecker {
     val t3 = p.durationTotal - t3x
     val (remainingArea, lowerTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
-        println("case 5a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
@@ -140,8 +139,6 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
-        println("case 5b")
-
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -158,8 +155,6 @@ object ReservationChecker {
                                   refDelta = p.t11 - t3x)
         (remainingArea, Some(trapezoid))
       case _ =>
-        println("case 5c")
-
         val areaL = p.t11 * p.velocity / 2
         val remainingArea =
           calcRemainingArea(p.area0, areaL, "distance to small (Case 5c)")
@@ -203,7 +198,6 @@ object ReservationChecker {
 
     val (remainingArea, lowerOptTrapezoid) = None match {
       case _ if p.vDown >= 0.0 =>
-        println("case 4a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 
@@ -221,8 +215,6 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
-        println("case 4b")
-
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -239,8 +231,6 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ =>
-        println("case 4c")
-
         val areaR = p.t13 * p.velocityEnd / 2
         val remainingArea =
           calcRemainingArea(
@@ -304,8 +294,6 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ if p.velocity > 0 =>
-        println("case 3b")
-
         val areaL = p.t11 * p.velocity / 2
         val areaR = p.t13 * p.velocityEnd / 2
 
@@ -321,8 +309,6 @@ object ReservationChecker {
         (remainingArea, Some(trapezoid))
 
       case _ =>
-        println("case 3c")
-
         (p.area0, None)
     }
 
@@ -486,7 +472,8 @@ object ReservationChecker {
     val builder = AccelerationSchedule.Builder()
 
     if (p1Time == p.currentTime) {
-      assert(p1.y isEqual p.velocity)
+      assert((p1.y - p.velocity).abs < 0.1,
+             s"velocity ${p1.y} not equals expected velocity ${p.velocity}")
     } else if (p1.y < p.velocity) {
       builder.add(p.deceleration, p.currentTime)
     } else {
@@ -591,8 +578,8 @@ object ReservationChecker {
   ) {
     // format: off
 //    assert(time <= timeEnd, s"Current time: $time, Arrival time: $timeEnd")
-    assert(velocity >= 0.0)
-    assert(velocity.isEqual(velocityMax) || velocity < velocityMax)
+    assert(velocity >= 0.0, s"Velocity cannot be negative. Current velocity: $velocity")
+//    assert(velocity.isEqual(velocityMax) || velocity < velocityMax, s"Invalid velocity $velocity, maxVelocity $velocityMax")
     assert(velocityEnd >= 0.0)
     assert(velocityEnd <= velocityMax)
     assert(distanceTotal >= 0.0)

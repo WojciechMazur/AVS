@@ -21,6 +21,7 @@ trait Driving extends VehiclePilot {
   import AutonomousVehicleDriver._
   var isTraversing = false
   var isMaintaingReservation = false
+  var isRetryingToMakeReservation = false
 
   private def withoutChange: self.type = this
 
@@ -28,15 +29,13 @@ trait Driving extends VehiclePilot {
            tickDelta: TickDelta)(
       movementDecidingFn: () => self.type): Behavior[Protocol] = {
     val oldPosition = vehicle.position
+    val newState = prepareToMove().withVehicle {
+      movementDecidingFn().vehicle
+        .move(currentTime, tickDelta.toUnit(TimeUnit.SECONDS))
+    }
 
-    val newPosition = prepareToMove()
-      .withVehicle {
-        movementDecidingFn().vehicle
-          .move(currentTime, tickDelta.toUnit(TimeUnit.SECONDS))
-      }
-      .vehicle
-      .position
-
+    this.vehicle = newState.vehicle
+    val newPosition = vehicle.position
     replyTo ! DriversMovementStage.DriverMoved(context.self,
                                                oldPosition,
                                                newPosition)
@@ -44,7 +43,7 @@ trait Driving extends VehiclePilot {
   }
 
   def controlScheduler(): self.type = {
-    if (hasClearLnaeToIntersection) {
+    if (hasClearLaneToIntersection) {
       withoutChange
     } else {
       val stoppingDistance = VehiclePilot.calcStoppingDistance(
@@ -59,6 +58,18 @@ trait Driving extends VehiclePilot {
           .applyBasicThrothelling()
       }
     }
+  }
+
+  def slowDownForReservationRetry(): self.type = {
+    val newState = withVehicle {
+      val currentVelocity = vehicle.velocity
+      vehicle
+        .withTargetVelocity((currentVelocity - 10).max(10.0))
+        .withAcceleration(vehicle.spec.maxDeceleration)
+    }.followCurrentLane()
+      .stopBeforeIntersection()
+      .stopBeforeVehicleInFront()
+    newState
   }
 
   def traverseIntersection(tickDelta: TickDelta)(): self.type = {
@@ -99,16 +110,16 @@ trait Driving extends VehiclePilot {
       context.self ! msg
       isMaintaingReservation = false
       isTraversing = true
-      context.log.info("Starting traversing")
+      context.log.debug("Starting traversing")
       Behaviors.same
 
-    case msg if isMaintaingReservation && !hasClearLnaeToIntersection =>
+    case msg if isMaintaingReservation && !hasClearLaneToIntersection =>
+      context.log.warning(
+        s"Canceling reservation ${reservationDetails.get.reservationId}. To close to preceding vehicle ${driverGauges.distanceToCollisionWithCarInFront}")
       nextIntersectionManager.get ! IntersectionManager.Protocol
         .CancelReservation(reservationDetails.get.reservationId, context.self)
-      timers.startSingleTimer(
-        PreperingReservation.Timer.RetryReservationRequest,
-        TrySendReservationRequest,
-        TickSource.timeStep)
+      nextReservationRequestAttempt =
+        Some(currentTime + TickSource.timeStep.toMillis)
       reservationDetails = None
       withVehicle(vehicle.withAccelerationSchedule(None))
       context.self ! msg
@@ -124,6 +135,12 @@ trait Driving extends VehiclePilot {
       move(replyTo, tickDelta) {
         traverseIntersection(tickDelta)
       }
+    case Move(replyTo, tickDelta) if isRetryingToMakeReservation =>
+      move(replyTo, tickDelta) {
+        slowDownForReservationRetry
+      }
+      Behaviors.same
+
     case Move(replyTo, tickDelta) =>
       move(replyTo, tickDelta) {
         followCurrentLane().applyBasicThrothelling

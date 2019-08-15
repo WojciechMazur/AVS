@@ -8,7 +8,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Angle,
   Velocity
 }
-
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 case class VirtualVehicle(
     var gauges: VehicleGauges,
     spec: VehicleSpec,
@@ -18,44 +18,62 @@ case class VirtualVehicle(
 
   override def id: Id = -1L
 
-  override def withAcceleration(
-      acceleration: Acceleration): VirtualVehicle.this.type = {
-    modify(this)(_.gauges.acceleration)
-      .setTo(acceleration)
+  override def withTargetVelocity(targetVelocity: Velocity): this.type = {
+    def boundedTargetVelocity =
+      MathUtils.withConstraint(targetVelocity,
+                               spec.minVelocity,
+                               spec.maxVelocity)
+
+    this
+      .modify(_.targetVelocity)
+      .setTo(
+        acceleration match {
+          case a if a.isZero => boundedTargetVelocity
+          case a if a > 0.0  => spec.maxVelocity
+          case a if a < 0.0  => spec.minVelocity
+        }
+      )
       .asInstanceOf[this.type]
   }
-  override def withVelocity(velocity: Velocity): VirtualVehicle.this.type =
-    modify(this)(_.gauges.velocity)
-      .setTo(velocity)
+
+  override def withAcceleration(acceleration: Acceleration): this.type =
+    this
+      .modify(_.gauges.acceleration)
+      .setTo(
+        MathUtils.withConstraint(acceleration,
+                                 spec.maxDeceleration,
+                                 spec.maxAcceleration))
       .asInstanceOf[this.type]
 
-  override def withSteeringAngle(
-      steeringAngle: Angle): VirtualVehicle.this.type =
-    modify(this)(_.gauges.steeringAngle)
-      .setTo {
-        MathUtils
-          .withConstraint(steeringAngle,
-                          -spec.maxSteeringAngle,
-                          spec.maxSteeringAngle)
-      }
+  override def withVelocity(velocity: Velocity): this.type =
+    this
+      .modify(_.gauges.velocity)
+      .setTo(MathUtils
+        .withConstraint(velocity, spec.minVelocity, spec.maxVelocity))
       .asInstanceOf[this.type]
 
-  override def withHeading(heading: Angle): VirtualVehicle.this.type =
+  override def withSteeringAngle(steeringAngle: Angle): this.type =
+    this
+      .modify(_.gauges.steeringAngle)
+      .setTo(
+        MathUtils.withConstraint(steeringAngle,
+                                 -spec.maxSteeringAngle,
+                                 spec.maxSteeringAngle))
+      .asInstanceOf[this.type]
+
+  override def withHeading(heading: Angle): this.type =
     modify(this)(_.gauges.heading)
       .setTo(heading)
       .modify(_.gauges.area)
       .setTo(Vehicle.calcArea(position, heading, spec))
       .asInstanceOf[this.type]
 
-  override def withPosition(position: Point): VirtualVehicle.this.type =
+  override def withPosition(position: Point): this.type =
     modify(this)(_.gauges.position)
       .setTo(position)
       .modify(_.gauges.area)
       .setTo(Vehicle.calcArea(position, heading, spec))
       .asInstanceOf[this.type]
-
-  override def withTargetVelocity(targetVelocity: Velocity): this.type =
-    modify(this)(_.targetVelocity).setTo(targetVelocity).asInstanceOf[this.type]
 
   override def accelerationSchedule: Option[AccelerationSchedule] = None
 

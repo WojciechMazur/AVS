@@ -33,26 +33,6 @@ sealed trait VehicleMovement {
   def withSteeringAngle(steeringAngle: Angle): self.type
   def withHeading(heading: Angle): self.type
   def withPosition(position: Point): self.type
-
-  protected def checkBounds(): self.type = {
-    val velocity = MathUtils.withConstraint(this.velocity,
-                                            spec.minVelocity,
-                                            spec.maxVelocity)
-    val acceleration = MathUtils.withConstraint(this.acceleration,
-                                                spec.maxDeceleration,
-                                                spec.maxAcceleration)
-    val steeringAngle = MathUtils.withConstraint(this.steeringAngle,
-                                                 -spec.maxSteeringAngle,
-                                                 spec.maxSteeringAngle)
-
-    if (velocity != this.velocity || acceleration != this.acceleration || steeringAngle != this.steeringAngle) {
-      this
-        .withVelocity(velocity)
-        .withAcceleration(acceleration)
-        .withSteeringAngle(steeringAngle)
-    } else { this }
-  }
-
 }
 
 object VehicleMovement {

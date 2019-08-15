@@ -8,10 +8,12 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 
-case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
-                               distanceToNextIntersection: Option[Dimension],
-                               distanceToPrevIntersection: Option[Dimension],
-                               isWithinIntersection: Boolean) {
+case class VehicleDriverGauges(
+    distanceToCarInFront: Option[Dimension],
+    distanceToCollisionWithCarInFront: Option[Dimension],
+    distanceToNextIntersection: Option[Dimension],
+    distanceToPrevIntersection: Option[Dimension],
+    isWithinIntersection: Boolean) {
 
   def calcDistance(point: Point, vehicle: Vehicle): Dimension =
     SpatialUtils.shapeFactory
@@ -21,15 +23,26 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
 
   def updateVehicleInFront(optVehicleInFront: Option[VehicleCachedReadings],
                            vehicle: Vehicle): VehicleDriverGauges = {
+    val distancToCarInFront = for {
+      vehicleInFront <- optVehicleInFront
+      geometry = vehicleInFront.geometry.getOrElse {
+        SpatialUtils.shapeFactory.getGeometryFrom(vehicleInFront.position)
+      }
+    } yield geometry.distance(vehicle.geometry).geoDegrees
+
     this
       .modify(_.distanceToCarInFront)
+      .setTo(distancToCarInFront)
+      .modify(_.distanceToCollisionWithCarInFront)
       .setTo {
         for {
           vehicleInFront <- optVehicleInFront
-          geometry = vehicleInFront.geometry.getOrElse {
-            SpatialUtils.shapeFactory.getGeometryFrom(vehicleInFront.position)
-          }
-        } yield geometry.distance(vehicle.geometry).geoDegrees
+          relativeVelocity = vehicle.velocity - vehicleInFront.velocity
+          if relativeVelocity > 0
+          distance <- distancToCarInFront
+          timeBeforeCollision = distance.asMeters / relativeVelocity
+          distanceCovered = vehicle.velocity * timeBeforeCollision
+        } yield distanceCovered.meters
       }
   }
 
@@ -64,8 +77,11 @@ case class VehicleDriverGauges(distanceToCarInFront: Option[Dimension],
 }
 
 object VehicleDriverGauges {
-  val empty = VehicleDriverGauges(distanceToCarInFront = None,
-                                  distanceToNextIntersection = None,
-                                  distanceToPrevIntersection = None,
-                                  isWithinIntersection = false)
+  val empty = VehicleDriverGauges(
+    distanceToCarInFront = None,
+    distanceToCollisionWithCarInFront = None,
+    distanceToNextIntersection = None,
+    distanceToPrevIntersection = None,
+    isWithinIntersection = false
+  )
 }

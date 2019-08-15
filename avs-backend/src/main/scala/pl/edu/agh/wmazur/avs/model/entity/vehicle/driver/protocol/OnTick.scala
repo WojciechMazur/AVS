@@ -36,6 +36,22 @@ trait OnTick {
           driverInFront
         ).flatten
           .foreach(_.ref ! GetPositionReading(context.self.narrow))
+
+        lastRequestTimestamp
+          .filter(
+            currentTime - _ > PreperingReservation.reservationRequestTimeout.toMillis)
+          .foreach { _ =>
+            lastRequestTimestamp = None
+            context.self ! ReservationRequestTimeout
+          }
+
+        nextReservationRequestAttempt
+          .filter(currentTime >= _)
+          .foreach { _ =>
+            nextReservationRequestAttempt = None
+            context.self ! TrySendReservationRequest
+          }
+
         Behaviors.same
 
       case reading: BasicReading =>

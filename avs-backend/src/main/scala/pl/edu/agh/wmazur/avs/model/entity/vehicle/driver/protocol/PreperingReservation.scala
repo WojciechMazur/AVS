@@ -4,6 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousIntersectionManager,
@@ -11,10 +12,8 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.ExtendedProtocol
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.{
   ReservationConfirmed,
   ReservationDetails,
@@ -42,6 +41,9 @@ trait PreperingReservation {
   type IntersectionToLaneVelocities =
     mutable.Map[ActorRef[AutonomousIntersectionManager.Protocol],
                 ArrivalToDeperatureLanesVelocities]
+
+  var lastRequestTimestamp: Option[Timestamp] = None
+  var nextReservationRequestAttempt: Option[Timestamp] = None
 
   var lastReservationRequest
     : Option[IntersectionManager.Protocol.IntersectionCrossingRequest] = None
@@ -91,8 +93,8 @@ trait PreperingReservation {
             }
 
             val estimations = maxVelocities
-              .mapValues(estimateArrival)
               .filterKeys(_ == currentLane)
+              .mapValues(estimateArrival)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation
               }
@@ -121,41 +123,40 @@ trait PreperingReservation {
 
             isAwaitingForAcceptance = true
             lastReservationRequest = Some(request)
+            lastRequestTimestamp = Some(currentTime)
             nextIntersectionManager.get ! request
-            timers.startSingleTimer(Timer.ReservationRequestTimeout(request.id),
-                                    ReservationRequestTimeout,
-                                    reservationRequestTimeout)
         }
         Behaviors.same
 
       case ReservationRequestTimeout =>
+        context.log.error("Reservation request timeout")
         withVehicle(vehicle.withAccelerationSchedule(None))
         isAwaitingForAcceptance = false
+        isRetryingToMakeReservation = true
+
         context.self ! TrySendReservationRequest
         Behaviors.same
 
       case ReservationRejected(requestId,
                                nextAllowedCommunicationTimestamp,
                                reason) =>
-        timers.cancel(Timer.ReservationRequestTimeout(requestId))
+        context.log.warning(s"Reservation $requestId rejected, $reason")
+        withVehicle(vehicle.withAccelerationSchedule(None))
+        lastRequestTimestamp = None
         isAwaitingForAcceptance = false
+        isRetryingToMakeReservation = true
         if (lastReservationRequest.map(_.id).contains(requestId)) {
-          reason match {
-            case NoClearPath | ConfirmedAnotherRequest | Dropped =>
-              val delay =
-                (nextAllowedCommunicationTimestamp - currentTime).millis
-                  .max(sendingRequestDelay)
-              timers.startSingleTimer(Timer.RetryReservationRequest(requestId),
-                                      TrySendReservationRequest,
-                                      delay)
-            case rejection =>
-              sys.error("Unable to recover from rejection " + rejection)
-          }
+          val delay =
+            (nextAllowedCommunicationTimestamp - currentTime).millis
+              .max(sendingRequestDelay)
+          nextReservationRequestAttempt = Some(currentTime + delay.toMillis)
         }
         Behaviors.same
 
       case ReservationConfirmed(reservationId, requestId, details) =>
-        timers.cancel(Timer.ReservationRequestTimeout(requestId))
+        context.log.debug("Reservation confirmed")
+
+        lastRequestTimestamp = None
         isAwaitingForAcceptance = false
         val updatedGauges = updateGauges
         assert(
@@ -178,20 +179,22 @@ trait PreperingReservation {
           .map { schedule =>
             assert(schedule.timestamps.last.timeEnd == details.arrivalTime)
             isMaintaingReservation = true
+            isRetryingToMakeReservation = false
+            nextReservationRequestAttempt = None
             reservationDetails = Some(details)
-//            context.self ! MaintainReservation
-            context.log.info(
+            context.log.debug(
               s"Reservation accepted - currentTime: $currentTime arrivalTime: ${details.arrivalTime}, velocity: ${details.arrivalVelocity}")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
           }
           .recover {
             case err =>
+//              err.printStackTrace()
               context.log.error("Reservation check failed: {}", err.getMessage)
               details.intersectionManagerRef ! IntersectionManager.Protocol
                 .CancelReservation(reservationId, context.self)
-              timers.startSingleTimer(Timer.RetryReservationRequest(requestId),
-                                      TrySendReservationRequest,
-                                      TickSource.timeStep)
+              nextReservationRequestAttempt =
+                Some(currentTime + sendingRequestDelay.toMillis)
+              isRetryingToMakeReservation = true
 //              context.self ! TrySendReservationRequest
               reservationDetails = None
               withVehicle(vehicle.withAccelerationSchedule(None))
@@ -224,13 +227,12 @@ trait PreperingReservation {
     VehicleArrivalEstimator.estimate(estimationParams) match {
       case Success(result)
           if VehicleArrivalEstimator.isValid(estimationParams, result) =>
-        println(
-          s"Estimation: currentTime: ${currentTime} arrivalTime: ${result.arrivalTime}, arrivalVelocity: ${result.arrivalVelocity}")
         Some(result)
       case Success(_) =>
         context.log.error("Estimation failed validity checks")
         None
       case Failure(exception) =>
+        exception.printStackTrace()
         context.log
           .error("Failed to estimate arrival: {}", exception.getMessage)
         None
@@ -261,7 +263,12 @@ trait PreperingReservation {
     reservationDetails.exists { reservationParams =>
       val v1 = reservationParams.arrivalVelocity
       val v2 = vehicle.velocity
-      (v1 - v2).abs <= arrivalVelocityThreshold
+
+      val result = (v1 - v2).abs <= arrivalVelocityThreshold
+      if (!result) {
+        System.err.println(s"Expected velocity $v1, currentVelocity $v2")
+      }
+      result
     }
   }
 
@@ -300,9 +307,9 @@ trait PreperingReservation {
     if (params.velocity.isZero) {
       params
         .modify(_.maxAcceleration)
-        .using(acc => (acc - arrivalEstimationAccelerationReduction).min(0))
+        .using(acc => (acc - arrivalEstimationAccelerationReduction).max(0))
         .modify(_.maxDeceleration)
-        .using(dec => (dec + arrivalEstimationAccelerationReduction).max(0))
+        .using(dec => (dec + arrivalEstimationAccelerationReduction).min(0))
     } else {
       params
         .modify(_.initialTime)
@@ -315,18 +322,13 @@ object PreperingReservation {
   final val maxExpectedIntersectionManagerReplyTime
     : FiniteDuration = 2 * TickSource.timeStep
   final val arrivalEstimationAccelerationReduction = 1.0
-  final val sendingRequestDelay = 20.millis
-  final val reservationRequestTimeout = 1.seconds
+  final val sendingRequestDelay = 100.millis
+  final val reservationRequestTimeout = 100.millis
   final val arrivalVelocityThreshold = 3.0
 
-  object Timer {
-    case class RetryReservationRequest(requestId: Vehicle#Id)
-    case class ReservationRequestTimeout(requestId: Long)
-  }
   trait Protocol {
     case object TrySendReservationRequest extends ExtendedProtocol
     case object ReservationRequestTimeout extends ExtendedProtocol
-    case object MaintainReservation extends ExtendedProtocol
 
     case class MaxCrossingVelocities(
         intersectionRef: ActorRef[IntersectionManager.Protocol],

@@ -10,12 +10,24 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason.NoClearPath
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 
 trait DefaultPolicy {
   self: AutonomousIntersectionManager with IntersectionConnectivity =>
 
   lazy val defaultPolicy: Behavior[IntersectionManager.Protocol] =
     Behaviors.receiveMessagePartial {
+      case req: IntersectionManager.Protocol.IntersectionCrossingRequest
+          if req.proposals.isEmpty =>
+        context.log.warning("Received list of empty proposals")
+        req.driverRef ! ReservationRejected(
+          requestId = req.id,
+          nextAllowedCommunicationTimestamp = req.currentTime + TickSource.timeStep.toMillis,
+          reason = NoClearPath,
+        )
+        Behaviors.same
+
       case req @ IntersectionManager.Protocol.IntersectionCrossingRequest(
             driverRef,
             _,
@@ -48,14 +60,14 @@ trait DefaultPolicy {
               acceptance <- buildReservationAcceptance(req.id,
                                                        reservationParameters)
               _ = driverRef ! acceptance
-              _ = context.log.info("Request {} confirmed", req.id)
+              _ = context.log.debug("Request {} confirmed", req.id)
             } yield acceptance
 
             if (optAcceptance.isEmpty) {
               val reason = Reason.NoClearPath
-              context.log.debug("Request {} rejected, reason {}",
-                                req.id,
-                                reason)
+              context.log.warning("Request {} rejected, reason {}",
+                                  req.id,
+                                  reason)
               driverRef ! ReservationRejected(
                 requestId = req.id,
                 nextAllowedCommunicationTimestamp = timestamp,

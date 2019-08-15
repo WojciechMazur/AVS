@@ -27,7 +27,7 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
 
   def move(currentTime: Timestamp, timeDelta: TimeDeltaSeconds): self.type = {
     accelerationSchedule match {
-      case Some(schedule) =>
+      case Some(_) =>
         moveWithSchedule(currentTime, timeDelta)
       case _ => move(timeDelta)
     }

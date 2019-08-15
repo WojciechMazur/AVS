@@ -16,25 +16,6 @@ trait VelocityReachingMovement
   self: Vehicle =>
   def targetVelocity: Velocity
 
-  override protected def checkBounds(): self.type = {
-    val boundedTargetVelocity = MathUtils.withConstraint(this.targetVelocity,
-                                                         spec.minVelocity,
-                                                         spec.maxVelocity)
-    val targetVelocity = acceleration match {
-      case a if a.isZero => boundedTargetVelocity
-      case a if a > 0.0  => spec.maxVelocity
-      case a if a < 0.0  => spec.minVelocity
-    }
-
-    val self = super.checkBounds()
-
-    if (this.targetVelocity != targetVelocity) {
-      self.withTargetVelocity(targetVelocity)
-    } else {
-      self
-    }
-  }
-
   private def moveWithAcceleration(accelerationDelta: Acceleration,
                                    tickDelta: TimeDeltaSeconds): self.type = {
     this

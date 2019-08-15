@@ -21,6 +21,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.Road
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
+import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
 
@@ -67,8 +68,10 @@ object AutonomousIntersectionManager {
   )
 
   sealed trait Protocol extends IntersectionManager.Protocol
+
   object Protocol {
     case object FetchDrivers extends Protocol
+    case class Tick(currentTime: Timestamp) extends Protocol
   }
 
   //scalastyle:off
@@ -86,9 +89,18 @@ object AutonomousIntersectionManager {
       val intersection = AutonomousRoadIntersection(id, roads, ctx.self)
       replyTo.foreach(_ ! SpawnResult(intersection, ctx.self))
 
+      val tickAdapter = ctx.messageAdapter[SimulationProtocol.Tick] {
+        case tick: SimulationProtocol.Tick.Default =>
+          Protocol.Tick(tick.currentTime)
+      }
+
       ctx.system.receptionist ! Receptionist.register(
         EntityRefsGroup.intersection,
         ctx.self)
+
+      ctx.system.receptionist ! Receptionist.register(
+        EntityRefsGroup.tickSubscribers,
+        tickAdapter)
 
       Behaviors.withTimers { timers =>
         val driversFetcherManager: ActorRef[DriversFetcherAgent.Protocol] =

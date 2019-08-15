@@ -3,7 +3,10 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.extension
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import pl.edu.agh.wmazur.avs.Dimension
-import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Protocol.FetchDrivers
+import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Protocol.{
+  FetchDrivers,
+  Tick
+}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.DriversFetcherAgent
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousIntersectionManager,
@@ -35,6 +38,10 @@ trait IntersectionConnectivity {
           val roadManagers = roads.map(_.managerRef)
           workers.driversFetcher ! DriversFetcherAgent.FetchDrivers(
             roadManagers)
+          Behaviors.same
+        case Tick(time) =>
+          this.currentTime = time
+          mainReservationManager.clean(time)
           Behaviors.same
       }
       .narrow

@@ -215,7 +215,17 @@ trait ReservationSystem {
             details
           )
         }
-      case _ =>
+      case (optRId, optAId) =>
+        if (optRId.isEmpty) {
+          context.log.warning(
+            s"Reservation rejected by main intersection manager for ${params.driverRef}")
+        }
+        if (optAId.isEmpty) {
+          context.log.warning(
+            s"Reservation rejected by admission control zone manager for ${params.driverRef}")
+
+        }
+
         reservationId.foreach(mainReservationManager.cancel)
         for {
           _ <- admissionId

@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 import java.util.concurrent.TimeUnit
 
 import akka.actor.typed.ActorRef
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.Intersection
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.IntersectionCrossingRequest
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager.ManagerConfig
@@ -39,6 +40,10 @@ case class GridReservationManager(config: ManagerConfig,
   )
   private val reservationGrid = ReservationGrid(tilesGrid, 10.seconds)
 
+  def clean(currentTime: Timestamp): Unit = {
+    reservationGrid.cleanup(currentTime)
+  }
+
   def cancel(reservationId: ReservationId): Unit = {
     reservationGrid.cancel(reservationId)
   }
@@ -47,6 +52,7 @@ case class GridReservationManager(config: ManagerConfig,
     val ticket = reservationsIdProvider.nextId
     val wasAccepted =
       reservationGrid.reserve(ticket, reservationSchedule.tilesCovered)
+
     if (wasAccepted) Some(ticket) else None
   }
 
@@ -145,6 +151,12 @@ case class GridReservationManager(config: ManagerConfig,
                 //TODO, przywrócić?
 //              reservationGrid.isRestrictedTile(tt.tileId) ||
                 reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
+//          val colliding = tilesToReservation
+//            .filter(tt => reservationGrid.isReservedAt(tt.timestamp, tt.tileId))
+//            .toList
+//            .sortBy(t => (t.timestamp, t.tileId))
+//          System.err.println(
+//            s"Reservation collide in ${colliding.size} tiles :: $colliding")
           None
         } else {
           iterate(
@@ -248,13 +260,13 @@ object GridReservationManager {
   val reservationsIdProvider: IdProvider[ReservationId] =
     new IdProvider[ReservationId] {}
   case class ManagerConfig(timeStep: FiniteDuration,
-                           granularity: Float,
-                           enableEdgeTimeBuffer: Boolean = true)(
+                           granularity: Dimension,
+                           enableEdgeTimeBuffer: Boolean = false)(
       _internalTimeBuffer: FiniteDuration = timeStep,
       _edgeTimeBuffer: FiniteDuration = timeStep,
   ) {
-    val internalTimeBuffer: FiniteDuration = _internalTimeBuffer.min(timeStep)
-    val edgeTimeBuffer: FiniteDuration = _edgeTimeBuffer.min(timeStep)
+    val internalTimeBuffer: FiniteDuration = _internalTimeBuffer.max(timeStep)
+    val edgeTimeBuffer: FiniteDuration = _edgeTimeBuffer.max(timeStep)
     val timeStepMillis: Timestamp = timeStep.toMillis
   }
 

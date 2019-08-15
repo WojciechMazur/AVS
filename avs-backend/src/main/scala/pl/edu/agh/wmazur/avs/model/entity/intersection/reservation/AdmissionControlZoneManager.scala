@@ -27,6 +27,8 @@ case class AdmissionControlZoneManager(
       Some(
         AdmissionPlan(query.driverRef, query.vehicleLength, query.stopDistance))
     } else {
+      System.err.println(
+        s"Admission control zone rejected entry for ${query.driverRef}")
       None
     }
   }

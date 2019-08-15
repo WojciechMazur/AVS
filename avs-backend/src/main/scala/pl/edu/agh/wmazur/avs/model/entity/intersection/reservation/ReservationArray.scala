@@ -24,15 +24,15 @@ class ReservationArray(arraySize: Int) {
       }
     }
 
-    val firstAvailableTime = reservationGrids.headOption
-      .map {
-        case (key, _) => key
-      }
-      .getOrElse(0L)
+//    val firstAvailableTime = reservationGrids.headOption
+//      .map {
+//        case (key, _) => key
+//      }
+//      .getOrElse(0L)
 
     if (!wasAlreadyReserved) {
       tiles
-        .filter(_.timestamp >= firstAvailableTime)
+//        .filter(_.timestamp >= firstAvailableTime)
         .foreach { tile =>
           val timestamp = tile.timestamp
           val tileId = tile.tileId
@@ -50,6 +50,7 @@ class ReservationArray(arraySize: Int) {
             .getOrElseUpdate(reservationId, mutable.Map.empty)
             .getOrElseUpdate(timestamp, mutable.Set.empty)
             .update(tileId, included = true)
+
         }
       true
     } else {

@@ -45,31 +45,31 @@ object VehicleArrivalEstimator {
         if (vEnd < vMax) {
           if (v < vMax) {
             if (v > vEnd) {
-              println("Estimation case 6")
+//              print("Estimation case 6 ")
               EdgeCases.case6(params)
             } else {
               if (v < vEnd) {
-                println("Estimation case 5")
+//                print("Estimation case 5 ")
 
                 EdgeCases.case5(params)
               } else {
-                println("Estimation case 4")
+//                print("Estimation case 4 ")
 
                 EdgeCases.case4(params)
               }
             }
           } else {
-            println("Estimation case 3")
+//            print("Estimation case 3 ")
 
             EdgeCases.case3(params)
           }
         } else {
           if (v < vMax) {
-            println("Estimation case 2")
+//            print("Estimation case 2 ")
 
             EdgeCases.case2(params)
           } else {
-            println("Estimation case 1")
+//            print("Estimation case 1 ")
 
             EdgeCases.case1(params)
           }
@@ -333,7 +333,7 @@ object VehicleArrivalEstimator {
         val delta = (params.maxAcceleration * Math.pow(params.finalVelocity, 2)
           - params.maxDeceleration * Math.pow(params.velocity, 2)
           - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
-        assert(delta >= 0.0)
+        assert(delta >= 0.0, s"delta cannot be negative $delta")
 
         val velocity = Math.sqrt(delta)
         assert(velocity > params.velocity)

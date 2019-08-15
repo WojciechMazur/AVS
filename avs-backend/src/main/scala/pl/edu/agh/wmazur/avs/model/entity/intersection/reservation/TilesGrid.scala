@@ -12,37 +12,32 @@ import pl.edu.agh.wmazur.avs.simulation.utils.BasicDirection.{
   South,
   West
 }
+import pl.edu.agh.wmazur.avs.Dimension
 
-case class TilesGrid(area: Shape, granularity: Double) {
+case class TilesGrid(area: Shape, granularity: Dimension) {
   val shape: Rectangle = area.getBoundingBox
-  val (cellsX, cellWidth) = calcTileSpec(shape.getWidth)
-  val (cellsY, cellHeight) = calcTileSpec(shape.getHeight)
+  val (cellsX, cellWidth) = calcTileSpec(shape.getWidth.geoDegrees)
+  val (cellsY, cellHeight) = calcTileSpec(shape.getHeight.geoDegrees)
   val size: Int = cellsX * cellsY
 
-  def calcTileSpec(length: Double): (Int, Double) = {
-    val tilesQuantity = (length / granularity).ceil.toInt
-    val finalSize = length / tilesQuantity
-    (tilesQuantity, finalSize)
+  def calcTileSpec(length: Dimension): (Int, Dimension) = {
+    val tilesQuantity = (length.asMeters / granularity.asMeters).ceil.toInt
+    val finalSize = length.asMeters / tilesQuantity
+    (tilesQuantity, finalSize.meters)
   }
 
   val tiles: Vector[Tile] = {
     val idsIterator = Iterator.from(0)
-    val bufferSize = granularity / 10
+    val bufferSize = (granularity / 10.0).meters.asGeoDegrees
     for {
-      bottomY <- 0
-        .until(cellsY)
-        .map(_ * cellHeight + shape.getMinX)
-        .map(MathUtils.roundDouble(_, 2))
-      leftX <- 0
-        .until(cellsX)
-        .map(_ * cellWidth + shape.getMinY)
-        .map(MathUtils.roundDouble(_, 2))
+      cellY <- 0.until(cellsY)
+      minY = cellY * cellHeight.asGeoDegrees + shape.getMinY
+      maxY = minY + cellHeight.asGeoDegrees
+      cellX <- 0.until(cellsX)
+      minX = cellX * cellWidth.asGeoDegrees + shape.getMinX
+      maxX = minX + cellWidth.asGeoDegrees
     } yield {
-      val rec = new RectangleImpl(leftX,
-                                  leftX + cellWidth,
-                                  bottomY,
-                                  bottomY + cellWidth,
-                                  SpatialContext.GEO)
+      val rec = new RectangleImpl(minX, maxX, minY, maxY, SpatialContext.GEO)
       val id = idsIterator.next()
       val isEdge = rec
         .getBuffered(bufferSize, SpatialContext.GEO)

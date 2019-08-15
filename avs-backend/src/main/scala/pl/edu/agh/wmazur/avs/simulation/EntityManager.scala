@@ -16,6 +16,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
   VehicleDriver
 }
+import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.{Vehicle, VehicleSpec}
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.{
@@ -64,9 +65,9 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
         val intersectionId = Intersection.nextId
         val managerConfig = GridReservationManager.ManagerConfig(
           timeStep = TickSource.timeStep,
-          granularity = 1f
-        )(_internalTimeBuffer = 1 * TickSource.timeStep,
-          _edgeTimeBuffer = 2 * TickSource.timeStep)
+          granularity = 1.meters
+        )(_internalTimeBuffer = 10 * TickSource.timeStep,
+          _edgeTimeBuffer = 10 * TickSource.timeStep)
 
         context.spawn(
           AutonomousIntersectionManager.init(Some(intersectionId),
