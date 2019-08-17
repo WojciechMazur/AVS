@@ -47,40 +47,34 @@ object VehicleArrivalEstimator {
             if (v > vEnd) {
 //              print("Estimation case 6 ")
               EdgeCases.case6(params)
+            } else if (v < vEnd) {
+//              print("Estimation case 5 ")
+
+              EdgeCases.case5(params)
             } else {
-              if (v < vEnd) {
-//                print("Estimation case 5 ")
+//              print("Estimation case 4 ")
 
-                EdgeCases.case5(params)
-              } else {
-//                print("Estimation case 4 ")
-
-                EdgeCases.case4(params)
-              }
+              EdgeCases.case4(params)
             }
           } else {
 //            print("Estimation case 3 ")
 
             EdgeCases.case3(params)
           }
+        } else if (v < vMax) {
+//          print("Estimation case 2 ")
+
+          EdgeCases.case2(params)
         } else {
-          if (v < vMax) {
-//            print("Estimation case 2 ")
+//          print("Estimation case 1 ")
 
-            EdgeCases.case2(params)
-          } else {
-//            print("Estimation case 1 ")
-
-            EdgeCases.case1(params)
-          }
+          EdgeCases.case1(params)
         }
+      } else if (v <= vEnd) {
+        EdgeCases.case0(params)
       } else {
-        if (v <= vEnd) {
-          EdgeCases.case0(params)
-        } else {
-          sys.error(
-            "distance is zero and the current velocity is larger than the maximum final velocity")
-        }
+        sys.error(
+          "distance is zero and the current velocity is larger than the maximum final velocity")
       }
     }
   }
@@ -267,7 +261,9 @@ object VehicleArrivalEstimator {
       }
 
       def case4b = {
-        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity - params.maxDeceleration * params.velocity * params.velocity - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * params.finalVelocity * params.finalVelocity
+          - params.maxDeceleration * params.velocity * params.velocity
+          - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
         assert(delta >= 0.0)
         val velocity = Math.sqrt(delta)
         assert(velocity < params.maxVelocity)
@@ -417,9 +413,9 @@ object VehicleArrivalEstimator {
       }
 
       def case6bcd: Result = {
-        val delta = (params.maxAcceleration * Math.pow(params.finalVelocity, 2) - params.maxDeceleration * Math.pow(
-          params.velocity,
-          2) - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
+        val delta = (params.maxAcceleration * Math.pow(params.finalVelocity, 2)
+          - params.maxDeceleration * Math.pow(params.velocity, 2)
+          - 2 * params.maxAcceleration * params.maxDeceleration * params.distanceTotal.asMeters) / (params.maxAcceleration - params.maxDeceleration)
 
         assert(delta >= 0.0)
 

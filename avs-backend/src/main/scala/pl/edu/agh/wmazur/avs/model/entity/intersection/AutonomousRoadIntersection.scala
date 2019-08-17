@@ -12,6 +12,8 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle.Vin
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
+import scala.annotation.tailrec
+
 case class AutonomousRoadIntersection(
     id: Vin,
     roads: Iterable[Road],
@@ -110,7 +112,7 @@ case class AutonomousRoadIntersection(
 
       segments
         .map(lineStringLength)
-        .reduce(_ + _)
+        .sum
     }
   }
 
@@ -122,32 +124,18 @@ case class AutonomousRoadIntersection(
   override lazy val position: Point = centroid
 
   private def findIntersectionGeometry(roads: Iterable[Road]): Geometry = {
-    val (_, geometry) =
-      roads
-        .zip(roads.tail)
-        .foldLeft((Set.empty[(Road, Road)], Option.empty[Geometry])) {
-          case ((collectedRoads, intersectionGeometry), pair @ (lr, rr))
-              if !collectedRoads.contains((rr, lr)) =>
-//                !lr.oppositeRoad.contains(rr) =>
+    val geometries = roads.map(_.geometry).toSet
+    val intersectionAreas = geometries
+      .subsets(2)
+      .map(_.toList)
+      .collect {
+        case left :: right :: Nil if left.intersects(right) =>
+          left.intersection(right)
+      }
 
-            val lrGeometry =
-              AutonomousRoadIntersection.shapeFactory
-                .getGeometryFrom(lr.area)
-
-            val rrGeometry =
-              AutonomousRoadIntersection.shapeFactory
-                .getGeometryFrom(rr.area)
-
-            val roadsIntersection = lrGeometry.intersection(rrGeometry)
-
-            val newIntersectionGeometry = intersectionGeometry match {
-              case Some(geo) => geo.union(roadsIntersection)
-              case _         => roadsIntersection
-            }
-
-            (collectedRoads + pair, Some(newIntersectionGeometry))
-        }
-    geometry.get
+    intersectionAreas
+      .reduce(_.union(_))
+      .convexHull()
   }
 
   private def extractIntersectionPointDistances(

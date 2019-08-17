@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.extension.policy
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.ExitedControlZone
 import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.IntersectionConnectivity
 import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.ReservationSystem.ProposalFilter.RejectedResult
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
@@ -16,7 +17,7 @@ import pl.edu.agh.wmazur.avs.simulation.TickSource
 trait DefaultPolicy {
   self: AutonomousIntersectionManager with IntersectionConnectivity =>
 
-  lazy val defaultPolicy: Behavior[IntersectionManager.Protocol] =
+  lazy val firstComeFirstServed: Behavior[IntersectionManager.Protocol] =
     Behaviors.receiveMessagePartial {
       case req: IntersectionManager.Protocol.IntersectionCrossingRequest
           if req.proposals.isEmpty =>
@@ -59,15 +60,21 @@ trait DefaultPolicy {
                 validProposals.map(_.proposal))
               acceptance <- buildReservationAcceptance(req.id,
                                                        reservationParameters)
-              _ = driverRef ! acceptance
-              _ = context.log.debug("Request {} confirmed", req.id)
+              _ = {
+                driverRef ! acceptance
+                context.unwatch(driverRef)
+                context.watchWith(
+                  driverRef,
+                  ExitedControlZone(acceptance.reservationId, driverRef))
+                context.log.debug("Request {} confirmed", req.id)
+              }
             } yield acceptance
 
             if (optAcceptance.isEmpty) {
               val reason = Reason.NoClearPath
-              context.log.warning("Request {} rejected, reason {}",
-                                  req.id,
-                                  reason)
+              context.log.debug("Request {} rejected, reason {}",
+                                req.id,
+                                reason)
               driverRef ! ReservationRejected(
                 requestId = req.id,
                 nextAllowedCommunicationTimestamp = timestamp,

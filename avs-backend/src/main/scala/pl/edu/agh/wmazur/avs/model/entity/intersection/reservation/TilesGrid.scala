@@ -19,6 +19,8 @@ case class TilesGrid(area: Shape, granularity: Dimension) {
   val (cellsX, cellWidth) = calcTileSpec(shape.getWidth.geoDegrees)
   val (cellsY, cellHeight) = calcTileSpec(shape.getHeight.geoDegrees)
   val size: Int = cellsX * cellsY
+  println(
+    f"Intersection grid ${cellsX}x$cellsY. Controlled area ${cellsX * cellWidth.asMeters}%3.2fm x ${cellsY * cellHeight.asMeters}%3.2fm")
 
   def calcTileSpec(length: Dimension): (Int, Dimension) = {
     val tilesQuantity = (length.asMeters / granularity.asMeters).ceil.toInt

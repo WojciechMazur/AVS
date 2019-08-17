@@ -53,8 +53,8 @@ object VehicleSpec extends IdProvider[VehicleSpec] {
 
   object Predefined {
     lazy val Sedan = VehicleSpec(
-      maxAcceleration = 3.25,
-      maxDeceleration = -39.0,
+      maxAcceleration = 2 * 9.81, //8.25,
+      maxDeceleration = -11.5,
       maxVelocity = 55.0,
       minVelocity = -15.0,
       length = 5.0.meters,
@@ -70,8 +70,8 @@ object VehicleSpec extends IdProvider[VehicleSpec] {
 
     lazy val Coupe = VehicleSpec(
       maxAcceleration = 4.5,
-      maxDeceleration = -45.0,
-      maxVelocity = 60.0,
+      maxDeceleration = -10.5,
+      maxVelocity = 50.0,
       minVelocity = -17.0,
       length = 4.0.meters,
       width = 1.85.meters,
@@ -86,8 +86,8 @@ object VehicleSpec extends IdProvider[VehicleSpec] {
 
     lazy val Van = VehicleSpec(
       maxAcceleration = 3.83,
-      maxDeceleration = -39.0,
-      maxVelocity = 52.0,
+      maxDeceleration = -9.0,
+      maxVelocity = 35.0,
       minVelocity = -12.0,
       length = 5.13,
       width = 2.007,

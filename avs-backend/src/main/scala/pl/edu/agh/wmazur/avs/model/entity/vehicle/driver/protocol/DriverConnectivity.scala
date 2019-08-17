@@ -5,6 +5,8 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import com.softwaremill.quicklens._
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.spatial4j.shape.Point
+import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
@@ -109,7 +111,9 @@ trait DriverConnectivity {
               driverGauges.updateVehicleInFront(driverInFront, vehicle)
         }
         Behaviors.same
-
+      case Stop =>
+        timers.cancelAll()
+        Behaviors.stopped
     }
     .receiveSignal {
       case (_, PostStop) =>
@@ -131,6 +135,12 @@ object DriverConnectivity {
   trait Protocol {
     self: AutonomousVehicleDriver.type =>
 
+    object Timers {
+      case object CheckIfAway
+    }
+
+    case object Stop extends ExtendedProtocol
+
     case class GetPositionReading(replyTo: ActorRef[BasicReading])
         extends ExtendedProtocol
 
@@ -142,9 +152,18 @@ object DriverConnectivity {
         acceleration: Acceleration,
         geometry: Geometry)
         extends Protocol
+    case class EmptyReading(
+        driverRef: ActorRef[AutonomousVehicleDriver.Protocol])
+        extends Protocol
 
     case class GetDetailedReadings(
         replyTo: ActorRef[SimulationStateGatherer.Protocol])
+        extends ExtendedProtocol
+
+    case class CheckIfAwayFromIntersection(
+        intersectionManager: ActorRef[IntersectionManager.Protocol],
+        intersectionPosition: Point,
+        admissionControlZoneLenght: Dimension)
         extends ExtendedProtocol
 
     sealed trait PrecedingVehicleResult extends ExtendedProtocol

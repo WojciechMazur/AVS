@@ -46,7 +46,7 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
     case TrySpawn(drivers, entityManagerRef, currentTime) =>
       if (spawnPoint.isDefined && nextSpawnTime <= currentTime) {
         drivers.foreach { ref =>
-//          context.watchWith(ref, Terminated(ref))
+          context.watchWith(ref, Terminated(ref))
           val adapter =
             context.messageAdapter[AutonomousVehicleDriver.BasicReading] {
               case AutonomousVehicleDriver.BasicReading(driverRef,
@@ -97,7 +97,7 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
                            spec = spec,
                            position = lane.entryPoint,
                            heading = lane.heading,
-                           velocity = spec.maxVelocity / 3,
+                           velocity = 10,
                            lane = lane)
       waitForSpawnResult()
     } else {

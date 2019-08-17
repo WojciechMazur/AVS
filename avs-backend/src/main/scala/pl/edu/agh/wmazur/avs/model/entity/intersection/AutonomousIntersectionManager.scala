@@ -57,8 +57,8 @@ class AutonomousIntersectionManager(
   }
 
   override protected val initialBehaviour
-    : Behavior[IntersectionManager.Protocol] =
-    switchBehavior(defaultPolicy)
+    : Behavior[IntersectionManager.Protocol] = switchBehavior(
+    firstComeFirstServed)
 }
 
 object AutonomousIntersectionManager {

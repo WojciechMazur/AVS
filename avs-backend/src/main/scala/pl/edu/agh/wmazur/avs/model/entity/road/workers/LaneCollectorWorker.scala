@@ -8,6 +8,7 @@ import pl.edu.agh.wmazur.avs.Agent
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneCollectorWorker.Protocol
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneCollectorWorker.Protocol.{
   PositionReading,
+  Terminated,
   TryCollect
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.{CollectorPoint, Lane}
@@ -41,7 +42,10 @@ class LaneCollectorWorker(
           Set.empty)
         idle
       } else {
-        drivers.foreach(_ ! AutonomousVehicleDriver.GetPositionReading(adapter))
+        drivers.foreach { ref =>
+          context.watchWith(ref, Terminated(ref))
+          ref ! AutonomousVehicleDriver.GetPositionReading(adapter)
+        }
         getReadings(drivers, Set.empty)
       }
   }
@@ -67,6 +71,8 @@ class LaneCollectorWorker(
               markedToDeletion
             }
           getReadings(awaiting - ref, markedVehicles)
+        case Terminated(driverRef) =>
+          getReadings(awaiting - driverRef, markedToDeletion)
       }
     }
   }
@@ -93,6 +99,9 @@ object LaneCollectorWorker {
         position: Point,
         geometry: Geometry)
         extends Protocol
+    case class Terminated(
+        driverRef: ActorRef[AutonomousVehicleDriver.Protocol]
+    ) extends Protocol
 
   }
 

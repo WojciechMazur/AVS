@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur.avs.model.entity.road
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.util.Timeout
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager._
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.{
   RoadCollectorWorker,
@@ -20,12 +21,12 @@ import pl.edu.agh.wmazur.avs.simulation.stage.{
   VehiclesSpawnerStage
 }
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
-
+import scala.concurrent.duration._
 import scala.collection.mutable
 
 class RoadManager(
     val context: ActorContext[Protocol],
-    val road: Road,
+    var road: Road,
     var oppositeRoadManager: Option[ActorRef[RoadManager.Protocol]] = None,
     val workers: Workers)
     extends Agent[Protocol] {
@@ -56,13 +57,18 @@ class RoadManager(
           vehiclesAtLanes.toMap)
         Behaviors.same
 
-      case RegisterOppositeRoadManager(roadManagerRef) =>
+      case RegisterOppositeRoadManager(roadManagerRef, oppositeRoad) =>
         oppositeRoadManager = Some(roadManagerRef)
+        val updatedOppositeRoad =
+          oppositeRoad.copy(oppositeRoad = Some(this.road))
+        road = road.copy(oppositeRoad = Some(updatedOppositeRoad))
+        roadManagerRef ! RegisterOppositeRoadManager(context.self, road)
         context.watchWith(roadManagerRef,
                           OppositeRoadTerminated(roadManagerRef))
         Behaviors.same
-      case OppositeRoadTerminated(ref) =>
+      case OppositeRoadTerminated(_) =>
         oppositeRoadManager = None
+        road = road.copy(oppositeRoad = None)
         Behaviors.same
 
       case GetDetailedReadings(replyTo) =>
@@ -109,7 +115,8 @@ object RoadManager {
       extends Protocol
 
   case class RegisterOppositeRoadManager(
-      roadManager: ActorRef[RoadManager.Protocol])
+      roadManager: ActorRef[RoadManager.Protocol],
+      road: Road)
       extends Protocol
 
   case class OppositeRoadTerminated(ref: ActorRef[RoadManager.Protocol])
@@ -149,22 +156,37 @@ object RoadManager {
       replyTo: Option[ActorRef[EntityManager.SpawnResult[Road, Protocol]]] =
         None): Behavior[Protocol] =
     Behaviors.setup { ctx =>
-      val road = Road(optId, lanes, ctx.self)
-      replyTo.foreach(_ ! SpawnResult(road, ctx.self))
+      val road = Road(optId, lanes, ctx.self, None)
 
-      val workers = Workers(
-        coordinator = ctx.spawn(RoadVehiclesCoordinator.init(lanes),
-                                s"road-coordinator-${road.id}"),
-        roadSpawnerWorker = ctx.spawn(
-          RoadSpawnerWorker.init(ctx.self, road.lanes),
-          s"road-spawner-${road.id}"
-        ),
-        roadCollector = ctx
-          .spawn(RoadCollectorWorker.init(ctx.self, road.lanes),
-                 s"road-collector-${road.id}")
-      )
+      def startManager(road: Road) = {
+        val workers = Workers(
+          coordinator = ctx.spawn(RoadVehiclesCoordinator.init(lanes),
+                                  s"road-coordinator-${road.id}"),
+          roadSpawnerWorker = ctx.spawn(
+            RoadSpawnerWorker.init(ctx.self, road.lanes),
+            s"road-spawner-${road.id}"
+          ),
+          roadCollector = ctx
+            .spawn(RoadCollectorWorker.init(ctx.self, road.lanes),
+                   s"road-collector-${road.id}")
+        )
+        replyTo.foreach(_ ! SpawnResult(road, ctx.self))
+        new RoadManager(ctx, road, oppositeRoadRef, workers)
+      }
 
-      new RoadManager(ctx, road, oppositeRoadRef, workers)
+      oppositeRoadRef match {
+        case Some(ref) =>
+//          ctx.ask[RoadManager.Protocol, RoadManager.Protocol](ref)(askRef =>
+//            RegisterOppositeRoadManager(askRef, ctx.self, road))(_.get)
+          ref ! RegisterOppositeRoadManager(ctx.self, road)
+          Behaviors.receiveMessage {
+            case RegisterOppositeRoadManager(oppositeRef, oppositeRoad) =>
+              val updatedRoad = road.copy(oppositeRoad = Some(oppositeRoad))
+              ctx.log.debug(s"Registered opposite road $oppositeRef")
+              startManager(updatedRoad)
+          }
+        case None => startManager(road)
+      }
 
     }
 

@@ -1,5 +1,5 @@
 package pl.edu.agh.wmazur.avs.simulation
-
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.locationtech.spatial4j.shape.SpatialRelation
@@ -69,49 +69,98 @@ object StateRecoveryAgent {
     }
 
   def spawnRoads(context: Context): Behavior[Protocol] = {
-    val laneSpec = new LaneSpec(30, 2.5, canSpawn = true)
+    val laneSpec = new LaneSpec(16.6, 2.5, canSpawn = true)
 
     val lane11 =
       DirectedLane.simple(spec = laneSpec,
-                          offStartX = -250.0.meters,
-                          length = 500.0.meters)
+                          offStartX = -125.0.meters,
+                          offStartY = -(laneSpec.width + 0.5.meters) - 2.meters,
+                          length = 300.0.meters)
 
-    val lane12 = DirectedLane.simple(spec = laneSpec.copy(speedLimit = 20),
-                                     offStartX = -250.0.meters,
-                                     offStartY = laneSpec.width + 0.5.meters,
-                                     length = 500.0.meters)
+    val lane12 = DirectedLane.simple(
+      spec = laneSpec,
+      offStartX = -125.0.meters,
+      offStartY = 2 * -(laneSpec.width + 0.5.meters) - 2.meters,
+      length = 300.0.meters)
 
     val lane13 = DirectedLane.simple(
-      spec = laneSpec.copy(speedLimit = 25),
-      offStartX = -250.0.meters,
-      offStartY = 2 * laneSpec.width + 2 * 0.5.meters,
-      length = 500.0.meters,
+      spec = laneSpec,
+      offStartX = -125.0.meters,
+      offStartY = 3 * -(laneSpec.width + 0.5.meters) - 2.meters,
+      length = 300.0.meters,
     )
 
     val lane21 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -250.0.meters,
-                                     length = 400.0.meters,
+                                     offStartY = -125.0.meters,
+                                     length = 300.0.meters,
                                      heading = Math.PI / 2)
 
-    val lane22 = DirectedLane.simple(spec = laneSpec.withSpawnEnabled(true),
-                                     offStartY = -250d,
+    val lane22 = DirectedLane.simple(spec = laneSpec,
+                                     offStartY = -125d,
                                      offStartX = laneSpec.width + 0.5,
-                                     length = 450.0,
+                                     length = 350.0,
                                      heading = Math.PI / 2)
 
     val lane23 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -250d,
+                                     offStartY = -125d,
                                      offStartX = 2 * laneSpec.width + 2 * 0.5,
-                                     length = 500.0,
+                                     length = 400.0,
                                      heading = Math.PI / 2)
 
-    val roadLanes1 = lane11 :: lane12 :: lane13 :: Nil
-    val roadLanes2 = lane21 :: lane22 :: lane23 :: Nil
+    val lane31 =
+      DirectedLane.simple(spec = laneSpec,
+                          offStartX = 150.0.meters,
+                          length = 300.0.meters,
+                          heading = Math.PI)
 
-    val roadsToSpawn = List(roadLanes1, roadLanes2)
-    roadsToSpawn.foreach { roadLanes =>
-      context.entityManager ! EntityManager.SpawnProtocol
-        .SpawnRoad(Some(context.adapter), roadLanes)
+    val lane32 = DirectedLane.simple(spec = laneSpec,
+                                     offStartX = 150.0.meters,
+                                     offStartY = laneSpec.width + 0.5.meters,
+                                     length = 300.0.meters,
+                                     heading = Math.PI)
+
+    val lane33 = DirectedLane.simple(
+      spec = laneSpec,
+      offStartX = 150.0.meters,
+      offStartY = 2 * (laneSpec.width + 0.5.meters),
+      length = 300.0.meters,
+      heading = Math.PI)
+
+    val lane41 = DirectedLane.simple(
+      spec = laneSpec,
+      offStartY = 150.0.meters,
+      offStartX = -(laneSpec.width + 0.5.meters) - 1.meters,
+      length = 300.0.meters,
+      heading = -Math.PI / 2)
+
+    val lane42 = DirectedLane.simple(
+      spec = laneSpec,
+      offStartY = 150d,
+      offStartX = 2 * -(laneSpec.width + 0.5.meters) - 1.meters,
+      length = 300.0,
+      heading = -Math.PI / 2)
+
+    val lane43 = DirectedLane.simple(
+      spec = laneSpec,
+      offStartY = 150d,
+      offStartX = 3 * -(laneSpec.width + 0.5.meters) - 1.meters,
+      length = 300.0,
+      heading = -Math.PI / 2)
+
+    val roadLanes1 = lane11 :: Nil // lane12 :: lane13 :: Nil
+    val roadLanes2 = lane21 :: Nil //lane22 :: lane23 :: Nil
+    val roadLanes3 = lane31 :: Nil //lane32 :: lane33 :: Nil
+    val roadLanes4 = lane41 :: Nil //lane42 :: lane43 :: Nil
+
+    val roadsToSpawn = List(roadLanes1, roadLanes2, roadLanes3, roadLanes4)
+    val roadGroups = List((roadLanes1, roadLanes3), (roadLanes2, roadLanes4))
+
+    roadGroups.foreach {
+      case (roadLanes, oppositeRoadLanes) =>
+        context.entityManager ! EntityManager.SpawnProtocol
+          .SpawnOppositeRoads(Some(context.adapter),
+                              roadLanes,
+                              oppositeRoadLanes)
     }
 
     waitForRoadsSpawn(context, roadsToSpawn.size)
@@ -134,11 +183,22 @@ object StateRecoveryAgent {
       context: StateRecoveryAgent.Context,
       roads: Map[Road, ActorRef[RoadManager.Protocol]]): Behavior[Protocol] = {
 
+    def roadsIntersect(lRoad: Road, rRoad: Road): Boolean = {
+      val case1 = lRoad.area.relate(rRoad.area).intersects()
+      def case2 =
+        lRoad.oppositeRoad.exists(_.area.relate(rRoad.area).intersects())
+      def case3 =
+        rRoad.oppositeRoad.exists(_.area.relate(rRoad.area).intersects())
+      def case4 =
+        rRoad.oppositeRoad.exists(_.area.relate(lRoad.area).intersects())
+
+      case1 || case2 || case3 || case4
+    }
+
     val roadsSet = roads.keySet
     val intersectiongRoads = for {
       road <- roadsSet
-      intersections = (roadsSet - road).filter(
-        _.area.relate(road.area) == SpatialRelation.INTERSECTS)
+      intersections = (roadsSet - road).filter(roadsIntersect(_, road))
     } yield intersections + road
     val distinct = intersectiongRoads.foldLeft(Set.empty[Set[Road]]) {
       case (acc, set) =>
@@ -150,9 +210,10 @@ object StateRecoveryAgent {
     }
 
     distinct.foreach { intersectionRoads =>
+      val sortedRoads =
+        intersectionRoads.toList.sortBy(_.position.angle(Point2(0, 0)))
       context.entityManager ! EntityManager.SpawnProtocol
-        .SpawnAutonomousIntersection(Some(context.adapter),
-                                     intersectionRoads.toList)
+        .SpawnAutonomousIntersection(Some(context.adapter), sortedRoads)
     }
 
     waitForIntersectionsSpawn(context, roads, Map.empty, distinct.size)

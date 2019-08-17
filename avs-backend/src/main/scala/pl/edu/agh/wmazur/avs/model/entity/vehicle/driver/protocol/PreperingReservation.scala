@@ -50,6 +50,8 @@ trait PreperingReservation {
   var isAwaitingForAcceptance: Boolean = false
   var reservationDetails: Option[ReservationDetails] = None
 
+  var rejectionCounter: Int = 0
+
   val cachedMaxVelocities: IntersectionToLaneVelocities = mutable.Map.empty
 
   val preperingReservation: Behavior[AutonomousVehicleDriver.Protocol] =
@@ -140,7 +142,13 @@ trait PreperingReservation {
       case ReservationRejected(requestId,
                                nextAllowedCommunicationTimestamp,
                                reason) =>
-        context.log.warning(s"Reservation $requestId rejected, $reason")
+        context.log.debug(s"Reservation $requestId rejected, $reason")
+        if (isRetryingToMakeReservation) {
+//          println(s"${vehicle.id} rejected by intersection")
+          rejectionCounter += 1
+        } else {
+          rejectionCounter = 1
+        }
         withVehicle(vehicle.withAccelerationSchedule(None))
         lastRequestTimestamp = None
         isAwaitingForAcceptance = false
@@ -159,9 +167,6 @@ trait PreperingReservation {
         lastRequestTimestamp = None
         isAwaitingForAcceptance = false
         val updatedGauges = updateGauges
-        assert(
-          driverGauges.distanceToNextIntersection.get isEqual driverGauges
-            .calcDistance(nextIntersectionPosition.get, vehicle))
 
         ReservationChecker
           .check(
@@ -179,6 +184,11 @@ trait PreperingReservation {
           .map { schedule =>
             assert(schedule.timestamps.last.timeEnd == details.arrivalTime)
             isMaintaingReservation = true
+            nextSchedulerCheckTimestamp = Some(currentTime + 250L)
+            if (isRetryingToMakeReservation) {
+              context.log.info(
+                s"Reservation accepted after $rejectionCounter retries")
+            }
             isRetryingToMakeReservation = false
             nextReservationRequestAttempt = None
             reservationDetails = Some(details)
@@ -188,8 +198,9 @@ trait PreperingReservation {
           }
           .recover {
             case err =>
-//              err.printStackTrace()
+              //              err.printStackTrace()
               context.log.error("Reservation check failed: {}", err.getMessage)
+              rejectionCounter += 1
               details.intersectionManagerRef ! IntersectionManager.Protocol
                 .CancelReservation(reservationId, context.self)
               nextReservationRequestAttempt =
@@ -241,7 +252,7 @@ trait PreperingReservation {
 
   def hasArrivedInTime: Boolean = {
     reservationDetails.exists { reservationParams =>
-      val a1 = currentTime - 2 * TickSource.timeStep.toMillis
+      val a1 = currentTime - TickSource.timeStep.toMillis
       val a2 = currentTime
       val b1 = reservationParams.arrivalTime - reservationParams.safetyBufferBefore.toMillis
       val b2 = reservationParams.arrivalTime + reservationParams.safetyBufferAfter.toMillis
@@ -319,11 +330,11 @@ trait PreperingReservation {
 }
 
 object PreperingReservation {
-  final val maxExpectedIntersectionManagerReplyTime
-    : FiniteDuration = 2 * TickSource.timeStep
+  final val maxExpectedIntersectionManagerReplyTime: FiniteDuration =
+    TickSource.timeStep
   final val arrivalEstimationAccelerationReduction = 1.0
-  final val sendingRequestDelay = 100.millis
-  final val reservationRequestTimeout = 100.millis
+  final val sendingRequestDelay = 7 * TickSource.timeStep
+  final val reservationRequestTimeout = 250.millis
   final val arrivalVelocityThreshold = 3.0
 
   trait Protocol {

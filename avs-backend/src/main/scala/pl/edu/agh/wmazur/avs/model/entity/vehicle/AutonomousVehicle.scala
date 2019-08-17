@@ -11,7 +11,6 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Velocity
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
-import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 case class AutonomousVehicle(
     id: Vin,
     gauges: VehicleGauges,

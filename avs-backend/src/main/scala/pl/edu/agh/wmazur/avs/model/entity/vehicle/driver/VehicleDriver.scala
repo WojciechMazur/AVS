@@ -95,7 +95,8 @@ object VehicleDriver {
         arrivalVelocity: Velocity,
         arrivalLaneId: Lane#Id,
         departureLaneId: Lane#Id,
-        accelerationProfile: AccelerationProfile
+        accelerationProfile: AccelerationProfile,
+        admissionZoneLength: Dimension
     )
 
     final case class ReservationRejected(

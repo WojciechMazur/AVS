@@ -13,7 +13,8 @@ import pl.edu.agh.wmazur.avs.model.entity.{Entity, EntitySettings}
 
 case class Road(id: Road#Id,
                 lanes: List[Lane],
-                managerRef: ActorRef[RoadManager.Protocol])
+                managerRef: ActorRef[RoadManager.Protocol],
+                oppositeRoad: Option[Road])
     extends Entity
     with DeltaOps[Road] {
   lanes.foreach(_.spec.road = Some(this))
@@ -43,7 +44,8 @@ case class Road(id: Road#Id,
 object Road extends EntitySettings[Road] with IdProvider[Road] {
   def apply(id: Option[Road#Id],
             lanes: List[Lane],
-            managerRef: ActorRef[RoadManager.Protocol]): Road = {
+            managerRef: ActorRef[RoadManager.Protocol],
+            oppositeRoad: Option[Road]): Road = {
     val lanesWithNeighbourhood = lanes.tail
       .foldLeft(lanes.head :: Nil) {
         case (acc, current: DirectedLane @unchecked) =>
@@ -68,8 +70,8 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
     new Road(
       id = id.getOrElse(nextId),
       lanes = lanesWithNeighbourhood,
-      managerRef = managerRef
-//      oppositeRoad = oppositeRoad
+      managerRef = managerRef,
+      oppositeRoad = oppositeRoad
     )
   }
 }

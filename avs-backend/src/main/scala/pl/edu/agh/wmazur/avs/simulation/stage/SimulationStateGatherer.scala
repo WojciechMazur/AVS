@@ -47,10 +47,13 @@ object SimulationStateGatherer {
 
   final lazy val init: Behavior[Protocol] = Behaviors.setup { ctx =>
     ctx.log.info("Simulation state gatharer stage spawned")
-    idle
+    val collisionDetector =
+      ctx.spawn(CollisionDetector.init, "collision-detector")
+    idle(collisionDetector)
   }
 
-  private val idle: Behaviors.Receive[Protocol] =
+  private def idle(collisionDetector: ActorRef[CollisionDetector.Protocol])
+    : Behaviors.Receive[Protocol] =
     Behaviors.receive {
       case (ctx,
             GetCurrentState(replyTo,
@@ -59,15 +62,25 @@ object SimulationStateGatherer {
                             intersectionRefs,
                             currentTime,
                             tickDelta)) =>
-        dispatchRequests(ctx, roadRefs, intersectionRefs, driverRefs)
+        dispatchRequests(ctx,
+                         collisionDetector,
+                         roadRefs,
+                         intersectionRefs,
+                         driverRefs)
 
         val emptyState = SimulationState.empty
           .copy(currentTime = currentTime, tickDelta = tickDelta)
-        gatherState(replyTo, roadRefs, intersectionRefs, driverRefs, emptyState)
+        gatherState(replyTo,
+                    collisionDetector,
+                    roadRefs,
+                    intersectionRefs,
+                    driverRefs,
+                    emptyState)
     }
 
   private def dispatchRequests(
       context: ActorContext[SimulationStateGatherer.Protocol],
+      collisionDetector: ActorRef[CollisionDetector.Protocol],
       roadRefs: Set[ActorRef[RoadManager.Protocol]],
       intersectionRefs: Set[ActorRef[IntersectionManager.Protocol]],
       driverRefs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]])
@@ -91,6 +104,7 @@ object SimulationStateGatherer {
 
   private def gatherState(
       replyTo: ActorRef[SimulationManager.Protocol],
+      collisionDetector: ActorRef[CollisionDetector.Protocol],
       roadRefs: Set[ActorRef[RoadManager.Protocol]],
       intersectionRefs: Set[ActorRef[IntersectionManager.Protocol]],
       driverRefs: Set[ActorRef[AutonomousVehicleDriver.ExtendedProtocol]],
@@ -106,6 +120,7 @@ object SimulationStateGatherer {
             modify(state)(_.vehicles)
               .setTo(state.vehicles.updated(vehicle.id, vehicle))
           gatherState(replyTo,
+                      collisionDetector,
                       roadRefs,
                       intersectionRefs,
                       driverRefs - driverRef,
@@ -113,6 +128,7 @@ object SimulationStateGatherer {
 
         case (_, DriverNotExists(driverRef)) =>
           gatherState(replyTo,
+                      collisionDetector,
                       roadRefs,
                       intersectionRefs,
                       driverRefs - driverRef,
@@ -122,6 +138,7 @@ object SimulationStateGatherer {
           val newState = modify(state)(_.roads)
             .setTo(state.roads.updated(road.id, road))
           gatherState(replyTo,
+                      collisionDetector,
                       roadRefs - roadRef,
                       intersectionRefs,
                       driverRefs,
@@ -131,6 +148,7 @@ object SimulationStateGatherer {
           val newState = modify(state)(_.intersections)
             .setTo(state.intersections.updated(intersection.id, intersection))
           gatherState(replyTo,
+                      collisionDetector,
                       roadRefs,
                       intersectionRefs - intersectionRef,
                       driverRefs,
@@ -138,7 +156,8 @@ object SimulationStateGatherer {
       }
     } else {
       replyTo ! StateUpdate(state)
-      idle
+      collisionDetector ! CollisionDetector.DetectCollisions(state)
+      idle(collisionDetector)
     }
   }
 

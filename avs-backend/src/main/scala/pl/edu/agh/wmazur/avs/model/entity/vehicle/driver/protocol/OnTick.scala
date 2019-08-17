@@ -6,7 +6,11 @@ import akka.actor.typed.{ActorRef, Behavior}
 import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.EntityRefsGroup
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
+import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager.Protocol.ExitedControlZone
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
+  AutonomousVehicleDriver,
+  VehiclePilot
+}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.DriverConnectivity.VehicleCachedReadings
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
@@ -35,7 +39,10 @@ trait OnTick {
         List(
           driverInFront
         ).flatten
-          .foreach(_.ref ! GetPositionReading(context.self.narrow))
+          .foreach { driver =>
+            context.watchWith(driver.ref, EmptyReading(driver.ref))
+            driver.ref ! GetPositionReading(context.self.narrow)
+          }
 
         lastRequestTimestamp
           .filter(
@@ -47,10 +54,25 @@ trait OnTick {
 
         nextReservationRequestAttempt
           .filter(currentTime >= _)
+          .filter(_ =>
+            driverGauges.distanceToCollisionWithCarInFront.forall(
+              _ > VehiclePilot.minimumDistanceBetweenCars))
           .foreach { _ =>
             nextReservationRequestAttempt = None
             context.self ! TrySendReservationRequest
           }
+
+        if (!hasLeavedAdmissionControlZone) {
+          for {
+            details <- reservationDetails
+            distance <- driverGauges.distanceToPrevIntersection
+            if distance > details.admissionZoneLength
+            msg = ExitedControlZone(details.reservationId, context.self)
+          } {
+            hasLeavedAdmissionControlZone = true
+            details.intersectionManagerRef ! msg
+          }
+        }
 
         Behaviors.same
 
@@ -64,7 +86,14 @@ trait OnTick {
           driverGauges =
             driverGauges.updateVehicleInFront(driverInFront, vehicle)
         }
+        Behaviors.same
 
+      case EmptyReading(driverRef) =>
+        if (driverInFront.exists(_.ref == driverRef)) {
+          driverInFront = None
+          driverGauges =
+            driverGauges.updateVehicleInFront(driverInFront, vehicle)
+        }
         Behaviors.same
     }
 
@@ -76,6 +105,10 @@ trait OnTick {
       .setTo(reading.position)
       .modify(_.velocity)
       .setTo(reading.velocity)
+      .modify(_.geometry)
+      .setTo(Some(reading.geometry))
+      .modify(_.ref)
+      .setTo(reading.driverRef)
   }
 
 }

@@ -55,7 +55,6 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
                                        schedule: AccelerationSchedule)
     : (self.type, Option[AccelerationSchedule]) = {
     val events = schedule.timestamps
-
     if (schedule.timestamps.isEmpty) {
       (self.withAcceleration(0.0).move(timeDelta), None)
     } else {
@@ -106,45 +105,11 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
             }
           } else {
             val delayTime = currentTime - timeStart
-            val fixedSchedule =
-              repairSchedule(delayTime.millis, schedule.timestamps)
+            val fixedSchedule = schedule.adjustSchedule(delayTime.millis)
             internalMoveWithSchedule(currentTime, timeDelta, fixedSchedule)
           }
       }
     }
   }
 
-  private def repairSchedule(
-      deleyTime: FiniteDuration,
-      remainingEvents: List[AccelerationTimestamp]): AccelerationSchedule = {
-    @tailrec
-    def iterate(
-        catchUpTime: FiniteDuration,
-        remainingEvents: List[AccelerationTimestamp],
-        fixedEvents: List[AccelerationTimestamp]): AccelerationSchedule = {
-      remainingEvents match {
-        case _ if catchUpTime == deleyTime =>
-          AccelerationSchedule(fixedEvents ++ remainingEvents)
-        case Nil => AccelerationSchedule(fixedEvents)
-        case current :: tail if current.acceleration.isZero =>
-          current.duration match {
-            case dur if dur >= deleyTime - catchUpTime =>
-              val updatedCurrent = current
-                .modify(_.timeStart)
-                .using(_ + deleyTime.toMillis)
-              iterate(deleyTime, tail, fixedEvents :+ updatedCurrent)
-            case duration =>
-              val availableDuration = deleyTime - duration
-              //remove current event
-              iterate(catchUpTime + availableDuration, tail, fixedEvents)
-          }
-        case current :: tail =>
-          val updatedCurrent = current
-            .modifyAll(_.timeStart, _.timeEnd)
-            .using(_ + (deleyTime - catchUpTime).toMillis)
-          iterate(catchUpTime, tail, fixedEvents :+ updatedCurrent)
-      }
-    }
-    iterate(Duration.Zero, remainingEvents, Nil)
-  }
 }

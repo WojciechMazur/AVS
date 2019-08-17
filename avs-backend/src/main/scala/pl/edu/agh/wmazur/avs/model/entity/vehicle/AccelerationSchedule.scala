@@ -1,15 +1,16 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle
 
 import java.util.concurrent.TimeUnit
-
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationSchedule.AccelerationTimestamp
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
   Velocity
 }
+import com.softwaremill.quicklens._
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-
+import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils.DoubleUtils
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
@@ -60,6 +61,40 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp],
 
 //  def calcFinalDistance(initialVelocity: Velocity): Velocity = {}
 
+  def adjustSchedule(deleyTime: FiniteDuration): AccelerationSchedule = {
+//    assert(deleyTime >= Duration.Zero)
+    @tailrec
+    def iterate(
+        catchUpTime: FiniteDuration,
+        remainingEvents: List[AccelerationTimestamp],
+        fixedEvents: List[AccelerationTimestamp]): AccelerationSchedule = {
+      remainingEvents match {
+        case _ if catchUpTime == deleyTime =>
+          AccelerationSchedule(fixedEvents ++ remainingEvents)
+        case Nil => AccelerationSchedule(fixedEvents)
+
+        case current :: tail if current.acceleration.isZero =>
+          current.duration match {
+            case dur if dur >= deleyTime - catchUpTime =>
+              val updatedCurrent = current
+                .modify(_.timeStart)
+                .using(_ + deleyTime.toMillis)
+              iterate(deleyTime, tail, fixedEvents :+ updatedCurrent)
+            case duration =>
+              val availableDuration = deleyTime - duration
+              //remove current event
+              iterate(catchUpTime + availableDuration, tail, fixedEvents)
+          }
+        case current :: tail =>
+          val updatedCurrent = current
+            .modifyAll(_.timeStart, _.timeEnd)
+            .using(_ + (deleyTime - catchUpTime).toMillis)
+          iterate(catchUpTime, tail, fixedEvents :+ updatedCurrent)
+      }
+    }
+    iterate(Duration.Zero, timestamps, Nil)
+  }
+
   def calcFinalVelocity(initialVelocity: Velocity): Velocity = {
     val (finalVelocity, _) =
       timestamps.tail.foldLeft((initialVelocity, timestamps.head)) {
@@ -70,6 +105,44 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp],
       }
     finalVelocity
   }
+
+  def calcTimeNeededToDriveDistance(
+      distance: Dimension,
+      currentTime: Timestamp,
+      initialVelocity: Velocity): FiniteDuration = {
+    val events = timestamps
+      .dropWhile(_.timeEnd < currentTime)
+    val durationBeforeSchedule =
+      (timestamps.head.timeStart - currentTime).max(0L).millis
+    val distanceBeforeSchedule = durationBeforeSchedule.toUnit(TimeUnit.SECONDS) * initialVelocity
+
+    val (durationTotal, _, _) = events
+      .foldLeft(
+        (Duration.Zero, distance - distanceBeforeSchedule, initialVelocity)) {
+        case ((totalTime, remainingDistance, velocity), _)
+            if remainingDistance.asMeters.isZero =>
+          (totalTime, remainingDistance, velocity)
+        case ((totalTime, remainingDistance, velocity), event) =>
+          val duration = event.durationSeconds
+          val velocityDelta = event.acceleration * duration
+          val avgVelocity = (2 * velocity + velocityDelta) / 2
+          val distanceTotal = duration * avgVelocity
+          //          val velocityAfter = velocity + velocityDelta
+          if (distanceTotal > remainingDistance.asMeters) {
+            val normalizedDistance = remainingDistance.asMeters / distanceTotal
+            val velocityAtEnd = velocity + normalizedDistance * velocityDelta
+            val vAvg = (velocity + velocityAtEnd) / 2
+            val timeToEnd = remainingDistance.asMeters / vAvg
+            (totalTime + timeToEnd.seconds, 0.0.meters, velocityAtEnd)
+          } else {
+            (totalTime + event.duration,
+             (distance.asMeters - distanceTotal).meters,
+             velocity + velocityDelta)
+          }
+      }
+    durationTotal + durationBeforeSchedule
+  }
+
 }
 
 object AccelerationSchedule {

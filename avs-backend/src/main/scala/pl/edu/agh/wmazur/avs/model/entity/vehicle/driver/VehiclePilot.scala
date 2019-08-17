@@ -132,9 +132,9 @@ trait VehiclePilot {
         val stoppingDistance = calcStoppingDistance(
           vehicle.velocity,
           vehicle.spec.maxDeceleration) + minimumDistanceBetweenCars
-        val result = driverGauges.distanceToCollisionWithCarInFront.forall(
+        driverGauges.distanceToCollisionWithCarInFront.forall(
           _ > stoppingDistance)
-        result
+
       case _ => true
     }
   }
@@ -191,8 +191,7 @@ trait VehiclePilot {
   }
 
   protected def stopBeforeVehicleInFront(): VehiclePilot.this.type = {
-    val breakingDistance =
-      calcStoppingDistance(vehicle.velocity, vehicle.spec.maxDeceleration)
+    val breakingDistance = distanceTraveledIfStoppingNextFrame
     val safeDistance = breakingDistance + minimumDistanceBetweenCars
 
     applyIf(driverGauges.distanceToCarInFront.exists(_ < safeDistance)) {

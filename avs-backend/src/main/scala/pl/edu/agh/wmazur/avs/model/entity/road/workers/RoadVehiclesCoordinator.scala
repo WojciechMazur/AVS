@@ -161,15 +161,16 @@ object RoadVehiclesCoordinator {
               AutonomousVehicleDriver.GetPositionReading(
                 context.driversAdapter))
             driverRef <- context.driversOccupation.keySet
+
           } driverRef ! readingRequest
 
           active(context)
 
-        case VehiclesOccupationUpdate(driverRef, enteredLanes, exitedLanes) => {
+        case VehiclesOccupationUpdate(driverRef, enteredLanes, exitedLanes) =>
+          context.context.watch(driverRef)
           active {
             context.updateDriverOccupation(driverRef, enteredLanes, exitedLanes)
           }
-        }
 
         case VehiclePositionReading(driverRef, position, velocity) =>
           val currentLane = context.driversOccupation(driverRef) match {

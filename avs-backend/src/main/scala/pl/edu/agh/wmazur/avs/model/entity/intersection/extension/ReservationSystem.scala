@@ -199,6 +199,8 @@ trait ReservationSystem {
           arrivalLaneId = params.successfulProposal.arrivalLaneId,
           departureLaneId = params.successfulProposal.departureLaneId,
           accelerationProfile = params.gridSchedule.accelerationProfile,
+          admissionZoneLength = admissionControlZonesManagers(
+            params.successfulProposal.arrivalLaneId).controlledDistance
         )
 
         val reservationRecord = ReservationRecord(
@@ -275,8 +277,7 @@ object ReservationSystem {
   }
 
   val maximumFutureReservationTime: FiniteDuration = 30.seconds
-  val defaultACZSize: Dimension = 40.asMeters
-  val admissionControlZoneLength: Dimension = 40.meters
+  val admissionControlZoneLength: Dimension = 50.meters
   val earlyArrivalThreshold: FiniteDuration = 0.5.seconds
   val lateArrivalThreshold: FiniteDuration = 0.5.seconds
 }

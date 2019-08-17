@@ -11,6 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver
 
 case class AdmissionControlZoneManager(
     private var admissionControlZone: AdmissionControlZone) {
+  def controlledDistance: Dimension = admissionControlZone.controlledDistance
 
   def cancel(driverRef: ActorRef[VehicleDriver.Protocol]): Unit = {
     admissionControlZone = admissionControlZone.cancel(driverRef)
@@ -27,8 +28,11 @@ case class AdmissionControlZoneManager(
       Some(
         AdmissionPlan(query.driverRef, query.vehicleLength, query.stopDistance))
     } else {
-      System.err.println(
-        s"Admission control zone rejected entry for ${query.driverRef}")
+//      System.err.println(
+//        f"Admission control zone rejected entry for ${query.driverRef}." +
+//          f" Area occupied in ${admissionControlZone.currentSize.asMeters / admissionControlZone.controlledDistance.asMeters * 100}%3.2f" + "%" +
+//          f" Remaining distance ${(admissionControlZone.controlledDistance - admissionControlZone.currentSize).asMeters}%3.2fm" +
+//          f" Needed distance ${query.stopDistance.asMeters}%3.2fm")
       None
     }
   }

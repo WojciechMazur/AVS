@@ -61,13 +61,23 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
           s"road-manager-$roadId")
         Behaviors.same
 
+      case SpawnProtocol.SpawnOppositeRoads(replyTo, lanes, oppositeLanes) =>
+        val roadId = Road.nextId
+
+        val road1 =
+          context.spawn(RoadManager.init(Some(roadId), lanes, None, replyTo),
+                        s"road-manager-$roadId")
+        context.self ! SpawnProtocol.SpawnRoad(replyTo,
+                                               oppositeLanes,
+                                               Some(road1))
+        Behaviors.same
+
       case SpawnProtocol.SpawnAutonomousIntersection(replyTo, roads) =>
         val intersectionId = Intersection.nextId
         val managerConfig = GridReservationManager.ManagerConfig(
           timeStep = TickSource.timeStep,
-          granularity = 1.meters
-        )(_internalTimeBuffer = 10 * TickSource.timeStep,
-          _edgeTimeBuffer = 10 * TickSource.timeStep)
+          granularity = 2.meters
+        )()
 
         context.spawn(
           AutonomousIntersectionManager.init(Some(intersectionId),
@@ -88,7 +98,7 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
           )
         }
 
-        driversRef.foreach(context.stop)
+        driversRef.foreach(_ ! AutonomousVehicleDriver.Stop)
         Behaviors.same
     }
 }
@@ -124,6 +134,13 @@ object EntityManager {
         lanes: List[Lane],
         oppositeRoad: Option[ActorRef[RoadManager.Protocol]] = None)
         extends SpawnProtocol
+
+    case class SpawnOppositeRoads(
+        replyTo: Option[ActorRef[SpawnResult[Road, RoadManager.Protocol]]] =
+          None,
+        lanes: List[Lane],
+        oppositeLanes: List[Lane]
+    ) extends SpawnProtocol
 
     case class SpawnAutonomousIntersection(
         // format: off

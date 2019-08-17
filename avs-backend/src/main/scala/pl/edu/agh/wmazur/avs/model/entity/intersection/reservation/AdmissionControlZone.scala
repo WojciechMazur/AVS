@@ -46,7 +46,9 @@ case class AdmissionControlZone(
           .modify(_.currentSize)
           .using(_ - length)
       } yield newState
-    }.getOrElse(this)
+    }.getOrElse {
+      this
+    }
   }
 
 }

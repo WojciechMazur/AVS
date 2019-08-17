@@ -7,7 +7,7 @@ import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, RoadManager}
-import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
+import pl.edu.agh.wmazur.avs.model.entity.utils.{MathUtils, SpatialUtils}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
@@ -147,7 +147,9 @@ object DriversFetcherAgent {
 
             def headingToIntersection: Boolean = {
               val angle = driverPosition.angle(context.intersectionCenter) - heading
-              angle.abs < Math.PI / 6
+              MathUtils.recenter(angle, 0, 2 * Math.PI) < Math.PI / 6 ||
+              MathUtils.recenter(angle.abs, 0, 2 * Math.PI) < Math.PI / 6
+
             }
             if (withinArea && headingToIntersection) {
               val lane = driverLanesOccupation(driverRef).minBy(

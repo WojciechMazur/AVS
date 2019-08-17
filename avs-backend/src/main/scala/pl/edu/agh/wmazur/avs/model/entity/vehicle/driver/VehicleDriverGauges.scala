@@ -15,12 +15,6 @@ case class VehicleDriverGauges(
     distanceToPrevIntersection: Option[Dimension],
     isWithinIntersection: Boolean) {
 
-  def calcDistance(point: Point, vehicle: Vehicle): Dimension =
-    SpatialUtils.shapeFactory
-      .getGeometryFrom(point)
-      .distance(vehicle.geometry)
-      .geoDegrees
-
   def updateVehicleInFront(optVehicleInFront: Option[VehicleCachedReadings],
                            vehicle: Vehicle): VehicleDriverGauges = {
     val distancToCarInFront = for {

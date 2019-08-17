@@ -21,5 +21,4 @@ object TickSource {
     .tick(initialDelay = Duration.Zero,
           interval = tickInterval,
           tick = timeStep)
-//    .batch(Long.MaxValue, identity)(_ + _)
 }
