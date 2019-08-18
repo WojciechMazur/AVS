@@ -1,12 +1,14 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
 import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.model.entity.road.TurningAllowance.AnyDirection
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Velocity
 
 class LaneSpec(
     val speedLimit: Velocity,
     val width: Dimension,
     val canSpawn: Boolean = true,
+    val turningAllowance: TurningAllowance = AnyDirection,
     _leadsIntoLane: => Option[Lane] = None,
     _leadsFromLane: => Option[Lane] = None,
     _leftNeighbourLane: => Option[Lane] = None,
@@ -18,6 +20,8 @@ class LaneSpec(
   lazy val rightNeighbourLane: Option[Lane] = _rightNeighbourLane
 
   def withSpawnEnabled(boolean: Boolean): LaneSpec = copy(canSpawn = boolean)
+  def withTurningAllowance(newAllowance: TurningAllowance): LaneSpec =
+    copy(turningAllowance = newAllowance)
 
   var road: Option[Road] = None
 
@@ -25,6 +29,7 @@ class LaneSpec(
       speedLimit: Velocity = this.speedLimit,
       width: Dimension = this.width,
       canSpawn: Boolean = this.canSpawn,
+      turningAllowance: TurningAllowance = this.turningAllowance,
       leadsIntoLane: => Option[Lane] = this.leadsInto,
       leadsFromLane: => Option[Lane] = this.leadsFrom,
       leftNeighbourLane: => Option[Lane] = this.leftNeighbourLane,

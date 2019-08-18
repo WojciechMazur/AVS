@@ -70,78 +70,83 @@ object StateRecoveryAgent {
 
   def spawnRoads(context: Context): Behavior[Protocol] = {
     val laneSpec = new LaneSpec(16.6, 2.5, canSpawn = true)
-
+    import pl.edu.agh.wmazur.avs.model.entity.road.TurningAllowance._
     val lane11 =
-      DirectedLane.simple(spec = laneSpec,
+      DirectedLane.simple(spec = laneSpec.withTurningAllowance(TurnLeftOnly),
                           offStartX = -125.0.meters,
                           offStartY = -(laneSpec.width + 0.5.meters) - 2.meters,
                           length = 300.0.meters)
 
     val lane12 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(GoStraightOnly),
       offStartX = -125.0.meters,
       offStartY = 2 * -(laneSpec.width + 0.5.meters) - 2.meters,
       length = 300.0.meters)
 
     val lane13 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(TurnRightOnly),
       offStartX = -125.0.meters,
       offStartY = 3 * -(laneSpec.width + 0.5.meters) - 2.meters,
       length = 300.0.meters,
     )
 
-    val lane21 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -125.0.meters,
-                                     length = 300.0.meters,
-                                     heading = Math.PI / 2)
+    val lane21 = DirectedLane.simple(
+      spec = laneSpec.withTurningAllowance(TurnLeftOnly),
+      offStartY = -125.0.meters,
+      length = 300.0.meters,
+      heading = Math.PI / 2)
 
-    val lane22 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -125d,
-                                     offStartX = laneSpec.width + 0.5,
-                                     length = 350.0,
-                                     heading = Math.PI / 2)
+    val lane22 = DirectedLane.simple(
+      spec = laneSpec.withTurningAllowance(GoStraightOnly),
+      offStartY = -125d,
+      offStartX = laneSpec.width + 0.5,
+      length = 350.0,
+      heading = Math.PI / 2)
 
-    val lane23 = DirectedLane.simple(spec = laneSpec,
-                                     offStartY = -125d,
-                                     offStartX = 2 * laneSpec.width + 2 * 0.5,
-                                     length = 400.0,
-                                     heading = Math.PI / 2)
+    val lane23 = DirectedLane.simple(
+      spec = laneSpec.withTurningAllowance(TurnRightOnly),
+      offStartY = -125d,
+      offStartX = 2 * laneSpec.width + 2 * 0.5,
+      length = 400.0,
+      heading = Math.PI / 2)
 
     val lane31 =
-      DirectedLane.simple(spec = laneSpec,
+      DirectedLane.simple(spec = laneSpec.withTurningAllowance(TurnLeftOnly),
                           offStartX = 150.0.meters,
                           length = 300.0.meters,
                           heading = Math.PI)
 
-    val lane32 = DirectedLane.simple(spec = laneSpec,
-                                     offStartX = 150.0.meters,
-                                     offStartY = laneSpec.width + 0.5.meters,
-                                     length = 300.0.meters,
-                                     heading = Math.PI)
+    val lane32 = DirectedLane.simple(
+      spec = laneSpec.withTurningAllowance(GoStraightOnly),
+      offStartX = 150.0.meters,
+      offStartY = laneSpec.width + 0.5.meters,
+      length = 300.0.meters,
+      heading = Math.PI)
 
     val lane33 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(TurnRightOnly),
       offStartX = 150.0.meters,
       offStartY = 2 * (laneSpec.width + 0.5.meters),
       length = 300.0.meters,
       heading = Math.PI)
 
     val lane41 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(TurnLeftOnly),
       offStartY = 150.0.meters,
       offStartX = -(laneSpec.width + 0.5.meters) - 1.meters,
       length = 300.0.meters,
-      heading = -Math.PI / 2)
+      heading = -Math.PI / 2
+    )
 
     val lane42 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(GoStraightOnly),
       offStartY = 150d,
       offStartX = 2 * -(laneSpec.width + 0.5.meters) - 1.meters,
       length = 300.0,
       heading = -Math.PI / 2)
 
     val lane43 = DirectedLane.simple(
-      spec = laneSpec,
+      spec = laneSpec.withTurningAllowance(TurnRightOnly),
       offStartY = 150d,
       offStartX = 3 * -(laneSpec.width + 0.5.meters) - 1.meters,
       length = 300.0,
