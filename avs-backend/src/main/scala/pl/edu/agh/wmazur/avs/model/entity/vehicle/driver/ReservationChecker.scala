@@ -530,8 +530,7 @@ object ReservationChecker {
           val newVelocity = velocity + event.acceleration * duration
           val newDistance = distance + (velocity + newVelocity) / 2 * duration
           val result = newVelocity < params.velocityMax ||
-            newVelocity.isEqual(params.velocityMax)
-
+            (newVelocity - params.velocityMax).abs < 0.1
           (newVelocity, newDistance, isValid && result)
       }
 

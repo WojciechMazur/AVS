@@ -29,8 +29,18 @@ import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage.Done
 import pl.edu.agh.wmazur.avs.{Agent, Services}
 
+import scala.collection.mutable
+import scala.util.Random
+
 class EntityManager(val context: ActorContext[EntityManager.Protocol])
     extends Agent[EntityManager.Protocol] {
+
+  val roadsRegistry = mutable.Set.empty[Road#Id]
+
+  def randomDestination: Road#Id =
+    roadsRegistry.iterator
+      .drop(Random.nextInt(roadsRegistry.size))
+      .next()
 
   override protected val initialBehaviour: Behavior[EntityManager.Protocol] =
     Behaviors.receiveMessagePartial {
@@ -39,17 +49,22 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
                                            position,
                                            heading,
                                            velocity,
-                                           lane) =>
+                                           lane,
+                                           initialDestination) =>
         val vehicleId = Vehicle.nextId
 
-        context.spawn(AutonomousVehicleDriver.init(id = vehicleId,
-                                                   spec,
-                                                   position,
-                                                   heading,
-                                                   velocity,
-                                                   lane = lane,
-                                                   replyTo = replyTo),
-                      s"autonomous-driver-$vehicleId",
+        context.spawn(
+          AutonomousVehicleDriver.init(
+            id = vehicleId,
+            spec,
+            position,
+            heading,
+            velocity,
+            lane = lane,
+            replyTo = replyTo,
+            initialDestination =
+              initialDestination.orElse(Some(randomDestination))),
+          s"autonomous-driver-$vehicleId",
         )
         Behaviors.same
 
@@ -63,7 +78,7 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol])
 
       case SpawnProtocol.SpawnOppositeRoads(replyTo, lanes, oppositeLanes) =>
         val roadId = Road.nextId
-
+        roadsRegistry.update(roadId, included = true)
         val road1 =
           context.spawn(RoadManager.init(Some(roadId), lanes, None, replyTo),
                         s"road-manager-$roadId")
@@ -125,7 +140,8 @@ object EntityManager {
         position: Point,
         heading: Angle,
         velocity: Velocity,
-        lane: Lane)
+        lane: Lane,
+        initialDestination: Option[Road#Id])
         extends SpawnProtocol
 
     case class SpawnRoad(

@@ -49,9 +49,13 @@ trait DefaultPolicy {
               nextAllowedCommunicationTimestamp = timestamp,
               reason = reason,
             )
-            context.log.warning("Request {} rejected, reason {}",
-                                req.id,
-                                reason)
+            context.log.warning(
+              s"Request {} rejected, reason {}. No valid proposal Arrival lanes {}, Departur lanes {}",
+              req.id,
+              reason,
+              req.proposals.map(_.arrivalLaneId).mkString(", "),
+              req.proposals.map(_.departureLane.id).mkString(", ")
+            )
 
           case (_, validProposals) =>
             val optAcceptance = for {
@@ -66,15 +70,24 @@ trait DefaultPolicy {
                 context.watchWith(
                   driverRef,
                   ExitedControlZone(acceptance.reservationId, driverRef))
-                context.log.debug("Request {} confirmed", req.id)
+                context.log.debug(
+                  s"Request {} confirmed, arrival lane {}, departure lane {}",
+                  req.id,
+                  acceptance.reservationDetails.arrivalLaneId,
+                  acceptance.reservationDetails.departureLaneId
+                )
               }
             } yield acceptance
 
             if (optAcceptance.isEmpty) {
               val reason = Reason.NoClearPath
-              context.log.debug("Request {} rejected, reason {}",
-                                req.id,
-                                reason)
+              context.log.warning(
+                s"Request {} rejected, reason {}. No acceptance. Arrival lanes {}, Departure lanes {}",
+                req.id,
+                reason,
+                req.proposals.map(_.arrivalLaneId).mkString(", "),
+                req.proposals.map(_.departureLane.id).mkString(", ")
+              )
               driverRef ! ReservationRejected(
                 requestId = req.id,
                 nextAllowedCommunicationTimestamp = timestamp,

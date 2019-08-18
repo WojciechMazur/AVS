@@ -41,17 +41,20 @@ object RoadSpawnerWorker {
                     entityManagerRef,
                     vehiclesAtLanes,
                     currentTime) =>
-        vehiclesAtLanes.foreach {
-          case (lane, drivers) =>
-            context.laneSpawners(lane) ! LaneSpawnerWorker.TrySpawn(
-              drivers,
-              entityManagerRef,
-              currentTime)
-        }
+        val filteredLanes =
+          vehiclesAtLanes.filterKeys(context.laneSpawners.contains)
+        filteredLanes
+          .foreach {
+            case (lane, drivers) =>
+              context.laneSpawners(lane) ! LaneSpawnerWorker.TrySpawn(
+                drivers,
+                entityManagerRef,
+                currentTime)
+          }
         val enrichedContext = context.copy(mainSpawnerRef = Some(replyTo),
                                            entityManagerRef =
                                              Some(entityManagerRef))
-        waitForLaneSpawners(enrichedContext, vehiclesAtLanes.keySet, Map.empty)
+        waitForLaneSpawners(enrichedContext, filteredLanes.keySet, Map.empty)
 
     }
 

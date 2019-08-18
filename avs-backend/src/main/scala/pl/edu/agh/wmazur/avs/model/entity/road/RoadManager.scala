@@ -34,12 +34,6 @@ class RoadManager(
   context.system.receptionist ! Receptionist.register(EntityRefsGroup.road,
                                                       context.self)
 
-  val vehiclesAtLanes
-    : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
-    road.lanes
-      .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])(
-        collection.breakOut)
-
   override protected val initialBehaviour: Behavior[Protocol] =
     Behaviors.receiveMessagePartial {
       case TrySpawn(replyTo, entityManagerRef, currentTime) =>
@@ -100,6 +94,12 @@ class RoadManager(
           .FindPrecedingVehicle(replyTo)
         Behaviors.same
     }
+
+  val vehiclesAtLanes
+    : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
+    road.lanes
+      .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])(
+        collection.breakOut)
 }
 
 object RoadManager {

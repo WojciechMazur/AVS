@@ -16,7 +16,7 @@ export class Car extends Entity{
 		this.mesh.position = position
 		this.mesh.scaling.set(props.spec!.width!, props.spec!.height!, props.spec!.length!)
 		
-		this.rotate(props.heading!)
+		this.rotate(props.heading! - Math.PI)
 		
 		// let indices = spec!.geometry!.shapes![0].indices!.map(vec3 => {
         //     return new Vector2(vec3.x!, vec3.z!)

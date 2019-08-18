@@ -60,7 +60,6 @@ case class GridReservationManager(config: ManagerConfig,
       query: ReservationQuery): Option[ReservationSchedule] = {
     val arrivalLane = intersection.lanesById(query.arrivalLaneId)
     val departueLane = intersection.lanesById(query.departureLaneId)
-
     val driver = {
       val v = createTestVehicle(requestVehicleSpec = query.vehicleSpec,
                                 arrivalVelocity = query.arrivalVelocity,

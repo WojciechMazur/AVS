@@ -27,7 +27,8 @@ class AutonomousVehicleDriver(
     val context: ActorContext[AutonomousVehicleDriver.Protocol],
     spawnLane: Lane,
     var vehicle: BasicVehicle,
-    val timers: TimerScheduler[AutonomousVehicleDriver.Protocol]
+    val timers: TimerScheduler[AutonomousVehicleDriver.Protocol],
+    initialDestination: Option[Road#Id]
 ) extends Agent[Protocol]
     with VehicleDriver
     with VehiclePilot
@@ -39,7 +40,10 @@ class AutonomousVehicleDriver(
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
   override var currentLane: Lane = setCurrentLane(spawnLane)
 
-  var destination: Option[Road] = Some(currentLane.spec.road.get)
+  var destination: Option[Road#Id] = initialDestination
+  if (destination == currentLane.spec.road.get.oppositeRoad.map(_.id)) {
+    destination = Some(currentLane.spec.road.get.id)
+  }
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior
@@ -103,7 +107,9 @@ object AutonomousVehicleDriver
       velocity: Velocity,
       lane: Lane,
       replyTo: Option[ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]]] =
-        None): Behavior[ExtendedProtocol] = {
+        None,
+      initialDestination: Option[Road#Id] = None)
+    : Behavior[ExtendedProtocol] = {
     Behaviors.setup[VehicleDriver.Protocol] { ctx =>
       val vehicle = BasicVehicle(driverRef = ctx.self,
                                  spec = spec,
@@ -119,7 +125,8 @@ object AutonomousVehicleDriver
         new AutonomousVehicleDriver(context = ctx,
                                     spawnLane = lane,
                                     vehicle = vehicle,
-                                    timers)
+                                    timers,
+                                    initialDestination)
       }
     }
   }.narrow

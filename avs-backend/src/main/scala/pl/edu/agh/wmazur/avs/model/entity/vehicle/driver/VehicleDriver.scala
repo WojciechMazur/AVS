@@ -32,7 +32,7 @@ trait VehicleDriver {
   var driverGauges: VehicleDriverGauges = VehicleDriverGauges.empty
   def occupiedLanes: mutable.Set[Lane]
 
-  def destination: Option[Road]
+  def destination: Option[Road#Id]
 
   def prepareToMove(): VehicleDriver = {
     updateGauges
@@ -94,10 +94,13 @@ object VehicleDriver {
         safetyBufferAfter: FiniteDuration,
         arrivalVelocity: Velocity,
         arrivalLaneId: Lane#Id,
-        departureLaneId: Lane#Id,
+        departureLane: Lane,
         accelerationProfile: AccelerationProfile,
         admissionZoneLength: Dimension
-    )
+    ) {
+      val departureRoadId: Road#Id = departureLane.spec.road.get.id
+      val departureLaneId: Lane#Id = departureLane.id
+    }
 
     final case class ReservationRejected(
         requestId: Long,

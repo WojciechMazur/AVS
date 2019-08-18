@@ -14,7 +14,7 @@ import pl.edu.agh.wmazur.avs.model.entity.road.workers.LaneSpawnerWorker.{
   TrySpawn
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.RoadSpawnerWorker.NotSpawned
-import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, SpawnPoint}
+import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, SpawnPoint}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
@@ -98,7 +98,8 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
                            position = lane.entryPoint,
                            heading = lane.heading,
                            velocity = 10,
-                           lane = lane)
+                           lane = lane,
+                           None)
       waitForSpawnResult()
     } else {
       spawnerContext.roadSpawner ! RoadSpawnerWorker.NotSpawned(lane)
@@ -122,6 +123,7 @@ object LaneSpawnerWorker {
       roadSpawner: ActorRef[RoadSpawnerWorker.Protocol],
       lane: Lane,
   )
+
   def init(replyTo: ActorRef[RoadSpawnerWorker.Protocol],
            lane: Lane): Behavior[Protocol] =
     Behaviors.setup[Protocol] { ctx =>

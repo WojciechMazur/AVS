@@ -58,8 +58,8 @@ object Vehicle extends IdProvider[Vehicle] {
                        heading: Angle,
                        spec: VehicleSpec): List[Point] = {
     val halfPi = Math.PI / 2
-    val p1 = position.moveRotate(spec.halfWidth, heading + halfPi / 2)
-    val p3 = position.moveRotate(spec.halfWidth, heading - halfPi / 2)
+    val p1 = position.moveRotate(spec.halfWidth, heading + halfPi)
+    val p3 = position.moveRotate(spec.halfWidth, heading - halfPi)
     val p2 = p1.moveRotate(spec.length, heading + Math.PI)
     val p4 = p3.moveRotate(spec.length, heading - Math.PI)
 

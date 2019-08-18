@@ -57,12 +57,14 @@ object IntersectionManager {
     object IntersectionCrossingRequest {
       final case class Proposal(
           arrivalLaneId: Lane#Id,
-          departureLaneId: Lane#Id,
+          departureLane: Lane,
           arrivalTime: Long,
           arrivalVelocity: Velocity,
           maxTurnVelocity: Velocity,
           accelerationSchedule: AccelerationSchedule
-      )
+      ) {
+        require(maxTurnVelocity > 0.0)
+      }
 
       final case class CrossingVehicleSpec(
           maxAcceleration: Acceleration,

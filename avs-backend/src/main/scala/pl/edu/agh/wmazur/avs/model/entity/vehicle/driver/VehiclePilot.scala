@@ -27,7 +27,8 @@ trait VehiclePilot {
   self: VehicleDriver =>
   import VehiclePilot._
 
-  final val defaultLeadTime = 0.4.seconds
+  final val defaultLeadTime = 0.1.seconds
+  final val traversingLaneChangeLeadTime = 0.1.seconds
   final val minimalLeadDistance = 0.2.meters
 
   @tailrec
@@ -59,7 +60,20 @@ trait VehiclePilot {
 
   protected def takeSteeringActiorsForTraversing(
       details: ReservationDetails): self.type = {
-    //TODO zmiana jezdni na włąściwą
+    def changesLane = currentLane.id != details.departureLaneId
+    def changesRoad = currentLane.spec.road.get.id != details.departureRoadId
+    if (changesLane && changesRoad) {
+      val distanceToLane = details.departureLane.geometry
+        .distance(vehicle.geometry)
+        .geoDegrees
+
+      val laneChangeDistance = (traversingLaneChangeLeadTime.toUnit(
+        TimeUnit.SECONDS) * vehicle.velocity).meters
+
+      if (distanceToLane < laneChangeDistance) {
+        setCurrentLane(details.departureLane)
+      }
+    }
     followCurrentLane()
   }
 
@@ -235,7 +249,7 @@ trait VehiclePilot {
 
 object VehiclePilot {
   val minimumDistanceBetweenCars: Dimension = 6.0.meters
-  val stopDistanceBeforeIntersection: Dimension = 3.0.meters
+  val stopDistanceBeforeIntersection: Dimension = 1.9.meters
 
   def calcStoppingDistance(velocity: Velocity,
                            deceleration: Acceleration): Dimension = {

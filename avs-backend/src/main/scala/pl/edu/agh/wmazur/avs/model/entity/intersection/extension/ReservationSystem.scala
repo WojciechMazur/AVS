@@ -129,7 +129,7 @@ trait ReservationSystem {
         remainingProposals: List[Proposal]): Option[ReservationParameters] = {
       remainingProposals.headOption.flatMap {
         case proposal @ Proposal(arrivalLaneId,
-                                 departureLaneId,
+                                 departureLane,
                                  arrivalTime,
                                  arrivalVelocity,
                                  maxTurnVelocity,
@@ -140,7 +140,7 @@ trait ReservationSystem {
             arrivalVelocity = arrivalVelocity,
             maxTurnVelocity = maxTurnVelocity,
             arrivalLaneId = arrivalLaneId,
-            departureLaneId = departureLaneId,
+            departureLaneId = departureLane.id,
             vehicleSpec = request.spec,
             isAccelerating = true
           )
@@ -156,7 +156,7 @@ trait ReservationSystem {
                     _) =>
                 for {
                   admissionManager <- admissionControlZonesManagers.get(
-                    departureLaneId)
+                    departureLane.id)
                   stopDistance = VehiclePilot.calcStoppingDistance(
                     schedule.exitVelocity,
                     request.spec.maxDeceleration)
@@ -169,7 +169,7 @@ trait ReservationSystem {
                                         proposal,
                                         schedule,
                                         exitTime,
-                                        departureLaneId,
+                                        departureLane.id,
                                         admissionPlan)
             }
             .orElse(findValidProposal(remainingProposals.tail))
@@ -197,7 +197,7 @@ trait ReservationSystem {
           safetyBufferAfter = ReservationSystem.lateArrivalThreshold,
           arrivalVelocity = params.successfulProposal.arrivalVelocity,
           arrivalLaneId = params.successfulProposal.arrivalLaneId,
-          departureLaneId = params.successfulProposal.departureLaneId,
+          departureLane = params.successfulProposal.departureLane,
           accelerationProfile = params.gridSchedule.accelerationProfile,
           admissionZoneLength = admissionControlZonesManagers(
             params.successfulProposal.arrivalLaneId).controlledDistance
@@ -205,7 +205,7 @@ trait ReservationSystem {
 
         val reservationRecord = ReservationRecord(
           params.driverRef,
-          params.successfulProposal.departureLaneId)
+          params.successfulProposal.departureLane.id)
 
         reservationRegistry.update(rId, reservationRecord)
         driverReservation.update(params.driverRef, rId)

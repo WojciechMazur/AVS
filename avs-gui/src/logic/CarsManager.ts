@@ -37,7 +37,7 @@ export class CarsManager extends ISystemManager{
 			if (entity != null && position != null) {
 				// entity.mesh.lookAt(new Vector3(position.x!, this.vehiclePositionY, position.z!))
 				entity.mesh.position.set(position.x!, this.vehiclePositionY, position.z!)
-				entity.rotate(vehicle.heading! + Math.PI / 2)
+				entity.rotate(- vehicle.heading! + Math.PI / 2)
 			}
 	
 			this.entities.set(id, entity)

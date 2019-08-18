@@ -61,7 +61,7 @@ trait PreperingReservation {
           nextIntersectionManager.get ! IntersectionCoordinator.Protocol
             .GetMaxCrossingVelocity(context.self,
                                     currentLane.id,
-                                    destination.get.id,
+                                    destination.get,
                                     vehicle.spec)
         }
         Behaviors.same
@@ -76,6 +76,9 @@ trait PreperingReservation {
             cachedMaxVelocities.getOrElseUpdate(intersectionRef,
                                                 mutable.Map.empty)
           arrivalLaneVelocities.update(arrivalLaneId, maxVelocities)
+          if (maxVelocities.values.exists(_.isZero)) {
+            context.self ! AskForMaximalCrossingVelocities
+          }
           context.self ! TrySendReservationRequest
         }
         Behaviors.same
@@ -95,7 +98,6 @@ trait PreperingReservation {
             }
 
             val estimations = maxVelocities
-              .filterKeys(_ == currentLane)
               .mapValues(estimateArrival)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation
@@ -108,7 +110,7 @@ trait PreperingReservation {
                                                    accScheduleProposal)) =>
                 IntersectionCrossingRequest.Proposal(
                   currentLane.id,
-                  departureLane.id,
+                  departureLane,
                   arrivalTime,
                   arrivalVelocity,
                   maxVelocities(departureLane),

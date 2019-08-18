@@ -39,12 +39,16 @@ case class AdmissionControlZoneManager(
 
   def accept(admissionPlan: AdmissionPlan): Option[Long] = {
     val admissionId = AdmissionControlZoneManager.admisionIdProvider.nextId
-    admissionControlZone = admissionControlZone.admit(
-      admissionPlan.driverRef,
-      admissionPlan.vehicleLength,
-      admissionPlan.stopDistance)
+    if (admissionControlZone.currentSize + admissionPlan.vehicleLength + admissionPlan.stopDistance <= admissionControlZone.controlledDistance) {
 
-    Some(admissionId)
+      admissionControlZone = admissionControlZone.admit(
+        admissionPlan.driverRef,
+        admissionPlan.vehicleLength,
+        admissionPlan.stopDistance)
+      Some(admissionId)
+    } else {
+      None
+    }
   }
 
 }

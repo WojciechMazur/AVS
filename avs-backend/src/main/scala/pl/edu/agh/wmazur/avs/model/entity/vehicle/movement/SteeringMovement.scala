@@ -28,26 +28,25 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
   }
 
   private def moveByArc(timeDelta: TimeDeltaSeconds): self.type = {
-    val rotationRate = velocity * Math.tan(
-      steeringAngle / spec.wheelBase.asMeters)
+    val rotationRate = velocity * Math.tan(steeringAngle) / spec.wheelBase.asMeters
     val finalHeading: Angle = MathUtils.boundedAngle {
       heading + rotationRate * timeDelta
-    }.toFloat
+    }
 
     val rearWheelPos = spec.pointBetweenBackWheels(position, heading)
 
-    val wheelsOffset = spec.wheelBase / Math.tan(steeringAngle)
+    val wheelsOffset = (spec.wheelBase / Math.tan(steeringAngle)).asGeoDegrees
 
     val newPosition = Point2(
-      x = rearWheelPos.getX - wheelsOffset.asGeoDegrees *
-        (Math.sin(heading) - Math.sin(finalHeading)),
-      y = position.getY - wheelsOffset.asGeoDegrees *
-        (Math.cos(finalHeading) - Math.cos(heading))
+      x = rearWheelPos.getX - (wheelsOffset * (Math.sin(heading) - Math.sin(
+        finalHeading))),
+      y = rearWheelPos.getY - (wheelsOffset * (Math.cos(finalHeading) - Math
+        .cos(heading)))
     ).moveRotate(spec.rearAxleDisplacement, finalHeading)
 
     this
       .withPosition(newPosition)
-      .withHeading(heading)
+      .withHeading(finalHeading)
   }
 
   def moveWheelsTowardPoint(point: Point): self.type = {

@@ -24,8 +24,9 @@ class RoadCollectorWorker(
   lazy val idle: Behaviors.Receive[Protocol] = Behaviors.receiveMessagePartial {
     case TryCollect(replyTo, _, vehiclesAtLanes) =>
       val laneWorkersFiltered = for {
-        (lane, drivers) <- vehiclesAtLanes.filterKeys(
-          _.collectorPoint.isDefined)
+        (lane, drivers) <- vehiclesAtLanes
+          .filterKeys(_.collectorPoint.isDefined)
+          .filterKeys(laneWorkers.contains)
         laneWorker = laneWorkers(lane)
         _ = laneWorker ! LaneCollectorWorker.Protocol.TryCollect(drivers)
       } yield laneWorker

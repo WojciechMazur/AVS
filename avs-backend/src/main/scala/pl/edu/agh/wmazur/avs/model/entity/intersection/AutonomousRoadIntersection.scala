@@ -1,6 +1,11 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
 import akka.actor.typed.ActorRef
-import org.locationtech.jts.geom.{Geometry, LineString, Polygon}
+import org.locationtech.jts.geom.{
+  Point => JtsPoint,
+  Geometry,
+  LineString,
+  Polygon
+}
 import org.locationtech.jts.operation.union.CascadedPolygonUnion
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext
 import org.locationtech.spatial4j.shape.{Point, Shape}
@@ -60,7 +65,7 @@ case class AutonomousRoadIntersection(
     def lineStringLength(geometry: Geometry): Dimension = {
       geometry match {
         case line: LineString => line.getLength.geoDegrees
-        case _                => sys.error("This should not happend")
+        case other            => sys.error(s"This should not happend, received $other")
       }
     }
 
@@ -94,8 +99,9 @@ case class AutonomousRoadIntersection(
         val intersectionPoint =
           arrivalLaneIntersectionSegment.intersection(
             departureLineIntersectionSegment) match {
-            case point: Point => point
-            case _            => sys.error("This should not happend")
+            case point: JtsPoint => Point2(point.getX, point.getY)
+            case point: Point    => point
+            case other           => sys.error(s"This should not happend, received $other")
           }
 
         List(
@@ -242,7 +248,7 @@ case class AutonomousRoadIntersection(
 
 object AutonomousRoadIntersection
     extends EntitySettings[AutonomousRoadIntersection] {
-  //Offset for additional space at intersection, e.q crosswalks
+  //Offset for additional space at intersection, e.q
   val expansionDistance: Dimension = 2.0.meters
   private val shapeFactory = SpatialUtils.shapeFactory
 
