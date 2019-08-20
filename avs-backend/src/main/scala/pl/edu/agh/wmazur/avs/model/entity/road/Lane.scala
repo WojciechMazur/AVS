@@ -9,6 +9,7 @@ import pl.edu.agh.wmazur.avs.model.entity.{Entity, Identifiable}
 
 trait Lane extends Entity with Identifiable {
   def spec: LaneSpec
+  def road: Road = spec.road.get
 
   def length: Dimension
   def heading: Angle

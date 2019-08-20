@@ -1,9 +1,27 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
+
 sealed trait TurningAllowance {
+  private val twoPi = 2 * Math.PI
+  private val strightThreshold = 15.0.toRadians
+  private val leftTurnMaxThreshold = 105.0.toRadians
+  private val rightTurnMaxThreshold = 255.0.toRadians
+
   def canGoStraight: Boolean = false
+  def canGoStraight(headingDelta: Angle): Boolean = {
+    canGoStraight && (headingDelta <= strightThreshold || headingDelta >= twoPi - strightThreshold)
+  }
+
   def canTurnLeft: Boolean = false
+  def canTurnLeft(headingDelta: Angle): Boolean = {
+    canTurnLeft && headingDelta > strightThreshold && headingDelta <= leftTurnMaxThreshold
+  }
+
   def canTurnRight: Boolean = false
+  def canTurnRight(headingDelta: Angle): Boolean = {
+    canTurnRight && headingDelta >= rightTurnMaxThreshold && headingDelta < twoPi - strightThreshold
+  }
 }
 object TurningAllowance {
 

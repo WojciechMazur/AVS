@@ -38,6 +38,7 @@ class LaneSpec(
       speedLimit = speedLimit,
       width = width,
       canSpawn = canSpawn,
+      turningAllowance = turningAllowance,
       _leadsIntoLane = leadsIntoLane,
       _leadsFromLane = leadsFromLane,
       _leftNeighbourLane = leftNeighbourLane,

@@ -4,11 +4,11 @@ object Libraries {
   object Versions {
     val scala = "2.12.8"
 
-    val akka = "2.5.23"
-    val akkaHttp = "10.1.8"
+    val akka = "2.5.24"
+    val akkaHttp = "10.1.9"
     val chimney = "0.3.2"
     val scalaTest = "3.0.5"
-    val scalaGraph = "1.12.5"
+    val scalaGraph = "1.13.0"
     val spatial4j = "0.7"
     val quickLens = "1.4.12"
   }
