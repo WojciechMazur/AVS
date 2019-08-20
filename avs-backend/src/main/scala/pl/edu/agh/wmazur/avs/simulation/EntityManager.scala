@@ -25,6 +25,7 @@ import pl.edu.agh.wmazur.avs.simulation.EntityManager.{
   TerminationWatcher
 }
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.GridReservationManager
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage.Done
 import pl.edu.agh.wmazur.avs.{Agent, Services}
@@ -32,7 +33,8 @@ import pl.edu.agh.wmazur.avs.{Agent, Services}
 import scala.collection.mutable
 import scala.util.Random
 
-class EntityManager(val context: ActorContext[EntityManager.Protocol])
+class EntityManager(val context: ActorContext[EntityManager.Protocol],
+                    globalNavigator: ActorRef[GlobalNavigator.Protocol])
     extends Agent[EntityManager.Protocol] {
 
   val roadsRegistry = mutable.Set.empty[Road#Id]
@@ -122,7 +124,8 @@ object EntityManager {
   def apply(): Behavior[Protocol] = Behaviors.setup { ctx =>
     ctx.system.receptionist ! Receptionist.register(Services.entityManager,
                                                     ctx.self)
-    new EntityManager(ctx)
+    val navigator = ctx.spawn(GlobalNavigator.init, "global-navigator")
+    new EntityManager(ctx, navigator)
   }
 
   sealed trait Protocol extends SimulationProtocol

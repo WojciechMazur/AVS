@@ -152,10 +152,10 @@ object StateRecoveryAgent {
       length = 300.0,
       heading = -Math.PI / 2)
 
-    val roadLanes1 = lane11 :: Nil // lane12 :: lane13 :: Nil
-    val roadLanes2 = lane21 :: Nil //lane22 :: lane23 :: Nil
-    val roadLanes3 = lane31 :: Nil //lane32 :: lane33 :: Nil
-    val roadLanes4 = lane41 :: Nil //lane42 :: lane43 :: Nil
+    val roadLanes1 = lane11 :: lane12 :: lane13 :: Nil
+    val roadLanes2 = lane21 :: lane22 :: lane23 :: Nil
+    val roadLanes3 = lane31 :: lane32 :: lane33 :: Nil
+    val roadLanes4 = lane41 :: lane42 :: lane43 :: Nil
 
     val roadsToSpawn = List(roadLanes1, roadLanes2, roadLanes3, roadLanes4)
     val roadGroups = List((roadLanes1, roadLanes3), (roadLanes2, roadLanes4))
