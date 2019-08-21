@@ -19,11 +19,12 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.{
   DriversFetcherAgent,
   IntersectionCoordinator
 }
-import pl.edu.agh.wmazur.avs.model.entity.road.Road
+import pl.edu.agh.wmazur.avs.model.entity.road.{Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
+import com.softwaremill.quicklens._
 
 class AutonomousIntersectionManager(
     val intersection: Intersection,
@@ -74,6 +75,18 @@ object AutonomousIntersectionManager {
     case class Tick(currentTime: Timestamp) extends Protocol
   }
 
+  def splitLanesByIntersection(
+      roads: List[Road],
+      intersection: AutonomousRoadIntersection): List[Road] = {
+    roads.map { road =>
+      val updatedLanes = road.lanes
+        .map { lane =>
+          ???
+        }
+      road.modify(_.lanes).setTo(updatedLanes)
+    }
+  }
+
   //scalastyle:off
   def init(
       optId: Option[Intersection#Id],
@@ -86,8 +99,17 @@ object AutonomousIntersectionManager {
     //scalastyle:on
     Behaviors.setup { ctx =>
       val id = optId.getOrElse(Intersection.nextId)
-      val intersection = AutonomousRoadIntersection(id, roads, ctx.self)
+      val roadsWithSplittedLanes = Road.roadsWithSplitLanes(roads)
+
+      val intersection =
+        AutonomousRoadIntersection(id, roadsWithSplittedLanes, ctx.self)
+
       replyTo.foreach(_ ! SpawnResult(intersection, ctx.self))
+      roadsWithSplittedLanes.foreach { road =>
+        road.managerRef ! RoadManager.UpdateRoad(road)
+        road.oppositeRoad.foreach(
+          _.managerRef ! RoadManager.UpdateRoad(road, inOppositeRoad = true))
+      }
 
       val tickAdapter = ctx.messageAdapter[SimulationProtocol.Tick] {
         case tick: SimulationProtocol.Tick.Default =>

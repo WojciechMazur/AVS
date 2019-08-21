@@ -9,19 +9,23 @@ class LaneSpec(
     val width: Dimension,
     val canSpawn: Boolean = true,
     val turningAllowance: TurningAllowance = AnyDirection,
-    _leadsIntoLane: => Option[Lane] = None,
-    _leadsFromLane: => Option[Lane] = None,
-    _leftNeighbourLane: => Option[Lane] = None,
-    _rightNeighbourLane: => Option[Lane] = None
+    var leadsInto: Option[Lane] = None,
+    var leadsFrom: Option[Lane] = None,
+    var leftNeighbour: Option[Lane] = None,
+    var rightNeighbour: Option[Lane] = None
 ) {
-  lazy val leadsInto: Option[Lane] = _leadsIntoLane
-  lazy val leadsFrom: Option[Lane] = _leadsFromLane
-  lazy val leftNeighbourLane: Option[Lane] = _leftNeighbourLane
-  lazy val rightNeighbourLane: Option[Lane] = _rightNeighbourLane
 
   def withSpawnEnabled(boolean: Boolean): LaneSpec = copy(canSpawn = boolean)
   def withTurningAllowance(newAllowance: TurningAllowance): LaneSpec =
     copy(turningAllowance = newAllowance)
+  def leadsInto(lane: Lane): LaneSpec = {
+    this.leadsInto = Some(lane)
+    this
+  }
+  def leadsFrom(lane: Lane): LaneSpec = {
+    this.leadsFrom = Some(lane)
+    this
+  }
 
   var road: Option[Road] = None
 
@@ -32,17 +36,17 @@ class LaneSpec(
       turningAllowance: TurningAllowance = this.turningAllowance,
       leadsIntoLane: => Option[Lane] = this.leadsInto,
       leadsFromLane: => Option[Lane] = this.leadsFrom,
-      leftNeighbourLane: => Option[Lane] = this.leftNeighbourLane,
-      rightNeighbourLane: => Option[Lane] = this.rightNeighbourLane): LaneSpec =
+      leftNeighbourLane: => Option[Lane] = this.leftNeighbour,
+      rightNeighbourLane: => Option[Lane] = this.rightNeighbour): LaneSpec =
     new LaneSpec(
       speedLimit = speedLimit,
       width = width,
       canSpawn = canSpawn,
       turningAllowance = turningAllowance,
-      _leadsIntoLane = leadsIntoLane,
-      _leadsFromLane = leadsFromLane,
-      _leftNeighbourLane = leftNeighbourLane,
-      _rightNeighbourLane = rightNeighbourLane
+      leadsInto = leadsIntoLane,
+      leadsFrom = leadsFromLane,
+      leftNeighbour = leftNeighbourLane,
+      rightNeighbour = rightNeighbourLane
     )
   lazy val halfWidth: Dimension = width / 2.0
 }

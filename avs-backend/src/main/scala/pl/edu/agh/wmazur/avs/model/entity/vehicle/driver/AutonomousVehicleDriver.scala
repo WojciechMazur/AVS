@@ -30,7 +30,6 @@ class AutonomousVehicleDriver(
     spawnLane: Lane,
     var vehicle: BasicVehicle,
     val timers: TimerScheduler[AutonomousVehicleDriver.Protocol],
-    initialDestination: Option[Road#Id],
     val navigatorRef: ActorRef[GlobalNavigator.Protocol]
 ) extends Agent[Protocol]
     with VehicleDriver
@@ -44,10 +43,7 @@ class AutonomousVehicleDriver(
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
   override var currentLane: Lane = setCurrentLane(spawnLane)
 
-  var destination: Option[Road#Id] = initialDestination
-  if (destination == currentLane.spec.road.get.oppositeRoad.map(_.id)) {
-    destination = Some(currentLane.spec.road.get.id)
-  }
+  var destination: Option[Road#Id] = None
 
   def switchTo(behavior: Behavior[Protocol]): Behavior[Protocol] =
     behavior
@@ -58,7 +54,7 @@ class AutonomousVehicleDriver(
       .orElse(navigation)
       .orElse {
         Behaviors.receiveMessage { msg =>
-          context.log.error("Unhanded message: ", { msg })
+          context.log.error("Unhanded message: {} ", msg)
           Behaviors.same
         }
       }
@@ -114,7 +110,6 @@ object AutonomousVehicleDriver
       lane: Lane,
       replyTo: Option[ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]]] =
         None,
-      initialDestination: Option[Road#Id] = None,
       navigatorRef: ActorRef[GlobalNavigator.Protocol])
     : Behavior[ExtendedProtocol] = {
     Behaviors.setup[VehicleDriver.Protocol] { ctx =>
@@ -130,14 +125,14 @@ object AutonomousVehicleDriver
       navigatorRef ! GlobalNavigator.Protocol.FindPath(
         ctx.self,
         Right(lane),
-        initialDestination.map(Left.apply))
+        None
+      )
 
       Behaviors.withTimers { timers =>
         new AutonomousVehicleDriver(context = ctx,
                                     spawnLane = lane,
                                     vehicle = vehicle,
                                     timers,
-                                    initialDestination,
                                     navigatorRef)
       }
     }

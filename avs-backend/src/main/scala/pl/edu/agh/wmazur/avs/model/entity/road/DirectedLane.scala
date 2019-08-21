@@ -140,6 +140,10 @@ case class DirectedLane(id: Lane#Id,
     case None if spec.canSpawn => Some(SpawnPoint(this))
     case _                     => None
   }
+
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
+  override def hashCode(): Int = super.hashCode()
 }
 
 object DirectedLane extends EntitySettings[DirectedLane] {

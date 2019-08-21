@@ -1,9 +1,14 @@
 package pl.edu.agh.wmazur.avs.model.entity.road
 
+import com.softwaremill.quicklens._
 import akka.actor.typed.ActorRef
 import com.softwaremill.quicklens._
 import org.locationtech.jts.geom.{Geometry, MultiPolygon}
 import org.locationtech.spatial4j.shape._
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils.{
+  LineFactory,
+  Point2
+}
 import pl.edu.agh.wmazur.avs.model.entity.utils.{
   DeltaOps,
   IdProvider,
@@ -46,26 +51,7 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
             lanes: List[Lane],
             managerRef: ActorRef[RoadManager.Protocol],
             oppositeRoad: Option[Road]): Road = {
-    val lanesWithNeighbourhood = lanes.tail
-      .foldLeft(lanes.head :: Nil) {
-        case (acc, current: DirectedLane @unchecked) =>
-          lazy val left: Option[DirectedLane] = acc.last match {
-            case lane: DirectedLane =>
-              Some(
-                lane
-                  .modify(_.spec)
-                  .using(_.copy(rightNeighbourLane = right))
-                //using because of lazy val evaluation
-              )
-            case _ => throw new RuntimeException("Unknown type of lane")
-          }
-          lazy val right: Option[DirectedLane] = Some(
-            current
-              .modify(_.spec)
-              .using(_.copy(leftNeighbourLane = left))
-          )
-          acc.init ++ (left :: right :: Nil).flatten
-      }
+    val lanesWithNeighbourhood = updateLanesNeighbourgood(lanes)
 
     new Road(
       id = id.getOrElse(nextId),
@@ -73,5 +59,64 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
       managerRef = managerRef,
       oppositeRoad = oppositeRoad
     )
+  }
+
+  def updateLanesNeighbourgood(lanes: List[Lane]): List[Lane] = {
+    val lanesSorted =
+      lanes.sortBy(lane => (lane.position.getX, lane.position.getY))
+    //TODO check if lanes are neighbouring
+
+    lanesSorted.tail
+      .foldLeft(lanesSorted.head :: Nil) {
+        case (acc, current: DirectedLane @unchecked) =>
+          val left = acc.last
+          left.spec.rightNeighbour = Some(current)
+          val right = current
+          right.spec.leftNeighbour = Some(left)
+          acc.init ++ (left :: right :: Nil)
+      }
+  }
+
+  def roadsWithSplitLanes(roads: Iterable[Road]): Iterable[Road] = {
+    roads.map { road =>
+      val intersectionArea = roads
+        .filterNot(_.id == road.id)
+        .filter(_.geometry.intersects(road.geometry))
+        .map(_.geometry.intersection(road.geometry))
+        .reduce(_ union _)
+        .convexHull()
+
+      val (lanesBeforeIntersection, lanesAfterIntersection) = road.lanes.map {
+        lane =>
+          val splitPoint = intersectionArea
+            .intersection(lane.geometry)
+            .getCentroid match {
+            case p => Point2(p.getX, p.getY)
+          }
+
+          val beforeIntersectionLane =
+            DirectedLane(id = lane.id,
+                         middleLine = LineFactory(lane.entryPoint, splitPoint),
+                         spec = lane.spec)
+
+          val afterIntersectionLane =
+            DirectedLane(id = Lane.nextId,
+                         middleLine = LineFactory(splitPoint, lane.exitPoint),
+                         spec = lane.spec)
+
+          val before = beforeIntersectionLane
+            .modify(_.spec)
+            .using(_.leadsInto(afterIntersectionLane))
+          val after = afterIntersectionLane
+            .modify(_.spec)
+            .using(_.leadsFrom(beforeIntersectionLane))
+          (before, after)
+      }.unzip
+
+      val updatedLanes = Road.updateLanesNeighbourgood(lanesBeforeIntersection) ++
+        Road.updateLanesNeighbourgood(lanesAfterIntersection)
+
+      road.copy(lanes = updatedLanes)
+    }
   }
 }

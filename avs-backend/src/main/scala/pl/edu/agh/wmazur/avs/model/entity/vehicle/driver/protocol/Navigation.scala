@@ -11,28 +11,29 @@ trait Navigation {
   self: AutonomousVehicleDriver =>
   import AutonomousVehicleDriver._
 
-  var currentPath: List[Road] = Nil
+  var currentPath: List[Lane] = Nil
   var hasPlannedPath = false
 
-  def nextRoad: Road = currentPath.tail.head
+  def nextLane: Lane = currentPath.tail.head
 
   val navigation: Behavior[AutonomousVehicleDriver.Protocol] =
     Behaviors.receiveMessagePartial {
       case PathToFollow(roads, lanes)
           if currentPath.headOption.forall(_.id == lanes.head.road.id) =>
-        currentPath = roads
+        currentPath = lanes
         hasPlannedPath = true
+        destination = roads.lastOption.map(_.id)
         if (nextIntersectionManager.isDefined) {
-          println("Tring to send request (nav)")
-          context.self ! TrySendReservationRequest
+          context.self ! AskForMaximalCrossingVelocities
         }
         Behaviors.same
       case NoPathFound =>
-        println("retrying to get path")
-        navigatorRef ! GlobalNavigator.Protocol.FindPath(
-          context.self,
-          Right(currentLane),
-          destination.map(Left.apply))
+        navigatorRef ! GlobalNavigator.Protocol.FindPath(context.self,
+                                                         Right(currentLane),
+                                                         None)
+        Behaviors.same
+
+      case NoPathForLanes(_, _) =>
         Behaviors.same
     }
 

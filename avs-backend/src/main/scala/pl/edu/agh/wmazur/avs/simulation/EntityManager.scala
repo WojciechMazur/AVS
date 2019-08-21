@@ -52,7 +52,7 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol],
                                            heading,
                                            velocity,
                                            lane,
-                                           initialDestination) =>
+                                           _) =>
         val vehicleId = Vehicle.nextId
 
         context.spawn(
@@ -64,8 +64,6 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol],
             velocity,
             lane = lane,
             replyTo = replyTo,
-            initialDestination =
-              initialDestination.orElse(Some(randomDestination)),
             navigatorRef = globalNavigator
           ),
           s"autonomous-driver-$vehicleId",

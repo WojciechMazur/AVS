@@ -56,7 +56,15 @@ trait PreperingReservation {
 
   val preperingReservation: Behavior[AutonomousVehicleDriver.Protocol] =
     Behaviors.receiveMessagePartial {
-      case AskForMaximalCrossingVelocities =>
+      case AskForMaximalCrossingVelocities
+          if nextIntersectionManager
+            .flatMap(cachedMaxVelocities.get)
+            .map(_.get(currentLane.id))
+            .isDefined =>
+        context.self ! TrySendReservationRequest
+        Behaviors.same
+
+      case AskForMaximalCrossingVelocities if destination.isDefined =>
         if (nextIntersectionManager.nonEmpty) {
           nextIntersectionManager.get ! IntersectionCoordinator.Protocol
             .GetMaxCrossingVelocity(context.self,
@@ -85,11 +93,16 @@ trait PreperingReservation {
         }
         Behaviors.same
 
+      case TrySendReservationRequest
+          if currentPath.isEmpty ||
+            nextIntersectionManager.isEmpty =>
+        Behaviors.same
+
       case TrySendReservationRequest =>
         nextIntersectionManager
           .flatMap(cachedMaxVelocities.get)
           .flatMap(_.get(currentLane.id)) match {
-          case None => println("no intersection manager")
+          case None => sys.error("This should not happend!")
           case Some(maxVelocities) =>
             withVehicle {
               stopBeforeIntersectionSchedule(currentTime) match {
@@ -99,9 +112,8 @@ trait PreperingReservation {
               }
             }
 
-            //TODO Przekazyważ listę jedni, a nie dróg
             val estimations = maxVelocities
-              .filterKeys(_.id == currentLane.id)
+              .filterKeys(_.id == nextLane.id)
               .mapValues(estimateArrival)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation

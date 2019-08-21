@@ -3,6 +3,7 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.workers
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator.Protocol.FindPath
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator.{
   IntersectionsListing,
@@ -14,16 +15,22 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   Intersection,
   IntersectionManager
 }
-import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, RoadManager}
+import pl.edu.agh.wmazur.avs.model.entity.road.{
+  Lane,
+  Road,
+  RoadManager,
+  TurningAllowance
+}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
-import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
-import scalax.collection.GraphPredef
+import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
+import scalax.collection.GraphPredef._
 import scalax.collection.edge.Implicits._
 import scalax.collection.edge.LkDiEdge
 import scalax.collection.mutable.Graph
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
 import scala.collection.mutable
 import scala.util.Random
@@ -35,10 +42,13 @@ class GlobalNavigator(
   private var cachedRoadsRefs: Set[ActorRef[RoadManager.Protocol]] = Set.empty
   private var cachedIntersectionsRefs
     : Set[ActorRef[IntersectionManager.Protocol]] = Set.empty
-  private var cachedLaneIdToRoad: mutable.Map[Lane#Id, Road] = mutable.Map.empty
+  private val cachedLaneIdToRoad: mutable.Map[Lane#Id, Road] = mutable.Map.empty
+  private val cachedLaneIdToLane: mutable.Map[Lane#Id, Lane] = mutable.Map.empty
 
-  private val roadsNetwork = Graph.empty[Road, LkDiEdge]
-//  private val intersectionNetwork = mutable.Graph.empty[Intersection, LkDiEdge]
+  private val cachedPaths
+    : mutable.Map[(Lane#Id, Road#Id), Option[List[List[Lane]]]] =
+    mutable.Map.empty
+  private val lanesNetwork = Graph.empty[Lane, LkDiEdge]
 
   private val stateReadingsAdapter =
     context.messageAdapter[SimulationStateGatherer.Protocol] {
@@ -52,76 +62,84 @@ class GlobalNavigator(
   override protected val initialBehaviour: Behavior[GlobalNavigator.Protocol] =
     Behaviors.receiveMessage {
       case FindPath(replyTo, currentLane, destination) =>
-        def randomEndNode(): roadsNetwork.NodeT =
-          roadsNetwork.nodes.iterator
-            .drop(Random.nextInt(roadsNetwork.size))
+        val startNode: lanesNetwork.NodeT = currentLane match {
+          case Left(laneId) => lanesNetwork.get(cachedLaneIdToLane(laneId))
+          case Right(lane)  => lanesNetwork.get(lane)
+        }
+
+        def randomEndNode(): lanesNetwork.NodeT = {
+          val nodes = lanesNetwork.nodes.filter(startNode.isConnectedWith)
+          nodes.iterator
+            .drop(Random.nextInt(nodes.size))
             .next()
-
-        val startNode: roadsNetwork.NodeT = currentLane match {
-          case Left(laneId) => roadsNetwork.get(cachedLaneIdToRoad(laneId))
-          case Right(lane)  => roadsNetwork.get(lane.road)
         }
 
-        val endNode: roadsNetwork.NodeT = destination match {
+        val endNodes: List[lanesNetwork.NodeT] = destination match {
           case Some(Left(roadId)) =>
-            roadsNetwork.nodes.find(_.id == roadId).getOrElse(randomEndNode())
-          case Some(Right(road)) => roadsNetwork.get(road)
-          case None              => randomEndNode()
+            lanesNetwork.nodes
+              .filter(_.road.id == roadId) match {
+              case s if s.isEmpty => randomEndNode() :: Nil
+              case s              => s.toList
+            }
+          case Some(Right(road)) => road.lanes.map(lanesNetwork.get)
+          case None              => randomEndNode() :: Nil
         }
 
-        startNode shortestPathTo endNode match {
-          case Some(path) =>
-            val roads = path.nodes.map(_.toOuter).toList
-//            val pathAsList = path.edges
-//              .map(_.toOuter.label)
-//              .collect {
-//                case lc: LanesConnection => lc.asInstanceOf[LanesConnection]
-//              }
-//              .foldLeft(List.empty[Lane]) {
-//                case (acc, LanesConnection(from, to)) if acc.isEmpty =>
-//                  from :: to :: Nil
-//                case (acc, LanesConnection(from, to)) =>
-//                  assert(acc.last.id == from.id,
-//                         s"last ${acc.last.id} did not equal ${from.id}")
-//                  acc :+ to
-//              }
-            replyTo ! AutonomousVehicleDriver.PathToFollow(roads, Nil)
-          case None => replyTo ! AutonomousVehicleDriver.NoPathFound
-        }
+        def calcPaths: Option[List[List[Lane]]] =
+          endNodes
+            .map(startNode.pathTo)
+            .flatten
+            .map(_.nodes.map(_.toOuter).toList) match {
+            case Nil   => None
+            case paths => Some(paths)
+          }
 
+        cachedPaths.getOrElseUpdate((startNode.id, endNodes.head.road.id),
+                                    calcPaths) match {
+          case Some(shortestsPath :: _) =>
+            val roads = shortestsPath.map(_.road)
+            replyTo ! AutonomousVehicleDriver.PathToFollow(roads, shortestsPath)
+          case other =>
+            replyTo ! AutonomousVehicleDriver.NoPathFound
+        }
         Behaviors.same
 
       case TrafficNetworkStateUpdate(roads, intersections) =>
-        roads.foreach { road =>
-          if (!roadsNetwork.contains(road)) {
-            roadsNetwork.add(road)
-            road.lanes
-              .map(_.id)
-              .foreach(cachedLaneIdToRoad.update(_, road))
+        roads
+          .flatMap(_.lanes)
+          .foreach { lane =>
+            if (!lanesNetwork.contains(lane)) {
+              val id = lane.id
+              lanesNetwork.add(lane)
+              cachedLaneIdToRoad.update(id, lane.road)
+              cachedLaneIdToLane.update(id, lane)
+            }
           }
-        }
 
         intersections.foreach { intersection =>
+          cachedPaths.clear()
           for {
             (entryLane, entryHeading) <- intersection.entryHeadings
             (departureLane, departureHeading) <- intersection.exitHeading
-            entryRoad = entryLane.road
-            departureRoad = departureLane.road
             allowance = entryLane.spec.turningAllowance
-            label = LanesConnection(entryLane, departureLane)
-            roadsConnection = (entryRoad ~+#> departureRoad)(label)
             headingDelta = MathUtils.boundedAngle(
               departureHeading - entryHeading)
           } {
+            val lanesConnection = (entryLane ~+#> departureLane)(
+              LanesConnection(intersection.entryPoints(entryLane),
+                              intersection.exitPoints(departureLane)))
             //TODO możliwość precyjnego wskazania na które wyjściowe jezdnie może wjechać. Teoretycznie podczas planowania i tak powinna zostać wybrana najkrótsza.
-            if (allowance.canGoStraight(headingDelta))
-              roadsNetwork += roadsConnection
+            if (allowance.canGoStraight(headingDelta)) {
+              lanesNetwork += lanesConnection
+            }
 
-            if (allowance.canTurnRight(headingDelta))
-              roadsNetwork += roadsConnection
+            if (allowance.canTurnRight(headingDelta)) {
+              lanesNetwork += lanesConnection
+            }
 
-            if (allowance.canTurnLeft(headingDelta))
-              roadsNetwork += roadsConnection
+            if (allowance.canTurnLeft(headingDelta)) {
+              lanesNetwork += lanesConnection
+            }
           }
         }
 
@@ -133,9 +151,9 @@ class GlobalNavigator(
 
         for {
           ref <- deleted
-          node <- roadsNetwork.nodes.find(_.managerRef == ref)
+          node <- lanesNetwork.nodes.find(_.road.managerRef == ref)
         } {
-          roadsNetwork.remove(node)
+          lanesNetwork.remove(node)
         }
 
         added.foreach(_ ! RoadManager.GetDetailedReadings(stateReadingsAdapter))
@@ -144,14 +162,6 @@ class GlobalNavigator(
 
       case IntersectionsListing(intersectionsRefs) =>
         val added = intersectionsRefs.diff(cachedIntersectionsRefs)
-        //TODO Intersections network
-        //val deleted = cachedIntersectionsRefs.diff(intersectionsRefs)
-        //for {
-        //  ref <- deleted
-        //  node <- roadsNetwork.nodes.find(_.managerRef == ref)
-        //} {
-        //  roadsNetwork.remove(node)
-        //}
         added.foreach(
           _ ! IntersectionManager.GetDetailedReadings(stateReadingsAdapter))
         cachedIntersectionsRefs = intersectionsRefs
@@ -160,19 +170,15 @@ class GlobalNavigator(
 }
 
 object GlobalNavigator {
-  case class LanesConnection(from: Lane, to: Lane) {
-    def fromId: from.Id = from.id
-    def toId: to.Id = to.id
-
+  case class LanesConnection(from: Point, to: Point) {
     override def equals(obj: Any): Boolean =
       obj match {
         case that: LanesConnection =>
-          this.fromId == that.fromId && this.toId == that.toId
+          this.from.distance(that.from) <= 0.01.meters &&
+            this.to.distance(that.to) <= 0.01.meters
         case _ => false
 
       }
-
-    override def toString: String = s"($fromId~>$toId)"
   }
 
   def init: Behavior[Protocol] = Behaviors.setup { ctx =>

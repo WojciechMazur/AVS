@@ -1,13 +1,6 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
 import akka.actor.typed.ActorRef
-import org.locationtech.jts.geom.{
-  Point => JtsPoint,
-  Geometry,
-  LineString,
-  Polygon
-}
-import org.locationtech.jts.operation.union.CascadedPolygonUnion
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext
+import org.locationtech.jts.geom.{Geometry, LineString, Point => JtsPoint}
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.EntitySettings
@@ -17,8 +10,6 @@ import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle.Vin
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Angle
 
-import scala.annotation.tailrec
-
 case class AutonomousRoadIntersection(
     id: Vin,
     roads: Iterable[Road],
@@ -27,7 +18,6 @@ case class AutonomousRoadIntersection(
   import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
   import scala.collection.breakOut
-
   val lanes: Iterable[Lane] = roads.flatMap(_.lanes)
   private val iaSegments: AutonomousRoadIntersection.IntersectionAreaSegments =
     extractAreaSegments(roads)
@@ -84,6 +74,11 @@ case class AutonomousRoadIntersection(
         entryPoints(departureLane)
       } else {
         departureLane.entryPoint
+      }
+
+      if (!exitPoints.contains(departureLane) || !entryPoints.contains(
+            arrivalLane)) {
+        println("!!!")
       }
 
       val arrivalLaneIntersectionSegment =
@@ -244,6 +239,7 @@ case class AutonomousRoadIntersection(
                                  newExitHeadings)
     }
   }
+
 }
 
 object AutonomousRoadIntersection

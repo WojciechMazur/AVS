@@ -47,6 +47,13 @@ trait Lane extends Entity with Identifiable {
   def headingAtNormalizedDistance(normalizedDistance: Double): Angle
   def distanceAlongLane(point: Point): Dimension
   def normalizedDistanceAlongLane(point: Point): Double
+
+  override def equals(obj: Any): Boolean = obj match {
+    case lane: Lane => this.id == lane.id
+    case _          => false
+  }
+
+  override def hashCode(): Int = this.id.toInt
 }
 
 object Lane extends IdProvider[Lane]

@@ -4,6 +4,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.stream.scaladsl.Source
+import akka.stream.typed.scaladsl.ActorMaterializer
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousRoadIntersection,
@@ -26,7 +28,9 @@ import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.{Agent, Dimension}
 
 import scala.annotation.tailrec
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class IntersectionCoordinator(
@@ -48,24 +52,46 @@ class IntersectionCoordinator(
     : mutable.Map[(Lane#Id, Lane#Id), Dimension] = mutable.Map.empty
   private val cachedTurnVelocities
     : mutable.Map[VehicleSpec, mutable.Map[(Lane#Id, Lane#Id), Velocity]] =
-    mutable.Map.empty
+    TrieMap.empty
 
-  for {
-    predifinedSpec <- VehicleSpec.Predefined.values
+  val predifinedCombinations: Vector[(VehicleSpec, Lane, Lane)] = for {
+    spec <- Vector(VehicleSpec.Predefined.Sedan)
     arrivalLane <- intersection.entryHeadings.keySet
-    departureLane <- intersection.exitHeading.keySet.filter(
-      _.spec.road.get.oppositeRoad.forall(_.id != arrivalLane.spec.road.get.id))
-    maxVelocity = calcMaxTurnVelocity(predifinedSpec,
-                                      arrivalLane,
-                                      departureLane)
-    cachedVelocitesForSpec = cachedTurnVelocities.getOrElseUpdate(
-      predifinedSpec,
-      mutable.Map.empty)
-  } {
-    cachedVelocitesForSpec.update((arrivalLane.id, departureLane.id),
-                                  maxVelocity)
+    departureLane <- intersection.exitHeading.keySet
+      .filter(
+        _.spec.road.get.oppositeRoad
+          .forall(_.id != arrivalLane.spec.road.get.id))
+  } yield (spec, arrivalLane, departureLane)
+
+  {
+    implicit val materializer: ActorMaterializer =
+      ActorMaterializer()(context.system)
+
+    val maxVelocitiesExpected: Int = predifinedCombinations.size
+    var done = 0L
+    Await.ready(
+      Source(predifinedCombinations)
+        .mapAsyncUnordered(4) {
+          case (spec, arrivalLane, departureLane) =>
+            Future {
+              val maxVelocity =
+                calcMaxTurnVelocity(spec, arrivalLane, departureLane)
+
+              cachedTurnVelocities
+                .getOrElseUpdate(spec, mutable.Map.empty)
+                .update((arrivalLane.id, departureLane.id), maxVelocity)
+              done += 1
+            }(context.system.executionContext)
+        }
+        .grouped(25)
+        .runForeach { _ =>
+          println(
+            s"Calculating max crossing velocities... $done/$maxVelocitiesExpected ")
+        },
+      Duration.Inf
+    )
+    context.log.info("Calculating maximal crossing velocities complete.")
   }
-  context.log.info("Calculating maximal crossing velocities complete.")
 
   private val lanePriorites: Map[Lane, Map[Road, List[Lane]]] = for {
     (lane, entryPoint) <- intersection.entryPoints
@@ -82,12 +108,16 @@ class IntersectionCoordinator(
   private def active(): Behavior[IntersectionCoordinator.Protocol] =
     Behaviors.receiveMessagePartial {
       case GetMaxCrossingVelocity(replyTo, laneId, roadId, vehicleSpec) =>
-        if (lanesById.keySet.contains(laneId) && roadsById.contains(roadId)) {
+        if (lanesById.keySet.contains(laneId) &&
+            intersection.entryPoints.exists(_._1.id == laneId) &&
+            roadsById.contains(roadId) &&
+            roadsById(roadId).lanes.exists(intersection.exitPoints.contains)) {
           val possibleVelocities: Map[Lane, Velocity] = {
             for {
               currentLane <- lanesById(laneId) :: Nil
               destianationRoad = roadsById(roadId)
               destinationLane <- lanePriorites(currentLane)(destianationRoad)
+                .filter(intersection.exitPoints.contains)
 
               cachedVelocitesForSpec = cachedTurnVelocities.getOrElseUpdate(
                 vehicleSpec,
@@ -215,13 +245,12 @@ class IntersectionCoordinator(
                         newMinSteeringAngle,
                         newMaxSteeringAngle)
         } else {
-
           def tooBigSteeringAngleDelta: Boolean =
             -minSteeringAngle > safeTraversalSteeringDelta &&
               maxSteeringAngle > safeTraversalSteeringDelta
 
           this match {
-            case _ if time > maxTime * 1.2 =>
+            case _ if time > maxTime * 1.4 =>
               false
             case _ if tooBigSteeringAngleDelta =>
               false
@@ -255,7 +284,16 @@ class IntersectionCoordinator(
                     maxSteeringAngle = 0)
     }
   }
-
+  def crossJoin[T](
+      list: Traversable[Traversable[T]]): Traversable[Traversable[T]] =
+    list match {
+      case xs :: Nil => xs map (Traversable(_))
+      case x :: xs =>
+        for {
+          i <- x
+          j <- crossJoin(xs)
+        } yield Traversable(i) ++ j
+    }
 }
 
 object IntersectionCoordinator {

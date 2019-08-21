@@ -42,6 +42,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
 
 import scala.collection.mutable
 import scala.concurrent.duration._
+import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
 trait ReservationSystem {
   self: AutonomousIntersectionManager =>
@@ -175,7 +176,14 @@ trait ReservationSystem {
             .orElse(findValidProposal(remainingProposals.tail))
       }
     }
-    findValidProposal(proposals)
+
+    val sortedProposals = proposals.sortBy { proposal =>
+      val entryLane = intersection.lanesById(proposal.arrivalLaneId)
+      val entryPoint = intersection.entryPoints(entryLane)
+      val exitPoint = intersection.exitPoints(proposal.departureLane)
+      entryPoint distance exitPoint
+    }
+    findValidProposal(sortedProposals)
   }
 
   def buildReservationAcceptance(
@@ -199,6 +207,7 @@ trait ReservationSystem {
           arrivalLaneId = params.successfulProposal.arrivalLaneId,
           departureLane = params.successfulProposal.departureLane,
           accelerationProfile = params.gridSchedule.accelerationProfile,
+          //TODO key not found
           admissionZoneLength = admissionControlZonesManagers(
             params.successfulProposal.arrivalLaneId).controlledDistance
         )

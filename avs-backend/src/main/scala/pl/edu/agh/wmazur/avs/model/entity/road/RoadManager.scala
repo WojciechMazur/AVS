@@ -23,6 +23,7 @@ import pl.edu.agh.wmazur.avs.simulation.stage.{
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
 import scala.concurrent.duration._
 import scala.collection.mutable
+import com.softwaremill.quicklens._
 
 class RoadManager(
     val context: ActorContext[Protocol],
@@ -33,6 +34,12 @@ class RoadManager(
 
   context.system.receptionist ! Receptionist.register(EntityRefsGroup.road,
                                                       context.self)
+
+  val vehiclesAtLanes
+    : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
+    road.lanes
+      .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])(
+        collection.breakOut)
 
   override protected val initialBehaviour: Behavior[Protocol] =
     Behaviors.receiveMessagePartial {
@@ -93,13 +100,17 @@ class RoadManager(
         workers.coordinator ! RoadVehiclesCoordinator.Protocol
           .FindPrecedingVehicle(replyTo)
         Behaviors.same
-    }
 
-  val vehiclesAtLanes
-    : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
-    road.lanes
-      .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])(
-        collection.breakOut)
+      case UpdateRoad(updatedRoad, inOppositeRoad) =>
+        if (inOppositeRoad) {
+          this.road
+            .modify(_.oppositeRoad.each)
+            .setTo(updatedRoad)
+        } else {
+          this.road = updatedRoad
+        }
+        Behaviors.same
+    }
 }
 
 object RoadManager {
@@ -143,6 +154,9 @@ object RoadManager {
     lazy val enteredLanes: Set[Lane] = lanes.diff(previousLanes)
     lazy val leavedLanes: Set[Lane] = previousLanes.diff(lanes)
   }
+
+  case class UpdateRoad(road: Road,
+                        inOppositeRoad: Boolean = false) extends Protocol
   // format: on
 
   case class Workers(coordinator: ActorRef[RoadVehiclesCoordinator.Protocol],
