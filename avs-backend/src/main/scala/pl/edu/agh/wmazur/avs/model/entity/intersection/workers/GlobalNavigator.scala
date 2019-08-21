@@ -3,30 +3,30 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.workers
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
-import pl.edu.agh.wmazur.avs.model.entity.intersection.{
-  Intersection,
-  IntersectionManager
-}
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator.Protocol.FindPath
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator.{
   IntersectionsListing,
   LanesConnection,
   RoadsListing,
   TrafficNetworkStateUpdate
 }
+import pl.edu.agh.wmazur.avs.model.entity.intersection.{
+  Intersection,
+  IntersectionManager
+}
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road, RoadManager}
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
+import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
+import scalax.collection.GraphPredef
 import scalax.collection.edge.Implicits._
 import scalax.collection.edge.LkDiEdge
-
-import scala.collection.mutable.Map
 import scalax.collection.mutable.Graph
 
 import scala.collection.mutable
-import scala.collection.parallel.immutable
+import scala.util.Random
 
 class GlobalNavigator(
     val context: ActorContext[GlobalNavigator.Protocol],
@@ -35,6 +35,7 @@ class GlobalNavigator(
   private var cachedRoadsRefs: Set[ActorRef[RoadManager.Protocol]] = Set.empty
   private var cachedIntersectionsRefs
     : Set[ActorRef[IntersectionManager.Protocol]] = Set.empty
+  private var cachedLaneIdToRoad: mutable.Map[Lane#Id, Road] = mutable.Map.empty
 
   private val roadsNetwork = Graph.empty[Road, LkDiEdge]
 //  private val intersectionNetwork = mutable.Graph.empty[Intersection, LkDiEdge]
@@ -50,11 +51,53 @@ class GlobalNavigator(
 
   override protected val initialBehaviour: Behavior[GlobalNavigator.Protocol] =
     Behaviors.receiveMessage {
+      case FindPath(replyTo, currentLane, destination) =>
+        def randomEndNode(): roadsNetwork.NodeT =
+          roadsNetwork.nodes.iterator
+            .drop(Random.nextInt(roadsNetwork.size))
+            .next()
+
+        val startNode: roadsNetwork.NodeT = currentLane match {
+          case Left(laneId) => roadsNetwork.get(cachedLaneIdToRoad(laneId))
+          case Right(lane)  => roadsNetwork.get(lane.road)
+        }
+
+        val endNode: roadsNetwork.NodeT = destination match {
+          case Some(Left(roadId)) =>
+            roadsNetwork.nodes.find(_.id == roadId).getOrElse(randomEndNode())
+          case Some(Right(road)) => roadsNetwork.get(road)
+          case None              => randomEndNode()
+        }
+
+        startNode shortestPathTo endNode match {
+          case Some(path) =>
+            val roads = path.nodes.map(_.toOuter).toList
+//            val pathAsList = path.edges
+//              .map(_.toOuter.label)
+//              .collect {
+//                case lc: LanesConnection => lc.asInstanceOf[LanesConnection]
+//              }
+//              .foldLeft(List.empty[Lane]) {
+//                case (acc, LanesConnection(from, to)) if acc.isEmpty =>
+//                  from :: to :: Nil
+//                case (acc, LanesConnection(from, to)) =>
+//                  assert(acc.last.id == from.id,
+//                         s"last ${acc.last.id} did not equal ${from.id}")
+//                  acc :+ to
+//              }
+            replyTo ! AutonomousVehicleDriver.PathToFollow(roads, Nil)
+          case None => replyTo ! AutonomousVehicleDriver.NoPathFound
+        }
+
+        Behaviors.same
 
       case TrafficNetworkStateUpdate(roads, intersections) =>
         roads.foreach { road =>
           if (!roadsNetwork.contains(road)) {
             roadsNetwork.add(road)
+            road.lanes
+              .map(_.id)
+              .foreach(cachedLaneIdToRoad.update(_, road))
           }
         }
 

@@ -76,10 +76,12 @@ trait PreperingReservation {
             cachedMaxVelocities.getOrElseUpdate(intersectionRef,
                                                 mutable.Map.empty)
           arrivalLaneVelocities.update(arrivalLaneId, maxVelocities)
+
           if (maxVelocities.values.exists(_.isZero)) {
             context.self ! AskForMaximalCrossingVelocities
+          } else if (hasPlannedPath) {
+            context.self ! TrySendReservationRequest
           }
-          context.self ! TrySendReservationRequest
         }
         Behaviors.same
 
@@ -87,7 +89,7 @@ trait PreperingReservation {
         nextIntersectionManager
           .flatMap(cachedMaxVelocities.get)
           .flatMap(_.get(currentLane.id)) match {
-          case None =>
+          case None => println("no intersection manager")
           case Some(maxVelocities) =>
             withVehicle {
               stopBeforeIntersectionSchedule(currentTime) match {
@@ -97,7 +99,9 @@ trait PreperingReservation {
               }
             }
 
+            //TODO Przekazyważ listę jedni, a nie dróg
             val estimations = maxVelocities
+              .filterKeys(_.id == currentLane.id)
               .mapValues(estimateArrival)
               .collect {
                 case (lane, Some(estimation)) => lane -> estimation

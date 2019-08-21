@@ -65,7 +65,9 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol],
             lane = lane,
             replyTo = replyTo,
             initialDestination =
-              initialDestination.orElse(Some(randomDestination))),
+              initialDestination.orElse(Some(randomDestination)),
+            navigatorRef = globalNavigator
+          ),
           s"autonomous-driver-$vehicleId",
         )
         Behaviors.same

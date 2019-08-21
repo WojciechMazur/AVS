@@ -5,20 +5,14 @@ import java.util.concurrent.TimeUnit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
-import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.ReservationSystem
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
-import pl.edu.agh.wmazur.avs.model.entity.vehicle.BasicVehicle
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver.ExtendedProtocol
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
   AutonomousVehicleDriver,
   VehiclePilot
 }
-import pl.edu.agh.wmazur.avs.simulation.TickSource
 import pl.edu.agh.wmazur.avs.simulation.TickSource.TickDelta
 import pl.edu.agh.wmazur.avs.simulation.stage.DriversMovementStage
-
-import scala.util.Random
-import scala.concurrent.duration._
 
 trait Driving extends VehiclePilot {
   self: AutonomousVehicleDriver with PreperingReservation =>

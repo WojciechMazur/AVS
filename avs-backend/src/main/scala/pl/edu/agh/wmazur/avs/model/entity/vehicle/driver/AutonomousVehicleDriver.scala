@@ -3,6 +3,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, Behavior}
 import org.locationtech.spatial4j.shape.Point
+import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.GlobalNavigator
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager.VehicleLanesOccupation
 import pl.edu.agh.wmazur.avs.model.entity.road.{Lane, Road}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{Angle, Velocity}
@@ -10,6 +11,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.protocol.{
   DriverConnectivity,
   Driving,
+  Navigation,
   OnTick,
   PreperingReservation
 }
@@ -28,14 +30,16 @@ class AutonomousVehicleDriver(
     spawnLane: Lane,
     var vehicle: BasicVehicle,
     val timers: TimerScheduler[AutonomousVehicleDriver.Protocol],
-    initialDestination: Option[Road#Id]
+    initialDestination: Option[Road#Id],
+    val navigatorRef: ActorRef[GlobalNavigator.Protocol]
 ) extends Agent[Protocol]
     with VehicleDriver
     with VehiclePilot
     with DriverConnectivity
     with OnTick
     with Driving
-    with PreperingReservation {
+    with PreperingReservation
+    with Navigation {
 
   override val occupiedLanes: mutable.Set[Lane] = mutable.Set.empty
   override var currentLane: Lane = setCurrentLane(spawnLane)
@@ -51,6 +55,7 @@ class AutonomousVehicleDriver(
       .orElse(basicConnectivity)
       .orElse(drive)
       .orElse(preperingReservation)
+      .orElse(navigation)
       .orElse {
         Behaviors.receiveMessage { msg =>
           context.log.error("Unhanded message: ", { msg })
@@ -94,7 +99,8 @@ object AutonomousVehicleDriver
     extends DriverConnectivity.Protocol
     with Driving.Protocol
     with OnTick.Protocol
-    with PreperingReservation.Protocol {
+    with PreperingReservation.Protocol
+    with Navigation.Protocol {
 
   type Protocol = VehicleDriver.Protocol
   trait ExtendedProtocol extends VehicleDriver.Protocol
@@ -108,7 +114,8 @@ object AutonomousVehicleDriver
       lane: Lane,
       replyTo: Option[ActorRef[SpawnResult[Vehicle, VehicleDriver.Protocol]]] =
         None,
-      initialDestination: Option[Road#Id] = None)
+      initialDestination: Option[Road#Id] = None,
+      navigatorRef: ActorRef[GlobalNavigator.Protocol])
     : Behavior[ExtendedProtocol] = {
     Behaviors.setup[VehicleDriver.Protocol] { ctx =>
       val vehicle = BasicVehicle(driverRef = ctx.self,
@@ -120,13 +127,18 @@ object AutonomousVehicleDriver
 
       ctx.system.receptionist ! Receptionist.register(EntityRefsGroup.driver,
                                                       ctx.self)
+      navigatorRef ! GlobalNavigator.Protocol.FindPath(
+        ctx.self,
+        Right(lane),
+        initialDestination.map(Left.apply))
 
       Behaviors.withTimers { timers =>
         new AutonomousVehicleDriver(context = ctx,
                                     spawnLane = lane,
                                     vehicle = vehicle,
                                     timers,
-                                    initialDestination)
+                                    initialDestination,
+                                    navigatorRef)
       }
     }
   }.narrow
