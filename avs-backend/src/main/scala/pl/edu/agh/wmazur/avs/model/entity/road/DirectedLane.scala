@@ -130,13 +130,13 @@ case class DirectedLane(id: Lane#Id,
   override type Self = DirectedLane
   override def entitySettings: EntitySettings[DirectedLane] = DirectedLane
 
-  override val collectorPoint: Option[CollectorPoint] =
+  override lazy val collectorPoint: Option[CollectorPoint] =
     spec.leadsInto match {
       case Some(_) => None
       case None    => Some(CollectorPoint(this))
     }
 
-  override val spawnPoint: Option[SpawnPoint] = spec.leadsFrom match {
+  override lazy val spawnPoint: Option[SpawnPoint] = spec.leadsFrom match {
     case None if spec.canSpawn => Some(SpawnPoint(this))
     case _                     => None
   }

@@ -151,10 +151,16 @@ trait ReservationSystem {
             .flatMap {
               case schedule @ GridReservationManager.ReservationSchedule(
                     driverRef,
+                    arrivalTime,
                     exitTime,
                     _,
                     _,
                     _) =>
+                if (admissionControlZonesManagers
+                      .get(departureLane.id)
+                      .isEmpty) {
+                  println(s"No acz manager for ${departureLane.id}")
+                }
                 for {
                   admissionManager <- admissionControlZonesManagers.get(
                     departureLane.id)
@@ -169,6 +175,7 @@ trait ReservationSystem {
                   ReservationParameters(driverRef,
                                         proposal,
                                         schedule,
+                                        arrivalTime,
                                         exitTime,
                                         departureLane.id,
                                         admissionPlan)
@@ -183,7 +190,11 @@ trait ReservationSystem {
       val exitPoint = intersection.exitPoints(proposal.departureLane)
       entryPoint distance exitPoint
     }
-    findValidProposal(sortedProposals)
+    val result = findValidProposal(sortedProposals)
+    if (result.isEmpty) {
+      System.err.println("No valid result")
+    }
+    result
   }
 
   def buildReservationAcceptance(
@@ -200,16 +211,15 @@ trait ReservationSystem {
           rId,
           aId,
           intersectionManagerRef = context.self,
-          arrivalTime = params.successfulProposal.arrivalTime,
+          arrivalTime = params.arrivalTime,
           safetyBufferBefore = ReservationSystem.earlyArrivalThreshold,
           safetyBufferAfter = ReservationSystem.lateArrivalThreshold,
           arrivalVelocity = params.successfulProposal.arrivalVelocity,
           arrivalLaneId = params.successfulProposal.arrivalLaneId,
           departureLane = params.successfulProposal.departureLane,
           accelerationProfile = params.gridSchedule.accelerationProfile,
-          //TODO key not found
           admissionZoneLength = admissionControlZonesManagers(
-            params.successfulProposal.arrivalLaneId).controlledDistance
+            params.successfulProposal.departureLane.id).controlledDistance
         )
 
         val reservationRecord = ReservationRecord(
@@ -263,6 +273,7 @@ trait ReservationSystem {
       driverRef: DriverRef,
       successfulProposal: Proposal,
       gridSchedule: GridReservationManager.ReservationSchedule,
+      arrivalTime: Timestamp,
       exitTime: Timestamp,
       admissionControlZoneId: Lane#Id,
       admissionControlZonePlan: AdmissionControlZoneManager.AdmissionPlan

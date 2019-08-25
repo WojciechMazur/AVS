@@ -25,6 +25,7 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.{
 }
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VelocityReachingMovement
 import pl.edu.agh.wmazur.avs.model.entity.vehicle._
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 
 import scala.annotation.tailrec
 import scala.collection._
@@ -69,12 +70,12 @@ case class GridReservationManager(config: ManagerConfig,
     }
 
     findTimeTilesPath(driver = driver,
-                      arrivalTime = query.arrivalTime,
+                      minimalArrivalTime = query.arrivalTime,
                       isAccelerating = query.isAccelerating)
       .collect {
-        case (tiles, exitTime, exitVelocity) =>
+        case (tiles, arrivalTime, exitTime, exitVelocity) =>
           val accelerationProfile = calculateAccelerationProfile(
-            arrivalTime = query.arrivalTime,
+            arrivalTime = arrivalTime,
             arrivalVelocity = query.arrivalVelocity,
             maxVelocity = query.maxTurnVelocity,
             maxAcceleration = driver.vehicle.spec.maxAcceleration,
@@ -84,6 +85,7 @@ case class GridReservationManager(config: ManagerConfig,
 
           ReservationSchedule(
             driverRef = query.driverRef,
+            arrivalTime = arrivalTime,
             exitTime = exitTime,
             exitVelocity = exitVelocity,
             tilesCovered = tiles.toList,
@@ -92,21 +94,27 @@ case class GridReservationManager(config: ManagerConfig,
       }
   }
 
-  private def findTimeTilesPath(
-      driver: VehicleDriver,
-      arrivalTime: Timestamp,
-      isAccelerating: Boolean): Option[(Set[TimeTile], Timestamp, Velocity)] = {
+  private def findTimeTilesPath(driver: VehicleDriver,
+                                minimalArrivalTime: Timestamp,
+                                isAccelerating: Boolean)
+    : Option[(Set[TimeTile], Timestamp, Timestamp, Velocity)] = {
     assert {
       intersection.bufferedArea
         .relate(driver.vehicle.pointAtMiddleFront)
         .intersects()
     }
 
+    val initialDriverState: CrashTestDriver =
+      driver.asInstanceOf[CrashTestDriver].copy()
+
+    val maximalArrivalTime = Long.MaxValue
+    //minimalArrivalTime + 60 * TickSource.timeStep.toMillis
     @tailrec
     def iterate(driver: VehicleDriver,
+                arrivalTime: Timestamp,
                 currentTime: Timestamp,
                 timeTiles: Set[TimeTile] = Set.empty)
-      : Option[(Set[TimeTile], Timestamp, Velocity)] = {
+      : Option[(Set[TimeTile], Timestamp, Timestamp, Velocity)] = {
       val vehicle = driver.vehicle
       val vehicleWithinIntersectionArea = {
         val positionIntersects =
@@ -150,28 +158,39 @@ case class GridReservationManager(config: ManagerConfig,
                 //TODO, przywrócić?
 //              reservationGrid.isRestrictedTile(tt.tileId) ||
                 reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
-//          val colliding = tilesToReservation
-//            .filter(tt => reservationGrid.isReservedAt(tt.timestamp, tt.tileId))
-//            .toList
-//            .sortBy(t => (t.timestamp, t.tileId))
-//          System.err.println(
-//            s"Reservation collide in ${colliding.size} tiles :: $colliding")
-          None
+
+          val nextTestedArrivalTime = currentTime + 5 * TickSource.timeStep.toMillis
+          if (nextTestedArrivalTime <= maximalArrivalTime) {
+            iterate(
+              initialDriverState,
+              nextTestedArrivalTime,
+              nextTestedArrivalTime,
+              Set.empty
+            )
+          } else {
+            None
+          }
+
         } else {
           iterate(
             newDriverState,
+            arrivalTime,
             currentTime + config.timeStepMillis,
             timeTiles ++ tilesToReservation
           )
         }
       } else {
-        Some((timeTiles, currentTime, vehicle.velocity))
+        Some((timeTiles, arrivalTime, currentTime, vehicle.velocity))
       }
     }
 
+    val arrivalTime =
+      reservationGrid.firstAvailableTimestamp(minimalArrivalTime)
+
     iterate(
       driver,
-      reservationGrid.firstAvailableTimestamp(arrivalTime)
+      arrivalTime,
+      arrivalTime
     )
   }
 
@@ -285,6 +304,7 @@ object GridReservationManager {
 
   case class ReservationSchedule(
       driverRef: ActorRef[VehicleDriver.Protocol],
+      arrivalTime: Timestamp,
       exitTime: Timestamp,
       exitVelocity: Velocity,
       tilesCovered: List[TimeTile],

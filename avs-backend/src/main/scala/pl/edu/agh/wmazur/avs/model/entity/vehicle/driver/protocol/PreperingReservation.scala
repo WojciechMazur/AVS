@@ -74,6 +74,13 @@ trait PreperingReservation {
         }
         Behaviors.same
 
+      case AskForMaximalCrossingVelocities =>
+        context.log.info(
+          s"Not ready yet destination: ${destination}, intersectio manager ${nextIntersectionManager
+            .map(_.path.name)}")
+        //not ready yet
+        Behaviors.same
+
       case MaxCrossingVelocities(intersectionRef,
                                  arrivalLaneId,
                                  maxVelocities) =>
@@ -210,6 +217,13 @@ trait PreperingReservation {
             isRetryingToMakeReservation = false
             nextReservationRequestAttempt = None
             reservationDetails = Some(details)
+            println(s"""
+                |Arrival velocity: ${details.arrivalVelocity}
+                |Exit velocity:    ${details.accelerationProfile
+                         .toAccelerationSchedule(details.arrivalTime)
+                         .calcFinalVelocity(details.arrivalVelocity)}
+                |Arrival Time:     ${details.arrivalTime}
+                |""".stripMargin)
             context.log.debug(
               s"Reservation accepted - currentTime: $currentTime arrivalTime: ${details.arrivalTime}, velocity: ${details.arrivalVelocity}")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))
@@ -224,8 +238,8 @@ trait PreperingReservation {
               nextReservationRequestAttempt =
                 Some(currentTime + sendingRequestDelay.toMillis)
               isRetryingToMakeReservation = true
-//              context.self ! TrySendReservationRequest
               reservationDetails = None
+              context.self ! TrySendReservationRequest
               withVehicle(vehicle.withAccelerationSchedule(None))
           }
           .get
@@ -351,7 +365,7 @@ object PreperingReservation {
   final val maxExpectedIntersectionManagerReplyTime: FiniteDuration =
     TickSource.timeStep
   final val arrivalEstimationAccelerationReduction = 1.0
-  final val sendingRequestDelay = 7 * TickSource.timeStep
+  final val sendingRequestDelay = 5 * TickSource.timeStep
   final val reservationRequestTimeout = 250.millis
   final val arrivalVelocityThreshold = 3.0
 

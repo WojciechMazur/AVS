@@ -68,7 +68,6 @@ trait DriverConnectivity {
                                            previousIntersectionPosition,
                                            vehicle)
             .updateIsWithinIntersection(nextIntersectionGeometry, vehicle)
-
           context.self ! AskForMaximalCrossingVelocities
           context.log.debug("Switching to preparing reservation")
           switchTo(preperingReservation)

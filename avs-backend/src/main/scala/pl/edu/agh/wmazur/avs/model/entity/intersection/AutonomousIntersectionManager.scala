@@ -75,18 +75,6 @@ object AutonomousIntersectionManager {
     case class Tick(currentTime: Timestamp) extends Protocol
   }
 
-  def splitLanesByIntersection(
-      roads: List[Road],
-      intersection: AutonomousRoadIntersection): List[Road] = {
-    roads.map { road =>
-      val updatedLanes = road.lanes
-        .map { lane =>
-          ???
-        }
-      road.modify(_.lanes).setTo(updatedLanes)
-    }
-  }
-
   //scalastyle:off
   def init(
       optId: Option[Intersection#Id],

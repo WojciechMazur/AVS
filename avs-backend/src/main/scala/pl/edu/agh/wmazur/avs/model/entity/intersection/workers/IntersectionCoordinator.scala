@@ -160,7 +160,7 @@ class IntersectionCoordinator(
           iterate(minVelocity, testedVelocity)
         }
       } else {
-        minVelocity.max(3.0)
+        minVelocity.max(5.0)
       }
     }
 

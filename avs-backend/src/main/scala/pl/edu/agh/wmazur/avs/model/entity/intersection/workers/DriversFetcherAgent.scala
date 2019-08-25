@@ -147,8 +147,8 @@ object DriversFetcherAgent {
 
             def headingToIntersection: Boolean = {
               val angle = driverPosition.angle(context.intersectionCenter) - heading
-              MathUtils.recenter(angle, 0, 2 * Math.PI) < Math.PI / 6 ||
-              MathUtils.recenter(angle.abs, 0, 2 * Math.PI) < Math.PI / 6
+              MathUtils.recenter(angle, 0, 2 * Math.PI) < Math.PI / 3 ||
+              MathUtils.recenter(angle.abs, 0, 2 * Math.PI) < Math.PI / 3
 
             }
             if (withinArea && headingToIntersection) {

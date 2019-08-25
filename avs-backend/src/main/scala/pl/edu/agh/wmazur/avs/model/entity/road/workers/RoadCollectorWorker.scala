@@ -14,10 +14,12 @@ import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.stage.VehiclesCollectorStage
 
+import scala.collection.mutable
+
 class RoadCollectorWorker(
     val context: ActorContext[Protocol],
     roadManagerRef: ActorRef[RoadManager.Protocol],
-    laneWorkers: Map[Lane, ActorRef[LaneCollectorWorker.Protocol]])
+    laneWorkers: mutable.Map[Lane, ActorRef[LaneCollectorWorker.Protocol]])
     extends Agent[Protocol] {
   override protected val initialBehaviour: Behavior[Protocol] = idle
 
@@ -26,8 +28,10 @@ class RoadCollectorWorker(
       val laneWorkersFiltered = for {
         (lane, drivers) <- vehiclesAtLanes
           .filterKeys(_.collectorPoint.isDefined)
-          .filterKeys(laneWorkers.contains)
-        laneWorker = laneWorkers(lane)
+        laneWorker = laneWorkers.getOrElseUpdate(
+          lane,
+          context.spawn(LaneCollectorWorker.init(lane, context.self),
+                        s"lane-collector-${lane.id}"))
         _ = laneWorker ! LaneCollectorWorker.Protocol.TryCollect(drivers)
       } yield laneWorker
 
@@ -58,14 +62,17 @@ object RoadCollectorWorker {
   def init(roadManagerRef: ActorRef[RoadManager.Protocol],
            lanes: List[Lane]): Behavior[Protocol] =
     Behaviors.setup { ctx =>
-      val lanesCollectors =
-        for {
-          lane <- lanes
-          laneCollector = ctx.spawn(LaneCollectorWorker.init(lane, ctx.self),
-                                    s"lane-collector-${lane.id}")
-        } yield lane -> laneCollector
+      val laneCollectors
+        : mutable.Map[Lane, ActorRef[LaneCollectorWorker.Protocol]] =
+        mutable.Map.empty
 
-      new RoadCollectorWorker(ctx, roadManagerRef, lanesCollectors.toMap)
+      for {
+        lane <- lanes
+        laneCollector = ctx.spawn(LaneCollectorWorker.init(lane, ctx.self),
+                                  s"lane-collector-${lane.id}")
+      } laneCollectors.update(lane, laneCollector)
+
+      new RoadCollectorWorker(ctx, roadManagerRef, laneCollectors)
     }
 
   sealed trait Protocol extends SimulationProtocol

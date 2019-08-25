@@ -76,11 +76,6 @@ case class AutonomousRoadIntersection(
         departureLane.entryPoint
       }
 
-      if (!exitPoints.contains(departureLane) || !entryPoints.contains(
-            arrivalLane)) {
-        println("!!!")
-      }
-
       val arrivalLaneIntersectionSegment =
         LineFactory(entryPoints(arrivalLane), arrivalLaneEnd)
       val departureLineIntersectionSegment =

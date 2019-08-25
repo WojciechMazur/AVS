@@ -81,6 +81,7 @@ trait DefaultPolicy {
 
             if (optAcceptance.isEmpty) {
               val reason = Reason.NoClearPath
+
               context.log.warning(
                 s"Request {} rejected, reason {}. No acceptance. Arrival lanes {}, Departure lanes {}",
                 req.id,
