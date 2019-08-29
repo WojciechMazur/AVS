@@ -217,13 +217,13 @@ trait PreperingReservation {
             isRetryingToMakeReservation = false
             nextReservationRequestAttempt = None
             reservationDetails = Some(details)
-            println(s"""
-                |Arrival velocity: ${details.arrivalVelocity}
-                |Exit velocity:    ${details.accelerationProfile
-                         .toAccelerationSchedule(details.arrivalTime)
-                         .calcFinalVelocity(details.arrivalVelocity)}
-                |Arrival Time:     ${details.arrivalTime}
-                |""".stripMargin)
+//            println(s"""
+//                |Arrival velocity: ${details.arrivalVelocity}
+//                |Exit velocity:    ${details.accelerationProfile
+//                         .toAccelerationSchedule(details.arrivalTime)
+//                         .calcFinalVelocity(details.arrivalVelocity)}
+//                |Arrival Time:     ${details.arrivalTime}
+//                |""".stripMargin)
             context.log.debug(
               s"Reservation accepted - currentTime: $currentTime arrivalTime: ${details.arrivalTime}, velocity: ${details.arrivalVelocity}")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))

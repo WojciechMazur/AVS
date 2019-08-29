@@ -111,6 +111,7 @@ class WebsocketRoute(wsManagerRef: ActorRef[WebsocketManager.Protocol])(
         }
       }
     }.flow
+
   val route: Route = path("avs" / JavaUUID) { connectionId =>
     handleWebSocketMessages(messegingFlow(connectionId.toString))
   }

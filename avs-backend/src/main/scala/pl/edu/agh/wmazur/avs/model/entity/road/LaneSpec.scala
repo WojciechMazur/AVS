@@ -27,6 +27,9 @@ case class LaneSpec(
     this
   }
 
+  override def toString: String =
+    s"LaneSpec(limit: $speedLimit, width: $width, canSpawn: ${canSpawn}, turningAllowance: $turningAllowance)"
+
   var road: Option[Road] = None
   lazy val halfWidth: Dimension = width / 2.0
 }

@@ -277,7 +277,6 @@ object ReservationChecker {
     val (remainingArea, lowerOptTrapezoid) = None match {
 
       case _ if p.vDown >= 0.0 =>
-        println("case 3a")
         val areaL = p.t14 * (p.velocity + p.vDown) / 2
         val areaR = p.t15 * (p.vDown + p.velocityEnd) / 2
 

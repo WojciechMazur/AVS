@@ -113,6 +113,7 @@ class IntersectionCoordinator(
             roadsById.contains(roadId) &&
             roadsById(roadId).lanes.exists(intersection.exitPoints.contains)) {
           val possibleVelocities: Map[Lane, Velocity] = {
+
             for {
               currentLane <- lanesById(laneId) :: Nil
               destianationRoad = roadsById(roadId)

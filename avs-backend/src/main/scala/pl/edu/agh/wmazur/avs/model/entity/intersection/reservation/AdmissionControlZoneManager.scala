@@ -28,11 +28,11 @@ case class AdmissionControlZoneManager(
       Some(
         AdmissionPlan(query.driverRef, query.vehicleLength, query.stopDistance))
     } else {
-      System.err.println(
-        f"Admission control zone rejected entry for ${query.driverRef}." +
-          f" Area occupied in ${admissionControlZone.currentSize.asMeters / admissionControlZone.controlledDistance.asMeters * 100}%3.2f" + "%" +
-          f" Remaining distance ${(admissionControlZone.controlledDistance - admissionControlZone.currentSize).asMeters}%3.2fm" +
-          f" Needed distance ${query.stopDistance.asMeters}%3.2fm")
+//      System.err.println(
+//        f"Admission control zone rejected entry for ${query.driverRef}." +
+//          f" Area occupied in ${admissionControlZone.currentSize.asMeters / admissionControlZone.controlledDistance.asMeters * 100}%3.2f" + "%" +
+//          f" Remaining distance ${(admissionControlZone.controlledDistance - admissionControlZone.currentSize).asMeters}%3.2fm" +
+//          f" Needed distance ${query.stopDistance.asMeters}%3.2fm")
       None
     }
   }

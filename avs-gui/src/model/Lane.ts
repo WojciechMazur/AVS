@@ -34,21 +34,21 @@ export class Lane extends Entity{
         this.name = name
         this.mesh.position.y = 0.2        
 
-        let entryPointMesh = Mesh.CreateSphere(name + "_entry_point", 16, 2, scene)
-        entryPointMesh.position = new Vector3(entryPoint.x!, 1, entryPoint.z!)
-        let spawPointIndicatiorMaterial = new GridMaterial("material_" + name + "_entrypoint_indicatior", scene)
-        spawPointIndicatiorMaterial.mainColor = Color3.Green()
-        entryPointMesh.material = spawPointIndicatiorMaterial
+        //let entryPointMesh = Mesh.CreateSphere(name + "_entry_point", 16, 2, scene)
+        //entryPointMesh.position = new Vector3(entryPoint.x!, 1, entryPoint.z!)
+        //let spawPointIndicatiorMaterial = new GridMaterial("material_" + name + "_entrypoint_indicatior", scene)
+        //spawPointIndicatiorMaterial.mainColor = Color3.Green()
+        //entryPointMesh.material = spawPointIndicatiorMaterial
 
-        let exitPointMesh = Mesh.CreateSphere(name + "_exit_point", 16, 2, scene)
-        exitPointMesh.position = new Vector3(exitPoint.x!, 1, exitPoint.z!)
-        let exitPointIndicatiorMaterial = new GridMaterial("material_" + name + "_exitpoint_indicatior", scene)
-        exitPointIndicatiorMaterial.mainColor = Color3.Red()
-        exitPointMesh.material = exitPointIndicatiorMaterial
+        //let exitPointMesh = Mesh.CreateSphere(name + "_exit_point", 16, 2, scene)
+        ///exitPointMesh.position = new Vector3(exitPoint.x!, 1, exitPoint.z!)
+        //let exitPointIndicatiorMaterial = new GridMaterial("material_" + name + "_exitpoint_indicatior", scene)
+        //exitPointIndicatiorMaterial.mainColor = Color3.Red()
+        //exitPointMesh.material = exitPointIndicatiorMaterial
         
-        this.mesh
-        .addChild(entryPointMesh)
-        .addChild(exitPointMesh)
+        //this.mesh
+        //.addChild(entryPointMesh)
+        //.addChild(exitPointMesh)
         
         if(spawnPoint){
             let spawnPointIndices = spawnPoint!.geometry!.shapes![0].indices!.map(vec3 => {

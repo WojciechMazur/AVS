@@ -7,8 +7,8 @@ import scala.concurrent.duration.FiniteDuration
 
 trait SimulationProtocol
 object SimulationProtocol {
-  trait Tick extends SimulationProtocol
 
+  trait Tick extends SimulationProtocol
   object Tick {
     case class Default(currentTime: Timestamp,
                        timeDelta: FiniteDuration,

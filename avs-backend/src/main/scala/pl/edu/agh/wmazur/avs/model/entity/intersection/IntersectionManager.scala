@@ -45,6 +45,7 @@ object IntersectionManager {
   trait Protocol extends SimulationProtocol
 
   object Protocol {
+
     final case class IntersectionCrossingRequest(
         driverRef: ActorRef[VehicleDriver.Protocol],
         spec: IntersectionCrossingRequest.CrossingVehicleSpec,
@@ -76,7 +77,9 @@ object IntersectionManager {
           rearAxleDisplacement: Dimension,
           maxSteeringAngle: Angle,
           maxTurnPerSecond: Angle
-      ) {
+      )
+
+      {
         def toVehicleSpec(maxVelocity: Velocity): VehicleSpec =
           VehicleSpec(
             maxAcceleration = maxAcceleration,

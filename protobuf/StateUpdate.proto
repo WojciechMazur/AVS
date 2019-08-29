@@ -46,7 +46,6 @@ message StateUpdate{
     }
     message UpdateMeta{
         uint32 updatesPerSecond = 1;
-
     }
 }
 
