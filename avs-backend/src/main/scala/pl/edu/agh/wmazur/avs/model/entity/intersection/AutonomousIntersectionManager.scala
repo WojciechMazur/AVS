@@ -2,7 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection
 
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
 import pl.edu.agh.wmazur.avs.model.entity.intersection.AutonomousIntersectionManager.Workers
 import pl.edu.agh.wmazur.avs.model.entity.intersection.extension.policy.{
   ClosedIntersectionPolicy,
@@ -115,16 +115,20 @@ object AutonomousIntersectionManager {
       Behaviors.withTimers { timers =>
         val driversFetcherManager: ActorRef[DriversFetcherAgent.Protocol] =
           ctx.spawn(
-            DriversFetcherAgent.init(
-              intersectionPosition = intersection.position,
-              intersectionGeometry =
-                SpatialUtils.shapeFactory.getGeometryFrom(intersection.area),
-              entryPoints = intersection.entryPoints,
-              exitPoints = intersection.exitPoints,
-              transmitionDistance =
-                IntersectionConnectivity.maxTransmitionDistance,
-              intersectionManager = ctx.self
-            ),
+            Behaviors
+              .supervise {
+                DriversFetcherAgent.init(
+                  intersectionPosition = intersection.position,
+                  intersectionGeometry = SpatialUtils.shapeFactory
+                    .getGeometryFrom(intersection.area),
+                  entryPoints = intersection.entryPoints,
+                  exitPoints = intersection.exitPoints,
+                  transmitionDistance =
+                    IntersectionConnectivity.maxTransmitionDistance,
+                  intersectionManager = ctx.self
+                )
+              }
+              .onFailure(SupervisorStrategy.restart),
             "drivers-fetcher"
           )
 

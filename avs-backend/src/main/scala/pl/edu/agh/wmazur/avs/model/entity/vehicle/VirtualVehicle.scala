@@ -1,6 +1,7 @@
 package pl.edu.agh.wmazur.avs.model.entity.vehicle
 
 import com.softwaremill.quicklens._
+import org.locationtech.jts.geom.util.AffineTransformation
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
@@ -61,30 +62,50 @@ case class VirtualVehicle(
                                  spec.maxSteeringAngle))
       .asInstanceOf[this.type]
 
+  override def withHeading(heading: Angle): this.type = {
+    val rotation = heading - this.heading
+
+    modify(this)(_.gauges.heading)
+      .setTo(heading)
+      .modify(_.gauges.geometry)
+      .using(
+        AffineTransformation
+          .rotationInstance(rotation,
+                            this.pointAtMiddleFront.getX,
+                            this.pointAtMiddleFront.getY)
+          .transform)
+      .asInstanceOf[this.type]
+  }
+
+  override def withPosition(position: Point): this.type = {
+    val xDelta = position.getX - this.position.getX
+    val yDelta = position.getY - this.position.getY
+
+    modify(this)(_.gauges.position)
+      .setTo(position)
+      .modify(_.gauges.geometry)
+      .using(AffineTransformation.translationInstance(xDelta, yDelta).transform)
+      .asInstanceOf[this.type]
+  }
+
   override def withPositionAndHeading(position: Point,
                                       heading: Angle): this.type = {
+    val rotation = heading - this.heading
+    val xDelta = position.getX - this.position.getX
+    val yDelta = position.getY - this.position.getY
+
     modify(this)(_.gauges.heading)
       .setTo(heading)
       .modify(_.gauges.position)
       .setTo(position)
-      .modify(_.gauges.area)
-      .setTo(Vehicle.calcArea(position, heading, spec))
+      .modify(_.gauges.geometry)
+      .using(
+        AffineTransformation
+          .translationInstance(xDelta, yDelta)
+          .compose(AffineTransformation.rotationInstance(rotation))
+          .transform)
       .asInstanceOf[this.type]
   }
-
-  override def withHeading(heading: Angle): this.type =
-    modify(this)(_.gauges.heading)
-      .setTo(heading)
-      .modify(_.gauges.area)
-      .setTo(Vehicle.calcArea(position, heading, spec))
-      .asInstanceOf[this.type]
-
-  override def withPosition(position: Point): this.type =
-    modify(this)(_.gauges.position)
-      .setTo(position)
-      .modify(_.gauges.area)
-      .setTo(Vehicle.calcArea(position, heading, spec))
-      .asInstanceOf[this.type]
 
   override def accelerationSchedule: Option[AccelerationSchedule] = None
 

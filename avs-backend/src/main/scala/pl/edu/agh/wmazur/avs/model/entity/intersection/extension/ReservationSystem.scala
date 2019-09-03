@@ -122,81 +122,6 @@ trait ReservationSystem {
         Behaviors.same
     }
 
-  def calcReservationParamaters(
-      request: IntersectionCrossingRequest,
-      proposals: List[Proposal]): Option[ReservationParameters] = {
-
-    def findValidProposal(
-        remainingProposals: List[Proposal]): Option[ReservationParameters] = {
-      remainingProposals.headOption.flatMap {
-        case proposal @ Proposal(arrivalLaneId,
-                                 departureLane,
-                                 arrivalTime,
-                                 arrivalVelocity,
-                                 maxTurnVelocity,
-                                 _) =>
-          val query = GridReservationManager.ReservationQuery(
-            driverRef = request.driverRef,
-            arrivalTime = arrivalTime,
-            arrivalVelocity = arrivalVelocity,
-            maxTurnVelocity = maxTurnVelocity,
-            arrivalLaneId = arrivalLaneId,
-            departureLaneId = departureLane.id,
-            vehicleSpec = request.spec,
-            isAccelerating = true
-          )
-
-          mainReservationManager
-            .scheduleTrajectory(query)
-            .flatMap {
-              case schedule @ GridReservationManager.ReservationSchedule(
-                    driverRef,
-                    arrivalTime,
-                    exitTime,
-                    _,
-                    _,
-                    _) =>
-                if (admissionControlZonesManagers
-                      .get(departureLane.id)
-                      .isEmpty) {
-                  println(s"No acz manager for ${departureLane.id}")
-                }
-                for {
-                  admissionManager <- admissionControlZonesManagers.get(
-                    departureLane.id)
-                  stopDistance = VehiclePilot.calcStoppingDistance(
-                    schedule.exitVelocity,
-                    request.spec.maxDeceleration)
-                  admissionQuery = AdmissionQuery(driverRef,
-                                                  query.vehicleSpec.length,
-                                                  stopDistance)
-                  admissionPlan <- admissionManager.query(admissionQuery)
-                } yield
-                  ReservationParameters(driverRef,
-                                        proposal,
-                                        schedule,
-                                        arrivalTime,
-                                        exitTime,
-                                        departureLane.id,
-                                        admissionPlan)
-            }
-            .orElse(findValidProposal(remainingProposals.tail))
-      }
-    }
-
-    val sortedProposals = proposals.sortBy { proposal =>
-      val entryLane = intersection.lanesById(proposal.arrivalLaneId)
-      val entryPoint = intersection.entryPoints(entryLane)
-      val exitPoint = intersection.exitPoints(proposal.departureLane)
-      entryPoint distance exitPoint
-    }
-    val result = findValidProposal(sortedProposals)
-    if (result.isEmpty) {
-      System.err.println("No valid result")
-    }
-    result
-  }
-
   def buildReservationAcceptance(
       requestId: Long,
       params: ReservationParameters): Option[ReservationConfirmed] = {
@@ -258,6 +183,73 @@ trait ReservationSystem {
 
         None
     }
+  }
+
+  def calcReservationParamaters(
+      request: IntersectionCrossingRequest,
+      proposals: List[Proposal]): Option[ReservationParameters] = {
+
+    def findValidProposal(
+        remainingProposals: List[Proposal]): Option[ReservationParameters] = {
+      remainingProposals.headOption.flatMap {
+        case proposal @ Proposal(arrivalLaneId,
+                                 departureLane,
+                                 arrivalTime,
+                                 arrivalVelocity,
+                                 maxTurnVelocity,
+                                 _) =>
+          val query = GridReservationManager.ReservationQuery(
+            driverRef = request.driverRef,
+            arrivalTime = arrivalTime,
+            arrivalVelocity = arrivalVelocity,
+            maxTurnVelocity = maxTurnVelocity,
+            arrivalLaneId = arrivalLaneId,
+            departureLaneId = departureLane.id,
+            vehicleSpec = request.spec,
+            isAccelerating = true
+          )
+
+          mainReservationManager
+            .scheduleTrajectory(query)
+            .flatMap {
+              case schedule @ GridReservationManager.ReservationSchedule(
+                    driverRef,
+                    arrivalTime,
+                    exitTime,
+                    _,
+                    _,
+                    _) =>
+                for {
+                  admissionManager <- admissionControlZonesManagers.get(
+                    departureLane.id)
+                  stopDistance = VehiclePilot.calcStoppingDistance(
+                    schedule.exitVelocity,
+                    request.spec.maxDeceleration)
+                  admissionQuery = AdmissionQuery(driverRef,
+                                                  query.vehicleSpec.length,
+                                                  stopDistance)
+                  admissionPlan <- admissionManager.query(admissionQuery)
+                } yield
+                  ReservationParameters(driverRef,
+                                        proposal,
+                                        schedule,
+                                        arrivalTime,
+                                        exitTime,
+                                        departureLane.id,
+                                        admissionPlan)
+            }
+            .orElse(findValidProposal(remainingProposals.tail))
+      }
+    }
+
+    val sortedProposals = proposals.sortBy { proposal =>
+      val entryLane = intersection.lanesById(proposal.arrivalLaneId)
+      val entryPoint = intersection.entryPoints(entryLane)
+      val exitPoint = intersection.exitPoints(proposal.departureLane)
+      entryPoint distance exitPoint
+    }
+    val result = findValidProposal(sortedProposals)
+    result
   }
 
   def hasReservation(driverRef: DriverRef): Boolean = {

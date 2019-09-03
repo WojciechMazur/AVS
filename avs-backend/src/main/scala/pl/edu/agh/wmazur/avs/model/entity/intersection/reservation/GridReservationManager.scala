@@ -130,7 +130,7 @@ case class GridReservationManager(config: ManagerConfig,
         import scala.collection.breakOut
 
         val tilesToReservation: Set[TimeTile] = tilesGrid
-          .occupiedByShape(vehicle.bufferedArea)
+          .occupiedByGeometry(vehicle.geometry)
           .flatMap { tile =>
             val timeBuffer = calculateTimeBuffer(tile).toMillis
             val timeRange = (currentTime - timeBuffer) to (currentTime + timeBuffer) by config.timeStep.toMillis
@@ -148,9 +148,6 @@ case class GridReservationManager(config: ManagerConfig,
             .max
 
           if (nextTestedArrivalTime <= maximalArrivalTime) {
-            println(
-              s"Retrying at ${nextTestedArrivalTime} for ${driver.currentLane.id} @ ${driver.currentLane.road.id} -> ${driver.destination}")
-
             iterate(
               initialDriverState,
               nextTestedArrivalTime,
@@ -219,7 +216,7 @@ case class GridReservationManager(config: ManagerConfig,
                              0,
                              0,
                              heading,
-                             Vehicle.calcArea(position, heading, spec)),
+                             Vehicle.calcGeometry(position, heading, spec)),
       spec = spec,
       targetVelocity = 0,
       spawnTime = -1

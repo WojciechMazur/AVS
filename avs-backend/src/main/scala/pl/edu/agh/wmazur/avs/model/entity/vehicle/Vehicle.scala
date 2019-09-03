@@ -66,6 +66,10 @@ object Vehicle extends IdProvider[Vehicle] {
     p3 :: p1 :: p2 :: p4 :: Nil
   }
 
-  def calcArea(position: Point, heading: Angle, spec: VehicleSpec): Shape =
-    PolygonFactory(calcCornerPoints(position, heading, spec), position)
+  def calcGeometry(position: Point,
+                   heading: Angle,
+                   spec: VehicleSpec): Geometry =
+    SpatialUtils.shapeFactory.getGeometryFrom {
+      PolygonFactory(calcCornerPoints(position, heading, spec), position)
+    }
 }

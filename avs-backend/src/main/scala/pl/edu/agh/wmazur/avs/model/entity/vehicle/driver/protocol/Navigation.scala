@@ -20,6 +20,7 @@ trait Navigation {
     Behaviors.receiveMessagePartial {
       case PathToFollow(roads, lanes)
           if currentPath.headOption.forall(_.id == lanes.head.road.id) =>
+        println(lanes.map(_.id))
         currentPath = lanes
         hasPlannedPath = true
         destination = roads.lastOption.map(_.id)

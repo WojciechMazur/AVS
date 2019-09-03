@@ -24,7 +24,7 @@ trait DefaultPolicy {
         context.log.warning("Received list of empty proposals")
         req.driverRef ! ReservationRejected(
           requestId = req.id,
-          nextAllowedCommunicationTimestamp = req.currentTime + TickSource.timeStep.toMillis,
+          nextAllowedCommunicationTimestamp = req.currentTime + 200,
           reason = NoClearPath,
         )
         Behaviors.same
@@ -46,7 +46,7 @@ trait DefaultPolicy {
 
             replyTo ! ReservationRejected(
               requestId = req.id,
-              nextAllowedCommunicationTimestamp = timestamp,
+              nextAllowedCommunicationTimestamp = timestamp + 200,
               reason = reason,
             )
             context.log.warning(
@@ -99,7 +99,7 @@ trait DefaultPolicy {
               )
               driverRef ! ReservationRejected(
                 requestId = req.id,
-                nextAllowedCommunicationTimestamp = timestamp,
+                nextAllowedCommunicationTimestamp = timestamp + 500,
                 reason = reason,
               )
             }

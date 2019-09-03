@@ -159,15 +159,16 @@ object DriversFetcherAgent {
               val angle = driverPosition.angle(context.intersectionCenter) - heading
               MathUtils.recenter(angle, 0, 2 * Math.PI) < Math.PI / 3 ||
               MathUtils.recenter(angle.abs, 0, 2 * Math.PI) < Math.PI / 3
-
             }
-            if (withinArea && headingToIntersection) {
+            def isAtEntryLane: Boolean = {
+              driverLanesOccupation(driverRef).forall(
+                context.entryPoints.contains)
+            }
+
+            if (withinArea && headingToIntersection && isAtEntryLane) {
               val lane = driverLanesOccupation(driverRef).minBy(
                 _.distanceFromPoint(driverPosition))
-              val position = context.entryPoints
-                .get(lane)
-                .orElse(context.entryPoints.find(_._1.id == lane.id).map(_._2))
-                .get
+              val position = context.entryPoints(lane)
 
               driverRef
                 .unsafeUpcast[VehicleDriver.Protocol] ! VehicleDriver.Protocol

@@ -83,9 +83,9 @@ class SimulationManager(context: ActorContext[Protocol],
           val currentSysTime = System.currentTimeMillis()
           val delta = (currentSysTime - sysTime).millis
           sysTime = currentSysTime
-          context.log.info(s"Tick - {} @ {}, ups: ${1.seconds / delta}",
-                           tick,
-                           currentTime)
+          context.log.debug(s"Tick - {} @ {}, ups: ${1.seconds / delta}",
+                            tick,
+                            currentTime)
           if (tickContext.externalChanges.nonEmpty) {
             applyExternalCommands(tickContext.externalChanges)
           } else {

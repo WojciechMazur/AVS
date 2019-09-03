@@ -28,7 +28,7 @@ import pl.edu.agh.wmazur.avs.simulation.stage.SimulationStateGatherer
 import pl.edu.agh.wmazur.avs.{Agent, Dimension, EntityRefsGroup}
 import scalax.collection.GraphPredef._
 import scalax.collection.edge.Implicits._
-import scalax.collection.edge.LkDiEdge
+import scalax.collection.edge.{LkDiEdge, WLkDiEdge}
 import scalax.collection.mutable.Graph
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
@@ -45,10 +45,9 @@ class GlobalNavigator(
   private val cachedLaneIdToRoad: mutable.Map[Lane#Id, Road] = mutable.Map.empty
   private val cachedLaneIdToLane: mutable.Map[Lane#Id, Lane] = mutable.Map.empty
 
-  private val cachedPaths
-    : mutable.Map[(Lane#Id, Road#Id), Option[List[List[Lane]]]] =
+  private val cachedPaths: mutable.Map[(Lane#Id, Road#Id), Option[List[Lane]]] =
     mutable.Map.empty
-  private val lanesNetwork = Graph.empty[Lane, LkDiEdge]
+  private val lanesNetwork = Graph.empty[Lane, WLkDiEdge]
 
   private val stateReadingsAdapter =
     context.messageAdapter[SimulationStateGatherer.Protocol] {
@@ -67,36 +66,60 @@ class GlobalNavigator(
           case Right(lane)  => lanesNetwork.get(lane)
         }
 
-        def randomEndNode(): lanesNetwork.NodeT = {
+        def randomEndNodes(): List[lanesNetwork.NodeT] = {
           val nodes = lanesNetwork.nodes.filter(startNode.isConnectedWith)
-          nodes.iterator
+          val lane = nodes.iterator
             .drop(Random.nextInt(nodes.size))
             .next()
+            .toOuter
+          def getNeighbours(lane: Lane): List[Lane] = {
+            def getLeftNeighbours(lane: Lane, acc: List[Lane]): List[Lane] = {
+              lane.spec.leftNeighbour match {
+                case None    => acc
+                case Some(x) => getLeftNeighbours(x, acc :+ x)
+              }
+            }
+            def getRightNeighbours(lane: Lane, acc: List[Lane]): List[Lane] = {
+              lane.spec.rightNeighbour match {
+                case None    => acc
+                case Some(x) => getRightNeighbours(x, acc :+ x)
+              }
+            }
+            getLeftNeighbours(lane, Nil) ++ getRightNeighbours(lane, Nil)
+          }
+          getNeighbours(lane).map(lanesNetwork.get)
         }
 
         val endNodes: List[lanesNetwork.NodeT] = destination match {
           case Some(Left(roadId)) =>
             lanesNetwork.nodes
               .filter(_.road.id == roadId) match {
-              case s if s.isEmpty => randomEndNode() :: Nil
+              case s if s.isEmpty => randomEndNodes()
               case s              => s.toList
             }
           case Some(Right(road)) => road.lanes.map(lanesNetwork.get)
-          case None              => randomEndNode() :: Nil
+          case None              => randomEndNodes()
         }
 
-        def calcPaths: Option[List[List[Lane]]] =
-          endNodes
-            .map(startNode.pathTo)
-            .flatten
-            .map(_.nodes.map(_.toOuter).toList) match {
-            case Nil   => None
-            case paths => Some(paths)
+        def calcPath: Option[List[Lane]] = {
+
+          endNodes.flatMap(startNode.shortestPathTo(_, _.weight)) match {
+            case Nil => None
+            case paths =>
+              val shortestPath = paths
+                .minBy(_.weight)
+                .nodes
+                .map(_.toOuter)
+                .toList
+
+              assert(shortestPath.size > 1)
+              Some(shortestPath)
           }
+        }
 
         cachedPaths.getOrElseUpdate((startNode.id, endNodes.head.road.id),
-                                    calcPaths) match {
-          case Some(shortestsPath :: _) =>
+                                    calcPath) match {
+          case Some(shortestsPath) =>
             val roads = shortestsPath.map(_.road)
             replyTo ! AutonomousVehicleDriver.PathToFollow(roads, shortestsPath)
           case other =>
@@ -128,9 +151,13 @@ class GlobalNavigator(
             headingDelta = MathUtils.boundedAngle(
               departureHeading - entryHeading)
           } {
-            val lanesConnection = (entryLane ~+#> departureLane)(
-              LanesConnection(intersection.entryPoints(entryLane),
-                              intersection.exitPoints(departureLane)))
+            val entryPoint = intersection.entryPoints(entryLane)
+            val exitPoint = intersection.exitPoints(departureLane)
+            val distance = entryPoint.distance(exitPoint).asMeters
+            assert(distance > 0)
+            val lanesConnection = (entryLane ~%+#> departureLane)(
+              distance,
+              LanesConnection(entryPoint, exitPoint))
             //TODO możliwość precyjnego wskazania na które wyjściowe jezdnie może wjechać. Teoretycznie podczas planowania i tak powinna zostać wybrana najkrótsza.
             if (allowance.canGoStraight(headingDelta)) {
               lanesNetwork += lanesConnection

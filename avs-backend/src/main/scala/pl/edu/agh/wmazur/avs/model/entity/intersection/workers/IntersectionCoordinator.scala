@@ -199,7 +199,7 @@ class IntersectionCoordinator(
                           0,
                           0,
                           heading,
-                          Vehicle.calcArea(position, heading, vehicleSpec)),
+                          Vehicle.calcGeometry(position, heading, vehicleSpec)),
           spec = vehicleSpec,
           targetVelocity = 0,
           spawnTime = -1),

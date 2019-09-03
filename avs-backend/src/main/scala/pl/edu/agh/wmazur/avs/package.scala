@@ -53,6 +53,8 @@ package object avs {
     def sqrt: Dimension = Math.sqrt(asMeters)
     //scalastyle:on
 
+    override def toString: String = asMeters + "m"
+
     def isEqual(that: Dimension): Boolean = {
       (this.asMeters - that.asMeters).abs < 0.01
     }

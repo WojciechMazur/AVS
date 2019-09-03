@@ -48,7 +48,7 @@ object BasicVehicle extends EntitySettings[BasicVehicle] {
       acceleration = acceleration,
       steeringAngle = steeringAngle,
       heading = heading,
-      area = Vehicle.calcArea(position, heading, spec)
+      geometry = Vehicle.calcGeometry(position, heading, spec)
     )
 
     lazy val vehicle: BasicVehicle = AutonomousVehicle(
