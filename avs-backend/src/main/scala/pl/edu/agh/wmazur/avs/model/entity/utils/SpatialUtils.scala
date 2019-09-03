@@ -4,7 +4,12 @@ import mikera.vectorz.Vector2
 import org.locationtech.jts.algorithm.Centroid
 import org.locationtech.jts.geom.impl.CoordinateArraySequence
 import org.locationtech.jts.geom.util.LineStringExtracter
-import org.locationtech.jts.geom.{Coordinate, LineString, LinearRing}
+import org.locationtech.jts.geom.{
+  Coordinate,
+  GeometryFactory,
+  LineString,
+  LinearRing
+}
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.context.jts.{
   JtsSpatialContext,
@@ -26,6 +31,8 @@ object SpatialUtils {
     JtsSpatialContext.GEO,
     new JtsSpatialContextFactory()
   )
+
+  lazy val jtsGeometryFactory: GeometryFactory = new GeometryFactory()
 
   implicit class PointAsVector(point: Point) {
     val vector: Vector2 = Vector2.of(point.getX, point.getY)

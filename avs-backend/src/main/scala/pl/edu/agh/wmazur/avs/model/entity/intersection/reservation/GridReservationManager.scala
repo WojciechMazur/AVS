@@ -13,7 +13,7 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationAr
   Timestamp
 }
 import pl.edu.agh.wmazur.avs.model.entity.road.Lane
-import pl.edu.agh.wmazur.avs.model.entity.utils.IdProvider
+import pl.edu.agh.wmazur.avs.model.entity.utils.{IdProvider, SpatialUtils}
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.AccelerationProfile.AccelerationEvent
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.{
   Acceleration,
@@ -107,8 +107,7 @@ case class GridReservationManager(config: ManagerConfig,
     val initialDriverState: CrashTestDriver =
       driver.asInstanceOf[CrashTestDriver].copy()
 
-    val maximalArrivalTime = Long.MaxValue
-    //minimalArrivalTime + 60 * TickSource.timeStep.toMillis
+    val maximalArrivalTime = minimalArrivalTime + 30 * TickSource.timeStep.toMillis
     @tailrec
     def iterate(driver: VehicleDriver,
                 arrivalTime: Timestamp,
@@ -117,22 +116,7 @@ case class GridReservationManager(config: ManagerConfig,
       : Option[(Set[TimeTile], Timestamp, Timestamp, Velocity)] = {
       val vehicle = driver.vehicle
       val vehicleWithinIntersectionArea = {
-        val positionIntersects =
-          intersection.bufferedArea.relate(vehicle.position).intersects()
-
-        lazy val rearIntersects =
-          intersection.bufferedArea
-            .relate {
-              vehicle.spec.pointBetweenBackWheels(
-                vehicle.position,
-                vehicle.heading
-              )
-            }
-            .intersects()
-        lazy val intersectsAtAnyPoint =
-          intersection.bufferedArea.relate(vehicle.bufferedArea).intersects()
-
-        positionIntersects || rearIntersects || intersectsAtAnyPoint
+        intersection.preparedGeometry.intersects(vehicle.geometry)
       }
 
       if (vehicleWithinIntersectionArea) {
@@ -159,8 +143,14 @@ case class GridReservationManager(config: ManagerConfig,
 //              reservationGrid.isRestrictedTile(tt.tileId) ||
                 reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
 
-          val nextTestedArrivalTime = currentTime + 5 * TickSource.timeStep.toMillis
+          val nextTestedArrivalTime = tilesToReservation
+            .map(reservationGrid.firstAvailableTimestamp)
+            .max
+
           if (nextTestedArrivalTime <= maximalArrivalTime) {
+            println(
+              s"Retrying at ${nextTestedArrivalTime} for ${driver.currentLane.id} @ ${driver.currentLane.road.id} -> ${driver.destination}")
+
             iterate(
               initialDriverState,
               nextTestedArrivalTime,

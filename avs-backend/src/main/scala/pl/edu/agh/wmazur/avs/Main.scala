@@ -41,3 +41,12 @@ object Main extends App {
   }
 
 }
+
+/**
+  * TODO
+  * 1. Zastąpić budowanie geometri, poprzez ich transformacje za pomocą org.locationtech.jts.geom.util.AffineTransformation
+  * 2. Sprawdzić rzucanie scala.runtime.NonLocalReturnControl w bibliotece scala-graph.
+  * 3. Znaleźć źródło błędu, przy wybieraniu ścieżki do przejazdu. np. przy skręcie w lewo wykorzystuje najbardziej odległy pas
+  * 4. Pojazdy nie próbują ponowanie zarezerwować przejazdu?
+  * 5. LaneCollector nie działa.
+  */

@@ -20,6 +20,7 @@ class LaneCollectorWorker(
     roadCollectorWorker: ActorRef[RoadCollectorWorker.Protocol],
     lane: Lane)
     extends Agent[Protocol] {
+
   val collectorPoint: Option[CollectorPoint] = lane.collectorPoint
   val adapter: ActorRef[AutonomousVehicleDriver.BasicReading] =
     context.messageAdapter[AutonomousVehicleDriver.BasicReading] {

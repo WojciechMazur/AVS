@@ -53,7 +53,11 @@ trait DefaultPolicy {
               s"Request {} rejected, reason {}. No valid proposal Arrival lanes {}, Departur lanes {}",
               req.id,
               reason,
-              req.proposals.map(_.arrivalLaneId).mkString(", "),
+              req.proposals
+                .map(_.arrivalLaneId)
+                .map(id =>
+                  id -> intersection.lanesById(id).spec.turningAllowance)
+                .mkString(", "),
               req.proposals.map(_.departureLane.id).mkString(", ")
             )
 
@@ -86,7 +90,11 @@ trait DefaultPolicy {
                 s"Request {} rejected, reason {}. No acceptance. Arrival lanes {}, Departure lanes {}",
                 req.id,
                 reason,
-                req.proposals.map(_.arrivalLaneId).mkString(", "),
+                req.proposals
+                  .map(_.arrivalLaneId)
+                  .map(id =>
+                    id -> intersection.lanesById(id).spec.turningAllowance)
+                  .mkString(", "),
                 req.proposals.map(_.departureLane.id).mkString(", ")
               )
               driverRef ! ReservationRejected(

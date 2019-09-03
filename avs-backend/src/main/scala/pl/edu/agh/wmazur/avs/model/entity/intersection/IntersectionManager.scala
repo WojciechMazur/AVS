@@ -77,9 +77,7 @@ object IntersectionManager {
           rearAxleDisplacement: Dimension,
           maxSteeringAngle: Angle,
           maxTurnPerSecond: Angle
-      )
-
-      {
+      ) {
         def toVehicleSpec(maxVelocity: Velocity): VehicleSpec =
           VehicleSpec(
             maxAcceleration = maxAcceleration,

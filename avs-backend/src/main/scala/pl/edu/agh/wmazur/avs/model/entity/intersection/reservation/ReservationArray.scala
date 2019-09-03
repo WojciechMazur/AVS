@@ -121,6 +121,18 @@ class ReservationArray(arraySize: Int) {
   def firstAvailableTimestamp(time: Timestamp): Timestamp = {
     time / timeStepMillis * timeStepMillis
   }
+
+  def firstAvailableTimestamp(timeTile: TimeTile): Timestamp = {
+    val availableTimestamps = reservationGrids
+      .filter(_._1 > timeTile.timestamp)
+      .filterNot {
+        case (timestamp, _) => isReservedAt(timestamp, timeTile.tileId)
+      }
+      .keys
+    (availableTimestamps ++
+      latestReservationTime().map(_ + timeStepMillis).toList).min
+
+  }
 }
 
 object ReservationArray {

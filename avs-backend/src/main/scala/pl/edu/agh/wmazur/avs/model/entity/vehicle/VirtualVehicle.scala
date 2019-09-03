@@ -61,6 +61,17 @@ case class VirtualVehicle(
                                  spec.maxSteeringAngle))
       .asInstanceOf[this.type]
 
+  override def withPositionAndHeading(position: Point,
+                                      heading: Angle): this.type = {
+    modify(this)(_.gauges.heading)
+      .setTo(heading)
+      .modify(_.gauges.position)
+      .setTo(position)
+      .modify(_.gauges.area)
+      .setTo(Vehicle.calcArea(position, heading, spec))
+      .asInstanceOf[this.type]
+  }
+
   override def withHeading(heading: Angle): this.type =
     modify(this)(_.gauges.heading)
       .setTo(heading)

@@ -42,6 +42,8 @@ class SimulationManager(context: ActorContext[Protocol],
     extends AbstractBehavior[Protocol] {
   import SimulationManager.Protocol._
 
+  private var sysTime = System.currentTimeMillis()
+
   private var currentTime = 0L
   private var tick = avs.Tick(0)
   private var lastTickDelta = Duration.Zero
@@ -78,10 +80,12 @@ class SimulationManager(context: ActorContext[Protocol],
                                                             lastTickDelta,
                                                             tick.seq)
           cachedTickSubscribersRefs.foreach(_ ! tickMessage)
-          context.log.debug(
-            s"Tick - {} @ {}, ups: ${1.seconds / tickContext.timeDelta}",
-            tick,
-            currentTime)
+          val currentSysTime = System.currentTimeMillis()
+          val delta = (currentSysTime - sysTime).millis
+          sysTime = currentSysTime
+          context.log.info(s"Tick - {} @ {}, ups: ${1.seconds / delta}",
+                           tick,
+                           currentTime)
           if (tickContext.externalChanges.nonEmpty) {
             applyExternalCommands(tickContext.externalChanges)
           } else {

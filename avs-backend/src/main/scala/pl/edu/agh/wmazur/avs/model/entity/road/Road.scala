@@ -107,9 +107,13 @@ object Road extends EntitySettings[Road] with IdProvider[Road] {
           val before = beforeIntersectionLane
             .modify(_.spec)
             .using(_.leadsInto(afterIntersectionLane))
+            .modify(_.spec.leadsFrom) // TODO tymaczasowe obejście. Sprawdzić dlaczego ustawia lane na samego siebie
+            .setTo(None)
           val after = afterIntersectionLane
             .modify(_.spec)
             .using(_.leadsFrom(beforeIntersectionLane))
+            .modify(_.spec.leadsInto) // TODO j.w
+            .setTo(None)
           (before, after)
       }.unzip
 

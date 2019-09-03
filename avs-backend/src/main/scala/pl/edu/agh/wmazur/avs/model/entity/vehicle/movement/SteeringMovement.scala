@@ -44,9 +44,7 @@ trait SteeringMovement extends VehicleMovement.UniformVehicleMovement {
         .cos(heading)))
     ).moveRotate(spec.rearAxleDisplacement, finalHeading)
 
-    this
-      .withPosition(newPosition)
-      .withHeading(finalHeading)
+    this.withPositionAndHeading(newPosition, finalHeading)
   }
 
   def moveWheelsTowardPoint(point: Point): self.type = {

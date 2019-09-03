@@ -6,6 +6,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.stream.scaladsl.Source
 import akka.stream.typed.scaladsl.ActorMaterializer
+import org.locationtech.spatial4j.context.SpatialContext
 import pl.edu.agh.wmazur.avs.model.entity.intersection.workers.IntersectionCoordinator.Protocol.GetMaxCrossingVelocity
 import pl.edu.agh.wmazur.avs.model.entity.intersection.{
   AutonomousRoadIntersection,
@@ -215,13 +216,11 @@ class IntersectionCoordinator(
                         enteredIntersection: Boolean,
                         minSteeringAngle: Angle,
                         maxSteeringAngle: Angle): Boolean = {
-        def timeElapsed = time > maxTime * 3
+        def timeElapsed = time > maxTime * 1.5
 
         def withinIntersection =
-          intersection.area
-//            .getBuffered(0.1.meters.asGeoDegrees, SpatialContext.GEO)
-            .relate(testDriver.vehicle.area)
-            .intersects()
+          intersection.preparedGeometry.intersects(testDriver.vehicle.geometry)
+
         val shouldContinue = !timeElapsed && (!enteredIntersection || withinIntersection)
         if (shouldContinue) {
           val beforeMoveState = testDriver.prepareToMove()
@@ -236,9 +235,8 @@ class IntersectionCoordinator(
               .move(TickSource.timeStepSeconds)
           }
 
-          val didEnteredIntersection = enteredIntersection || afterMoveState.vehicle.area
-            .relate(intersection.bufferedArea)
-            .intersects()
+          val didEnteredIntersection = enteredIntersection || intersection.preparedGeometry
+            .intersects(afterMoveState.vehicle.geometry)
 
           isSafeToCross(time + TickSource.timeStep,
                         afterMoveState,
@@ -251,7 +249,7 @@ class IntersectionCoordinator(
               maxSteeringAngle > safeTraversalSteeringDelta
 
           this match {
-            case _ if time > maxTime * 1.4 =>
+            case _ if time > maxTime * 1.5 =>
               false
             case _ if tooBigSteeringAngleDelta =>
               false

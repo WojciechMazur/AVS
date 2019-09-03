@@ -61,6 +61,7 @@ trait PreperingReservation {
             .flatMap(cachedMaxVelocities.get)
             .map(_.get(currentLane.id))
             .isDefined =>
+        println("Try send reservation request")
         context.self ! TrySendReservationRequest
         Behaviors.same
 
@@ -96,6 +97,8 @@ trait PreperingReservation {
             context.self ! AskForMaximalCrossingVelocities
           } else if (hasPlannedPath) {
             context.self ! TrySendReservationRequest
+          } else {
+            sys.error("Unknown behaviour")
           }
         }
         Behaviors.same
@@ -103,6 +106,9 @@ trait PreperingReservation {
       case TrySendReservationRequest
           if currentPath.isEmpty ||
             nextIntersectionManager.isEmpty =>
+        nextReservationRequestAttempt =
+          Some(currentTime + TickSource.timeStep.toMillis * 5)
+        context.log.info(s"Retry at $nextReservationRequestAttempt")
         Behaviors.same
 
       case TrySendReservationRequest =>
@@ -111,6 +117,7 @@ trait PreperingReservation {
           .flatMap(_.get(currentLane.id)) match {
           case None => sys.error("This should not happend!")
           case Some(maxVelocities) =>
+            context.log.info("Creating reservation request")
             withVehicle {
               stopBeforeIntersectionSchedule(currentTime) match {
                 case optSchedule @ Some(_) =>
@@ -147,6 +154,7 @@ trait PreperingReservation {
               currentTime,
               context.self
             )
+            context.log.info("Awaiting for response")
 
             isAwaitingForAcceptance = true
             lastReservationRequest = Some(request)
@@ -167,7 +175,7 @@ trait PreperingReservation {
       case ReservationRejected(requestId,
                                nextAllowedCommunicationTimestamp,
                                reason) =>
-        context.log.debug(s"Reservation $requestId rejected, $reason")
+        context.log.info(s"Reservation $requestId rejected, $reason")
         if (isRetryingToMakeReservation) {
 //          println(s"${vehicle.id} rejected by intersection")
           rejectionCounter += 1
@@ -187,7 +195,7 @@ trait PreperingReservation {
         Behaviors.same
 
       case ReservationConfirmed(reservationId, requestId, details) =>
-        context.log.debug("Reservation confirmed")
+        context.log.info("Reservation confirmed")
 
         lastRequestTimestamp = None
         isAwaitingForAcceptance = false
@@ -217,13 +225,13 @@ trait PreperingReservation {
             isRetryingToMakeReservation = false
             nextReservationRequestAttempt = None
             reservationDetails = Some(details)
-//            println(s"""
-//                |Arrival velocity: ${details.arrivalVelocity}
-//                |Exit velocity:    ${details.accelerationProfile
-//                         .toAccelerationSchedule(details.arrivalTime)
-//                         .calcFinalVelocity(details.arrivalVelocity)}
-//                |Arrival Time:     ${details.arrivalTime}
-//                |""".stripMargin)
+            println(s"""
+                |Arrival velocity: ${details.arrivalVelocity}
+                |Exit velocity:    ${details.accelerationProfile
+                         .toAccelerationSchedule(details.arrivalTime)
+                         .calcFinalVelocity(details.arrivalVelocity)}
+                |Arrival Time:     ${details.arrivalTime}
+                |""".stripMargin)
             context.log.debug(
               s"Reservation accepted - currentTime: $currentTime arrivalTime: ${details.arrivalTime}, velocity: ${details.arrivalVelocity}")
             withVehicle(vehicle.withAccelerationSchedule(Some(schedule)))

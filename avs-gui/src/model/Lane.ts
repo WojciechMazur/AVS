@@ -1,4 +1,4 @@
-import {Color3, Mesh, Scene, Vector3, PolygonMeshBuilder, Nullable, Vector2} from "@babylonjs/core"
+import {Color3, Mesh, Scene, Vector3, PolygonMeshBuilder, Nullable, Vector2, _BabylonLoaderRegistered, ActionManager, ExecuteCodeAction, ActionEvent} from "@babylonjs/core"
 import {GridMaterial} from "@babylonjs/materials"
 import {Entity} from "./Entity"
 import { IGeometry, ILane, ISpawnPoint, IVector3, ICollectPoint } from "../protobuff/protobuff";
@@ -30,6 +30,50 @@ export class Lane extends Entity{
         shapes.slice(1).forEach((shape) => {
             this.mesh.addChild(shape)
         })
+
+        this.mesh.actionManager = new ActionManager(scene)
+        let wsc
+        let onHover = (meshEvent: ActionEvent) => {
+            var but = document.createElement("span");
+            but.setAttribute("id", "hoverText_" + name);
+            var sty = but.style;
+            sty.position = "absolute";
+            sty.lineHeight = "5em";
+            sty.paddingLeft = "10px";
+            sty.paddingRight = "10px";
+            sty.color = "#ffff00";
+            sty.border = "5pt ridge blue";
+            sty.borderRadius = "12px";
+            sty.backgroundColor = "none";
+            sty.fontSize = "48pt";
+            sty.top = scene.pointerY + "px";
+            sty.left = screen.width + scene.pointerX + "px";
+            sty.cursor = "pointer";
+            but.setAttribute("onclick", "alert('ouch!')");
+            document.body.appendChild(but);
+    
+            but.textContent = name;
+        }
+
+        let onOut = (meshEven: ActionEvent) => {
+            while (document.getElementById("hoverText_" + name)) {
+                document.getElementById("hoverText_" + name)!.parentNode!.removeChild(document.getElementById("hoverText_" + name)!);
+            }
+        }
+
+        this.mesh.actionManager.registerAction(
+            new ExecuteCodeAction(
+                ActionManager.OnPointerOverTrigger,
+                onHover
+            )
+        );
+        this.mesh.actionManager.registerAction(
+            new ExecuteCodeAction(
+                ActionManager.OnPointerOutTrigger,
+                onOut
+            )
+        );
+    
 
         this.name = name
         this.mesh.position.y = 0.2        

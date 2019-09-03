@@ -31,6 +31,7 @@ sealed trait VehicleMovement {
   def withAcceleration(acceleration: Acceleration): self.type
   def withVelocity(velocity: Velocity): self.type
   def withSteeringAngle(steeringAngle: Angle): self.type
+  def withPositionAndHeading(position: Point, heading: Angle): self.type
   def withHeading(heading: Angle): self.type
   def withPosition(position: Point): self.type
 }

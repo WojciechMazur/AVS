@@ -116,8 +116,11 @@ class GlobalNavigator(
             }
           }
 
-        intersections.foreach { intersection =>
+        if (intersections.nonEmpty) {
           cachedPaths.clear()
+        }
+
+        intersections.foreach { intersection =>
           for {
             (entryLane, entryHeading) <- intersection.entryHeadings
             (departureLane, departureHeading) <- intersection.exitHeading

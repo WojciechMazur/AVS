@@ -1,6 +1,7 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
 
 import mikera.vectorz.Vector2
+import org.locationtech.jts.geom.prep.PreparedGeometry
 import org.locationtech.spatial4j.shape.Point
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.Entity
@@ -31,7 +32,7 @@ trait Intersection extends Entity with DeltaOps[Intersection] {
   def exitPoints: Map[Lane, Point]
   def entryHeadings: Map[Lane, Angle]
   def exitHeading: Map[Lane, Angle]
-
+  def preparedGeometry: PreparedGeometry
   def isExitedBy(lane: Lane): Boolean = exitPoints.contains(lane)
   def isEnteredBy(lane: Lane): Boolean = entryPoints.contains(lane)
 

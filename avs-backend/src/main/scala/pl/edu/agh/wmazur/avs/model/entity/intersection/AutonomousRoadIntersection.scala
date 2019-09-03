@@ -1,5 +1,9 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection
 import akka.actor.typed.ActorRef
+import org.locationtech.jts.geom.prep.{
+  PreparedGeometry,
+  PreparedGeometryFactory
+}
 import org.locationtech.jts.geom.{Geometry, LineString, Point => JtsPoint}
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
@@ -116,6 +120,10 @@ case class AutonomousRoadIntersection(
     AutonomousRoadIntersection.shapeFactory.makeShapeFromGeometry {
       iaSegments.geometry.get
     }
+
+  lazy val preparedGeometry: PreparedGeometry =
+    new PreparedGeometryFactory()
+      .create(geometry.buffer(0.1.meters.asGeoDegrees))
 
   override lazy val position: Point = centroid
 

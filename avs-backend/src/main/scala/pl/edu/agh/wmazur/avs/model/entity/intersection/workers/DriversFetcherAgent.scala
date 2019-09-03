@@ -2,7 +2,12 @@ package pl.edu.agh.wmazur.avs.model.entity.intersection.workers
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior, Terminated}
-import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom
+import org.locationtech.jts.geom.{Coordinate, Geometry}
+import org.locationtech.jts.geom.prep.{
+  PreparedGeometry,
+  PreparedGeometryFactory
+}
 import org.locationtech.spatial4j.shape.{Point, Shape}
 import pl.edu.agh.wmazur.avs.Dimension
 import pl.edu.agh.wmazur.avs.model.entity.intersection.IntersectionManager
@@ -19,7 +24,7 @@ object DriversFetcherAgent {
   import SpatialUtils._
   private case class Context(
                               context: ActorContext[Protocol],
-                              transmitionArea: Shape,
+                              transmitionArea: PreparedGeometry,
                               intersectionCenter: Point,
                               intersectionGeometry: Geometry,
                               entryPoints: Map[Lane, Point],
@@ -52,10 +57,13 @@ object DriversFetcherAgent {
             intersectionManager: ActorRef[IntersectionManager.Protocol]): Behavior[Protocol] =
   Behaviors.setup { ctx =>
     // format: on
-    val transmitionArea = intersectionPosition.getBuffered(
-      transmitionDistance.asGeoDegrees,
-      SpatialUtils.shapeFactory.getSpatialContext)
-
+    val transmitionArea = new PreparedGeometryFactory().create {
+      SpatialUtils.shapeFactory.getGeometryFrom {
+        intersectionPosition.getBuffered(
+          transmitionDistance.asGeoDegrees,
+          SpatialUtils.shapeFactory.getSpatialContext)
+      }
+    }
     val lanesOccupationAdapter =
       ctx.messageAdapter[RoadManager.LanesOccupation] {
         case RoadManager.LanesOccupation(ref, vehiclesAtLanes) =>
@@ -142,8 +150,10 @@ object DriversFetcherAgent {
       Behaviors
         .receiveMessagePartial[Protocol] {
           case DriverReading(driverRef, driverPosition, heading) =>
+            val positionJTS = SpatialUtils.jtsGeometryFactory.createPoint(
+              new Coordinate(driverPosition.getX, driverPosition.getY))
             def withinArea: Boolean =
-              context.transmitionArea.relate(driverPosition).intersects()
+              context.transmitionArea.contains(positionJTS)
 
             def headingToIntersection: Boolean = {
               val angle = driverPosition.angle(context.intersectionCenter) - heading
@@ -154,7 +164,10 @@ object DriversFetcherAgent {
             if (withinArea && headingToIntersection) {
               val lane = driverLanesOccupation(driverRef).minBy(
                 _.distanceFromPoint(driverPosition))
-              val position = context.entryPoints(lane)
+              val position = context.entryPoints
+                .get(lane)
+                .orElse(context.entryPoints.find(_._1.id == lane.id).map(_._2))
+                .get
 
               driverRef
                 .unsafeUpcast[VehicleDriver.Protocol] ! VehicleDriver.Protocol

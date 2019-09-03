@@ -3,7 +3,8 @@ package pl.edu.agh.wmazur.avs.model.entity.road
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.util.Timeout
+import com.softwaremill.quicklens._
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.model.entity.road.RoadManager._
 import pl.edu.agh.wmazur.avs.model.entity.road.workers.{
   RoadCollectorWorker,
@@ -14,27 +15,25 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.AutonomousVehicleDriver
 import pl.edu.agh.wmazur.avs.protocol.SimulationProtocol
 import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
-import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 import pl.edu.agh.wmazur.avs.simulation.stage.{
   SimulationStateGatherer,
   VehiclesCollectorStage,
   VehiclesSpawnerStage
 }
 import pl.edu.agh.wmazur.avs.{Agent, EntityRefsGroup}
-import scala.concurrent.duration._
+
 import scala.collection.mutable
-import com.softwaremill.quicklens._
 
 class RoadManager(
     val context: ActorContext[Protocol],
     var road: Road,
     var oppositeRoadManager: Option[ActorRef[RoadManager.Protocol]] = None,
-    val workers: Workers)
+    var workers: Workers)
     extends Agent[Protocol] {
 
   context.system.receptionist ! Receptionist.register(EntityRefsGroup.road,
                                                       context.self)
-
+  var roadUpdates = 0
   val vehiclesAtLanes
     : mutable.Map[Lane, Set[ActorRef[AutonomousVehicleDriver.Protocol]]] =
     road.lanes
@@ -108,6 +107,24 @@ class RoadManager(
             .setTo(updatedRoad)
         } else {
           this.road = updatedRoad
+          roadUpdates += 1
+          val newWorkers = this.workers.copy(
+            roadSpawnerWorker = context.spawn(
+              RoadSpawnerWorker.init(context.self, updatedRoad.lanes),
+              s"road-spawner-${road.id}-v${roadUpdates}"
+            ),
+            roadCollector = context
+              .spawn(RoadCollectorWorker.init(context.self, updatedRoad.lanes),
+                     s"road-collector-${road.id}-v${roadUpdates}")
+          )
+          context.stop(workers.roadCollector)
+          context.stop(workers.roadSpawnerWorker)
+
+          vehiclesAtLanes.clear()
+          vehiclesAtLanes ++= updatedRoad.lanes
+            .map(_ -> Set.empty[ActorRef[AutonomousVehicleDriver.Protocol]])
+
+          this.workers = newWorkers
         }
         Behaviors.same
     }
