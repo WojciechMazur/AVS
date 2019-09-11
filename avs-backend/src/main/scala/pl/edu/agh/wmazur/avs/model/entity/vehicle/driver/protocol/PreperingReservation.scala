@@ -178,6 +178,11 @@ trait PreperingReservation {
           s"Reservation $requestId rejected, $reason, ${vehicle.id} with path ${currentPath.map(_.id).mkString(" ~> ")}")
         if (isRetryingToMakeReservation) {
           rejectionCounter += 1
+
+          context.log.warning(
+            s"Failed to get reservation after ${rejectionCounter} attempts, path ${currentPath
+              .map(_.id)
+              .mkString(" ~> ")}, ${currentLane.spec.turningAllowance}")
         } else {
           rejectionCounter = 1
         }
@@ -186,15 +191,27 @@ trait PreperingReservation {
         isAwaitingForAcceptance = false
         isRetryingToMakeReservation = true
         if (lastReservationRequest.map(_.id).contains(requestId)) {
+          import pl.edu.agh.wmazur.avs.Dimension
           val delay =
-            (nextAllowedCommunicationTimestamp - currentTime).millis
-              .max(sendingRequestDelay)
+            if (driverGauges.distanceToNextIntersection.exists(_ > 5.meters)) {
+              (nextAllowedCommunicationTimestamp - currentTime).millis
+                .max(sendingRequestDelay)
+            } else {
+              sendingRequestDelay
+            }
           nextReservationRequestAttempt = Some(currentTime + delay.toMillis)
         }
-        Behaviors.same
+        if (rejectionCounter > 10 || (driverGauges.distanceToNextIntersection.isDefined && vehicle.velocity <= 1.0 && !isRetryingToMakeReservation)) {
+          Behaviors.stopped
+        } else {
+          Behaviors.same
+        }
 
       case ReservationConfirmed(reservationId, requestId, details) =>
-        context.log.info("Reservation confirmed")
+//        context.log.info(
+//          "Reservation confirmed, arrival time {}, arrival velocity {}",
+//          details.arrivalTime,
+//          details.arrivalVelocity)
 
         lastRequestTimestamp = None
         isAwaitingForAcceptance = false
@@ -216,10 +233,10 @@ trait PreperingReservation {
           .map { schedule =>
             assert(schedule.timestamps.last.timeEnd == details.arrivalTime)
             isMaintaingReservation = true
-            nextSchedulerCheckTimestamp = Some(currentTime + 250L)
+            nextSchedulerCheckTimestamp = Some(currentTime + 100)
             if (isRetryingToMakeReservation) {
               context.log.info(
-                s"Reservation accepted after $rejectionCounter retries")
+                s"Reservation accepted after $rejectionCounter retries, distance to intersection ${driverGauges.distanceToNextIntersection}")
             }
             isRetryingToMakeReservation = false
             nextReservationRequestAttempt = None
@@ -239,8 +256,9 @@ trait PreperingReservation {
                 Some(currentTime + sendingRequestDelay.toMillis)
               isRetryingToMakeReservation = true
               reservationDetails = None
-              context.self ! TrySendReservationRequest
-              withVehicle(vehicle.withAccelerationSchedule(None))
+              nextReservationRequestAttempt = Some(currentTime + 200)
+//              withVehicle(vehicle.withAccelerationSchedule(None))
+              withVehicle(vehicle)
           }
           .get
 
@@ -250,6 +268,7 @@ trait PreperingReservation {
 
   def estimateArrival(
       maxArrivalVelocity: Velocity): Option[VehicleArrivalEstimator.Result] = {
+    updateGauges
     val maxVelocity = VehiclePilot.calcMaxAllowedVelocity(vehicle, currentLane)
     val initialParams = VehicleArrivalEstimator.Parameters(
       initialTime = currentTime,
@@ -266,7 +285,7 @@ trait PreperingReservation {
         buildEstimationParamsWithAcclerationSchedule(initialParams)
       case None => buildEstimationParamsNoAcclerationSchedule(initialParams)
     }
-
+    import pl.edu.agh.wmazur.avs.Dimension
     VehicleArrivalEstimator.estimate(estimationParams) match {
       case Success(result)
           if VehicleArrivalEstimator.isValid(estimationParams, result) =>
@@ -309,7 +328,7 @@ trait PreperingReservation {
 
       val result = (v1 - v2).abs <= arrivalVelocityThreshold
       if (!result) {
-        System.err.println(s"Expected velocity $v1, currentVelocity $v2")
+        context.log.error(s"Expected velocity $v1, currentVelocity $v2")
       }
       result
     }
@@ -319,7 +338,7 @@ trait PreperingReservation {
       params: VehicleArrivalEstimator.Parameters)
     : VehicleArrivalEstimator.Parameters = {
     val accelerationSchedule = this.vehicle.accelerationSchedule.get
-    val timeAtExpectedReplyTime = params.initialTime + maxExpectedIntersectionManagerReplyTime.toMillis
+    val timeAtExpectedReplyTime = params.initialTime //+ maxExpectedIntersectionManagerReplyTime.toMillis
 
     val (distanceTraveled, finalVelocity) =
       accelerationSchedule.calculateFinalStateAtTime(
@@ -367,7 +386,7 @@ object PreperingReservation {
   final val arrivalEstimationAccelerationReduction = 1.0
   final val sendingRequestDelay = 5 * TickSource.timeStep
   final val reservationRequestTimeout = 250.millis
-  final val arrivalVelocityThreshold = 3.0
+  final val arrivalVelocityThreshold = 5
 
   trait Protocol {
     case object TrySendReservationRequest extends ExtendedProtocol

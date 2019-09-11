@@ -53,8 +53,8 @@ object SimulationStateUpdateEncoder
   }
 
   def pointEncoder(point: Point): ProtoVector3 = {
-    val x = geoDegresToMeters(point.x).toFloat
-    val y = geoDegresToMeters(point.y).toFloat
+    val x = geoDegresToMeters(point.getX).toFloat
+    val y = geoDegresToMeters(point.getY).toFloat
     ProtoVector3.of(
       x = x,
       y = 0f,
@@ -97,7 +97,9 @@ object SimulationStateUpdateEncoder
     ProtoVehicle(
       id = vehicle.id.toString,
       currentPosition = {
-        val coords = vehicle.position.simpleCoordinates
+        val coords = vehicle.position
+          .moveRotate(-vehicle.spec.halfLength, vehicle.heading)
+          .simpleCoordinates
         Some(
           ProtoVector3
             .of(coords.x.toFloat, 0f, coords.y.toFloat))

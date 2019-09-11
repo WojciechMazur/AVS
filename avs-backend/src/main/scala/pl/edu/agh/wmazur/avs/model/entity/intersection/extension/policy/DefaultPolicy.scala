@@ -14,8 +14,17 @@ import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.driver.VehicleDriver.Protocol.ReservationRejected.Reason.NoClearPath
 import pl.edu.agh.wmazur.avs.simulation.TickSource
 
+import scala.util.Random
+
 trait DefaultPolicy {
   self: AutonomousIntersectionManager with IntersectionConnectivity =>
+
+  object NextAllowedCommunicationInterval {
+    val emptyProposals = 250
+    val noValidProposal = 500
+    def noAcceptance = 500 + Random.nextInt(500)
+
+  }
 
   lazy val firstComeFirstServed: Behavior[IntersectionManager.Protocol] =
     Behaviors.receiveMessagePartial {
@@ -24,7 +33,7 @@ trait DefaultPolicy {
         context.log.warning("Received list of empty proposals")
         req.driverRef ! ReservationRejected(
           requestId = req.id,
-          nextAllowedCommunicationTimestamp = req.currentTime + 200,
+          nextAllowedCommunicationTimestamp = req.currentTime + NextAllowedCommunicationInterval.emptyProposals,
           reason = NoClearPath,
         )
         Behaviors.same
@@ -46,7 +55,7 @@ trait DefaultPolicy {
 
             replyTo ! ReservationRejected(
               requestId = req.id,
-              nextAllowedCommunicationTimestamp = timestamp + 200,
+              nextAllowedCommunicationTimestamp = timestamp + NextAllowedCommunicationInterval.noValidProposal,
               reason = reason,
             )
             context.log.warning(
@@ -99,7 +108,7 @@ trait DefaultPolicy {
               )
               driverRef ! ReservationRejected(
                 requestId = req.id,
-                nextAllowedCommunicationTimestamp = timestamp + 500,
+                nextAllowedCommunicationTimestamp = timestamp + NextAllowedCommunicationInterval.noAcceptance,
                 reason = reason,
               )
             }

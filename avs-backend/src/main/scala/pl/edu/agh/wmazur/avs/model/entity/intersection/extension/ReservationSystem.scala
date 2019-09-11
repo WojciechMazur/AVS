@@ -288,8 +288,8 @@ object ReservationSystem {
     }
   }
 
-  val maximumFutureReservationTime: FiniteDuration = 30.seconds
-  val admissionControlZoneLength: Dimension = 50.meters
+  val maximumFutureReservationTime: FiniteDuration = 10.seconds
+  val admissionControlZoneLength: Dimension = 20.meters
   val earlyArrivalThreshold: FiniteDuration = 0.5.seconds
-  val lateArrivalThreshold: FiniteDuration = 0.5.seconds
+  val lateArrivalThreshold: FiniteDuration = 0.1.seconds
 }

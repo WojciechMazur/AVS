@@ -24,8 +24,6 @@ sealed trait VehicleMovement {
   def steeringAngle: Angle
   def spec: VehicleSpec
 
-  val positionVector: Vector2 = position
-
   def move(tickDelta: TimeDeltaSeconds): self.type
 
   def withAcceleration(acceleration: Acceleration): self.type

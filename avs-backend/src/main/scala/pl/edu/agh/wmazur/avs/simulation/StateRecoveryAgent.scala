@@ -69,13 +69,15 @@ object StateRecoveryAgent {
     }
 
   def spawnRoads(context: Context): Behavior[Protocol] = {
-    val laneSpec = new LaneSpec(16.6, 2.5, canSpawn = true)
+    val laneSpec = new LaneSpec(16.6, 2.5, canSpawn = false)
     import pl.edu.agh.wmazur.avs.model.entity.road.TurningAllowance._
     val lane11 =
-      DirectedLane.simple(spec = laneSpec.withTurningAllowance(TurnLeftOnly),
-                          offStartX = -125.0.meters,
-                          offStartY = -(laneSpec.width + 0.5.meters) - 2.meters,
-                          length = 300.0.meters)
+      DirectedLane.simple(
+        spec = laneSpec.withTurningAllowance(TurnLeftOnly),
+        offStartX = -125.0.meters,
+        offStartY = -(laneSpec.width + 0.5.meters) - 2.meters,
+        length = 300.0.meters
+      )
 
     val lane12 = DirectedLane.simple(
       spec = laneSpec.withTurningAllowance(GoStraightOnly),
@@ -146,11 +148,12 @@ object StateRecoveryAgent {
       heading = -Math.PI / 2)
 
     val lane43 = DirectedLane.simple(
-      spec = laneSpec.withTurningAllowance(TurnRightOnly),
+      spec = laneSpec.withTurningAllowance(TurnRightOnly).withSpawnEnabled(true),
       offStartY = 150d,
       offStartX = 3 * -(laneSpec.width + 0.5.meters) - 1.meters,
       length = 300.0,
-      heading = -Math.PI / 2)
+      heading = -Math.PI / 2
+    )
 
     val roadLanes1 = lane11 :: lane12 :: lane13 :: Nil
     val roadLanes2 = lane21 :: lane22 :: lane23 :: Nil

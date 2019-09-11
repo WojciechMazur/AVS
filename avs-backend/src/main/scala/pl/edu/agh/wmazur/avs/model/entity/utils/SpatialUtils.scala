@@ -48,38 +48,39 @@ object SpatialUtils {
       that.x - self.x
     )
     def angle(that: Point): Angle = Math.atan2(
-      that.y - self.y,
-      that.x - self.x
+      that.getY - self.getY,
+      that.getX - self.getX
     )
   }
 
   implicit class PointUtils(point: Point) {
     def simpleCoordinates: Vector2 = Vector2.of(
-      point.x * DistanceUtils.DEG_TO_KM * 1000,
-      point.y * DistanceUtils.DEG_TO_KM * 1000
+      point.getX * DistanceUtils.DEG_TO_KM * 1000,
+      point.getY * DistanceUtils.DEG_TO_KM * 1000
     )
 
     def distance(that: Point): Dimension = {
       Math.sqrt {
-        Math.pow(point.x - that.x, 2) + Math.pow(point.y - that.y, 2)
+        Math.pow(point.getX - that.getX, 2) + Math.pow(point.getY - that.getY,
+                                                       2)
       }
     }.geoDegrees
 
     def angle(that: Point): Angle = Math.atan2(
-      that.y - point.y,
-      that.x - point.x
+      that.getY - point.getY,
+      that.getX - point.getX
     )
 
     def moveRotate(dimension: avs.Dimension, angle: Angle): Point = {
       Point2(
-        point.x + dimension.asGeoDegrees * Math.cos(angle),
-        point.y + dimension.asGeoDegrees * Math.sin(angle)
+        point.getX + dimension.asGeoDegrees * Math.cos(angle),
+        point.getY + dimension.asGeoDegrees * Math.sin(angle)
       )
     }
 
     def moveInternal(x: Double, y: Double): Point = Point2(
-      point.x + x,
-      point.y + y
+      point.getX + x,
+      point.getY + y
     )
 
     def move(xDelta: avs.Dimension, yDelta: avs.Dimension): Point =
@@ -87,10 +88,10 @@ object SpatialUtils {
 
     //scalastyle:off
     def +(dim: avs.Dimension): Point = {
-      Point2(point.x + dim.asGeoDegrees, point.y + dim.asGeoDegrees)
+      Point2(point.getX + dim.asGeoDegrees, point.getY + dim.asGeoDegrees)
     }
     def -(dim: avs.Dimension): Point = {
-      Point2(point.x - dim.asGeoDegrees, point.y - dim.asGeoDegrees)
+      Point2(point.getX - dim.asGeoDegrees, point.getY - dim.asGeoDegrees)
     }
 
     //scalastyle:on
@@ -98,7 +99,7 @@ object SpatialUtils {
     def angleDegrees(that: Point): Angle = angle(that) * 180 / Math.PI
   }
 
-  implicit def pointToVector(point: Point): Vector2 = {
+  def pointToVector(point: Point): Vector2 = {
     Vector2.of(point.getX, point.getY)
   }
 
@@ -152,7 +153,7 @@ object SpatialUtils {
 
       (pointsSorted ++ (pointsSorted.head :: Nil))
         .foldLeft(shapeFactory.polygon()) {
-          case (polygon, point) => polygon.pointXY(point.x, point.y)
+          case (polygon, point) => polygon.pointXY(point.getX, point.getY)
         }
         .build()
     }

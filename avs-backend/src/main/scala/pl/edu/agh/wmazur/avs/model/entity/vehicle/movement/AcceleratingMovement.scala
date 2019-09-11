@@ -2,6 +2,7 @@ package pl.edu.agh.wmazur.avs.model.entity.vehicle.movement
 
 import pl.edu.agh.wmazur.avs.model.entity.utils.MathUtils._
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.Vehicle
+import pl.edu.agh.wmazur.avs.model.entity.vehicle.VehicleSpec.Acceleration
 import pl.edu.agh.wmazur.avs.model.entity.vehicle.movement.VehicleMovement.TimeDeltaSeconds
 
 trait AcceleratingMovement extends VehicleMovement.VariableVehicleMovement {
@@ -19,4 +20,10 @@ trait AcceleratingMovement extends VehicleMovement.VariableVehicleMovement {
         .move(timeDelta)
         .withVelocity(initialVelocity + velocityDelta)
     }
+
+  def setAndMoveWithAcceleration(acc: Acceleration,
+                                 timeDelta: TimeDeltaSeconds): self.type = {
+    withAcceleration(acc)
+      .moveWithAcceleration(timeDelta)
+  }
 }

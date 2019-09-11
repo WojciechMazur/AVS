@@ -32,6 +32,7 @@ import scalax.collection.edge.{LkDiEdge, WLkDiEdge}
 import scalax.collection.mutable.Graph
 import pl.edu.agh.wmazur.avs.model.entity.utils.SpatialUtils._
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
 
@@ -73,12 +74,14 @@ class GlobalNavigator(
             .next()
             .toOuter
           def getNeighbours(lane: Lane): List[Lane] = {
+            @tailrec
             def getLeftNeighbours(lane: Lane, acc: List[Lane]): List[Lane] = {
               lane.spec.leftNeighbour match {
                 case None    => acc
                 case Some(x) => getLeftNeighbours(x, acc :+ x)
               }
             }
+            @tailrec
             def getRightNeighbours(lane: Lane, acc: List[Lane]): List[Lane] = {
               lane.spec.rightNeighbour match {
                 case None    => acc
@@ -102,18 +105,23 @@ class GlobalNavigator(
         }
 
         def calcPath: Option[List[Lane]] = {
-
-          endNodes.flatMap(startNode.shortestPathTo(_, _.weight)) match {
-            case Nil => None
-            case paths =>
-              val shortestPath = paths
-                .minBy(_.weight)
-                .nodes
-                .map(_.toOuter)
-                .toList
-
-              assert(shortestPath.size > 1)
-              Some(shortestPath)
+          if (startNode.spec.leadsInto.exists(endNodes.contains)) {
+            val nextLane = startNode.spec.leadsInto.get
+            Some(List(startNode.toOuter, nextLane))
+          } else {
+//            endNodes.flatMap(startNode.shortestPathTo(_, _.weight)) match {
+//              case Nil => None
+//              case paths =>
+//                val shortestPath = paths
+//                  .minBy(_.weight)
+//                  .nodes
+//                  .map(_.toOuter)
+//                  .toList
+//
+//                assert(shortestPath.size > 1)
+//                Some(shortestPath)
+            val closestNode = startNode.edges.minBy(_.weight).to.toOuter
+            Some(List(startNode.toOuter, closestNode))
           }
         }
 

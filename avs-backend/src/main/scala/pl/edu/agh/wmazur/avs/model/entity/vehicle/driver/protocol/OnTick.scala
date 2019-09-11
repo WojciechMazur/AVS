@@ -22,6 +22,7 @@ trait OnTick {
   import AutonomousVehicleDriver._
 
   var currentTime: Timestamp = 0L
+  var spawnTime: Option[Timestamp] = None
 
   val tickAdapter: ActorRef[SimulationProtocol.Tick] =
     context.messageAdapter[SimulationProtocol.Tick] {
@@ -36,6 +37,10 @@ trait OnTick {
     Behaviors.receiveMessagePartial {
       case Tick(time) =>
         currentTime = time
+        if (spawnTime.isEmpty) {
+          spawnTime = Some(time)
+        }
+
         List(
           driverInFront
         ).flatten
@@ -62,6 +67,22 @@ trait OnTick {
             context.self ! TrySendReservationRequest
           }
 
+//        if (isTraversing) {
+        import pl.edu.agh.wmazur.avs.Dimension
+//          println(s"""
+//               |to lane: ${reservationDetails.get.departureLane.id}
+//               |velocity:     ${vehicle.velocity}
+//               |acceleration: ${vehicle.acceleration}
+//               |remainingDistance: ${reservationDetails.get.departureLane.geometry
+//                       .difference(
+//                         nextIntersectionGeometry
+//                           .orElse(prevIntersectionGeometry)
+//                           .get)
+//                       .distance(vehicle.geometry)
+//                       .geoDegrees}
+//               |""".stripMargin)
+//        }
+
         if (!hasLeavedAdmissionControlZone) {
           for {
             details <- reservationDetails
@@ -74,8 +95,15 @@ trait OnTick {
           }
         }
 
-        Behaviors.same
-
+        if (driverGauges.distanceToPrevIntersection.exists(
+              _ > currentLane.length) ||
+            (spawnTime.exists(currentTime - _ > 10 * 1000) && (nextIntersectionManager
+              .orElse(prevIntersectionManager)
+              .isEmpty || isRetryingToMakeReservation))) {
+          Behaviors.stopped
+        } else {
+          Behaviors.same
+        }
       case reading: BasicReading =>
         val driverRef = reading.driverRef
         if (driverInFront.exists(_.ref == driverRef)) {

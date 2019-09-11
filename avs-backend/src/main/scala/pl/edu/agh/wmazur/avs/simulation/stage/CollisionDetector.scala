@@ -26,9 +26,8 @@ object CollisionDetector {
           .subsets(2)
           .foldLeft(Set.empty[Vehicle]) {
             case (acc, combination)
-                if combination.head.area
-                  .relate(combination.last.area)
-                  .intersects =>
+                if combination.head.prepearedGeometry
+                  .intersects(combination.last.geometry) =>
               acc ++ combination
             case (acc, _) => acc
           }

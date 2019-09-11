@@ -1,8 +1,9 @@
 package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
 
 import scala.collection._
+import scala.concurrent.duration.FiniteDuration
 
-class ReservationArray(arraySize: Int) {
+class ReservationArray(arraySize: Int, timeStep: FiniteDuration) {
   import ReservationArray._
   type Reservations = Array[Option[ReservationId]]
   type ReservedTiles = mutable.Map[ReservationId, mutable.Set[TileId]]
@@ -13,6 +14,7 @@ class ReservationArray(arraySize: Int) {
   protected[this] val reservedTilesByTimestamp: mutable.TreeMap[Timestamp, ReservedTiles] = mutable.TreeMap.empty[Timestamp, ReservedTiles]
   protected[this] val reservedTimeTilesByReservation: mutable.TreeMap[ReservationId, ReservedTimeTiles] = mutable.TreeMap.empty[ReservationId, ReservedTimeTiles]
   // format: on
+  val timeStepMillis: Long = timeStep.toMillis
 
   def reserve(reservationId: ReservationId,
               tiles: Iterable[TimeTile]): Boolean = {
@@ -24,15 +26,15 @@ class ReservationArray(arraySize: Int) {
       }
     }
 
-//    val firstAvailableTime = reservationGrids.headOption
-//      .map {
-//        case (key, _) => key
-//      }
-//      .getOrElse(0L)
+    val firstAvailableTime = reservationGrids.headOption
+      .map {
+        case (key, _) => key
+      }
+      .getOrElse(0L)
 
     if (!wasAlreadyReserved) {
       tiles
-//        .filter(_.timestamp >= firstAvailableTime)
+        .filter(_.timestamp >= firstAvailableTime)
         .foreach { tile =>
           val timestamp = tile.timestamp
           val tileId = tile.tileId
@@ -141,9 +143,6 @@ object ReservationArray {
   type Timestamp = Long
   type TileId = Int
 
-  //TODO Add to config
-  val timeStep: FiniteDuration = 1.second / 60
-  val timeStepMillis = timeStep.toMillis
   case class TimeTile(tileId: TileId, timestamp: Timestamp)
 
 }

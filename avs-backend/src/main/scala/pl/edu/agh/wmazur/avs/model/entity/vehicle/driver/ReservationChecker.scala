@@ -113,8 +113,8 @@ object ReservationChecker {
 
     findPartialTrapezoid(p, trapezoids, remainingArea)
       .map(makeAccelerationSchedule(p, _))
-      .getOrElse(
-        sys.error("Reservation check failed: distance too large (Case 3,4,5)"))
+      .getOrElse(sys.error(
+        "Reservation check failed: distance too large (Case 3,4,5) - " + p))
   }
 
   private def whenNeedToSlowDown(p: Params): (Double, List[Trapezoid]) = {
@@ -380,8 +380,7 @@ object ReservationChecker {
   private def findPartialTrapezoid(
       params: Params,
       trapezoids: List[Trapezoid],
-      initialArea: Acceleration): Option[(Vector2, Vector2)] = {
-
+      initialArea: Double): Option[(Vector2, Vector2)] = {
     val (_, solution) =
       trapezoids.foldLeft((initialArea, Option.empty[(Vector2, Vector2)])) {
         case ((remainingArea, res @ Some(_)), _) => (remainingArea, res)
@@ -389,10 +388,16 @@ object ReservationChecker {
         case ((remainingArea, None), trapezoid: Trapezoid)
             if remainingArea.isEqual(trapezoid.area) ||
               remainingArea < trapezoid.area =>
-          val optSolution =
+          val partialTrapezoid =
             Try(calcPartialTrapezoid(trapezoid, remainingArea))
+          println(partialTrapezoid)
+          val optSolution =
+            partialTrapezoid
               .filter(isPartialTrapezoidValid(params, _)) match {
-              case Success(value) => Some(value)
+              case Success(value) =>
+                println(value)
+                Some(value)
+
               case Failure(exception) =>
                 System.err.println(exception.getMessage)
                 None
@@ -400,6 +405,8 @@ object ReservationChecker {
           (remainingArea, optSolution)
 
         case ((remainingArea, None), trapezoid) =>
+          println(
+            s"${remainingArea} > ${trapezoid.area} ~> ${remainingArea - trapezoid.area} ")
           (remainingArea - trapezoid.area, None)
       }
 
@@ -427,7 +434,6 @@ object ReservationChecker {
         Vector2.of(p1x + w, p1y)
       )
     }
-
     None match {
       case _ if area.isZero =>
         buildLine(p.widthLower, 0.0, 0.0, p.referencePoint)
@@ -438,10 +444,10 @@ object ReservationChecker {
       case _ if area >= 0.0 && area <= p.area =>
         if (p.widthUpper isEqual p.widthLower) {
           val h0 = area / p.widthLower
-          buildLine(p.widthLower,
-                    h0,
-                    h0 * p.refDelta / p.height,
-                    p.referencePoint)
+          buildLine(w = p.widthLower,
+                    h = h0,
+                    x = h0 * p.refDelta / p.height,
+                    refPoint = p.referencePoint)
         } else {
           val h0 = (
             Math.sqrt(
@@ -452,7 +458,7 @@ object ReservationChecker {
           ) / (p.widthUpper - p.widthLower)
           val w0 = (p.widthUpper - p.widthLower) * h0 / p.height + p.widthLower
           val x0 = h0 * p.refDelta / p.height
-          buildLine(w0, h0, x0, p.referencePoint)
+          buildLine(w = w0, h = h0, x = x0, refPoint = p.referencePoint)
         }
       case _ =>
         sys.error("Error in LevelOffReservationCheck: calcPartialTrapezoid")

@@ -59,7 +59,27 @@ case class AccelerationSchedule(timestamps: List[AccelerationTimestamp],
     iterate(initialTime, initialVelocity, 0.0, nonExpiredEvents)
   }
 
-//  def calcFinalDistance(initialVelocity: Velocity): Velocity = {}
+  def calcRemaining(initialTime: Timestamp,
+                    initialVelocity: Velocity): (FiniteDuration, Dimension) = {
+    timestamps
+      .dropWhile(_.timeEnd < initialTime)
+      .foldLeft((initialTime, Duration.Zero, 0.meters, initialVelocity)) {
+        case ((currentTime, accDuration, accDistance, currentVelocity),
+              event) =>
+          val duration = if (currentTime != event.timeStart) {
+            (event.timeEnd - currentTime).millis
+          } else { event.duration }
+          val durationSecods = duration.toUnit(TimeUnit.SECONDS)
+          val endVelocity = currentVelocity + event.acceleration * durationSecods
+          val distanceTotal = accDistance + (durationSecods * (currentVelocity + endVelocity) / 2)
+            .meters
+
+          (event.timeEnd, accDuration + duration, distanceTotal, endVelocity)
+      } match {
+      case (_, duration, distance, _) =>
+        (duration, distance)
+    }
+  }
 
   def adjustSchedule(deleyTime: FiniteDuration): AccelerationSchedule = {
 //    assert(deleyTime >= Duration.Zero)

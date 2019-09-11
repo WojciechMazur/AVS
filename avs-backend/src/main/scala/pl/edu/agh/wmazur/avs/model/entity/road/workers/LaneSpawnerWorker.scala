@@ -26,6 +26,8 @@ import pl.edu.agh.wmazur.avs.simulation.EntityManager
 import pl.edu.agh.wmazur.avs.simulation.EntityManager.SpawnResult
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.Timestamp
 
+import scala.util.Random
+
 class LaneSpawnerWorker(val context: ActorContext[Protocol],
                         spawnerContext: Context)
     extends Agent[Protocol] {
@@ -112,7 +114,8 @@ class LaneSpawnerWorker(val context: ActorContext[Protocol],
       case LaneSpawnerWorker.Spawned(driverRef, id) =>
         spawnerContext.roadSpawner ! RoadSpawnerWorker
           .SpawnedAtLane(spawnerContext.lane, driverRef, id)
-        nextSpawnTime += SpawnPoint.spawnInterval.toMillis
+        nextSpawnTime += SpawnPoint.spawnInterval.toMillis + Random.nextInt(
+          SpawnPoint.spawnInterval.toMillis.toInt / 2)
         idle
     }
 

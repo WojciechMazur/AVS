@@ -22,6 +22,7 @@ trait Driving extends VehiclePilot {
   var isMaintaingReservation = false
   var isRetryingToMakeReservation = false
   var hasLeavedAdmissionControlZone = true
+  var finishedTraversing = false
 
   var nextSchedulerCheckTimestamp: Option[Timestamp] = None
 
@@ -31,8 +32,18 @@ trait Driving extends VehiclePilot {
            tickDelta: TickDelta)(
       movementDecidingFn: () => self.type): Behavior[Protocol] = {
     val oldPosition = vehicle.position
+
+    val vehicleState = movementDecidingFn().vehicle
+    val updatedSchedule = vehicleState.accelerationSchedule.map { schedule =>
+      val remainingScheduleDistance = schedule
+        .calcRemaining(currentTime, vehicle.velocity) match {
+        case (_, distance) =>
+          println(driverGauges.distanceToNextIntersection.map(_ - distance))
+      }
+    }
+
     val newState = prepareToMove().withVehicle {
-      movementDecidingFn().vehicle
+      vehicleState
         .move(currentTime, tickDelta.toUnit(TimeUnit.SECONDS))
     }
 
@@ -52,7 +63,7 @@ trait Driving extends VehiclePilot {
         vehicle.velocity,
         vehicle.spec.maxDeceleration)
       val followingDistance = stoppingDistance + VehiclePilot.minimumDistanceBetweenCars
-      if (driverGauges.distanceToNextIntersection.exists(_ > followingDistance)) {
+      if (driverGauges.distanceToCarInFront.exists(_ > followingDistance)) {
         withoutChange
       } else {
         withVehicle(vehicle.withAccelerationSchedule(None))
@@ -113,21 +124,35 @@ trait Driving extends VehiclePilot {
       nextIntersectionPosition = None
       nextIntersectionGeometry = None
       isTraversing = false
-      withoutChange
+      finishedTraversing = true
+
+      withVehicle(
+        vehicle
+          .withAccelerationSchedule(None)
+          .maxAccelerationWithTargetVelocity(currentLane.spec.speedLimit)
+      )
     }
   }
-
   lazy val drive: Behavior[Protocol] = Behaviors.receiveMessagePartial {
+    case Move(replyTo, tickDelta) if finishedTraversing =>
+      move(replyTo, tickDelta) { () =>
+        followCurrentLane().cruise
+      }
 
     case Move(replyTo, tickDelta) if isAwaitingForAcceptance =>
-      move(replyTo, tickDelta) {
-        controlScheduler
-      }
+      move(replyTo, tickDelta) { controlScheduler }
+
     case msg @ Move(_, _)
         if isMaintaingReservation &&
           driverGauges.isWithinIntersection =>
-//      assert(hasArrivedInTime)
-//      assert(hasArrivedWithExpectedVelocity)
+      val (remDuration, remDistance) =
+        vehicle.accelerationSchedule.get
+          .calcRemaining(currentTime, vehicle.velocity)
+      println(s"Remaining due to schedule: $remDuration, ${remDistance}")
+      val hat = hasArrivedInTime
+      val hav = hasArrivedWithExpectedVelocity
+      vehicle.accelerationSchedule.get.timestamps
+//      assert(hat && hav)
       context.self ! msg
       isMaintaingReservation = false
       isTraversing = true
@@ -138,22 +163,17 @@ trait Driving extends VehiclePilot {
 
     case msg if isMaintaingReservation && !hasClearLaneToIntersection =>
       context.log.warning(
-        s"Canceling reservation ${reservationDetails.get.reservationId}. To close to preceding vehicle ${driverGauges.distanceToCollisionWithCarInFront
+        s"Canceling reservation ${reservationDetails.get.reservationId}. To close to preceding vehicle ${driverGauges.distanceToCarInFront},  ${driverGauges.distanceToCollisionWithCarInFront
           .map(_.asMeters)}")
       context.self ! msg
       cancelReservation
       Behaviors.same
 
-//    case msg
-//        if isMaintaingReservation && estimateArrival(
-//          reservationDetails.get.arrivalVelocity).exists(
-//          _.arrivalTime > reservationDetails.get.arrivalTime + ReservationSystem.lateArrivalThreshold.toMillis) =>
-//      context.self ! msg
-//      cancelReservation
-
     case Move(replyTo, tickDelta) if isMaintaingReservation =>
       move(replyTo, tickDelta) { () =>
-        followCurrentLane().stopBeforeIntersection().stopBeforeVehicleInFront()
+        followCurrentLane()
+          .stopBeforeIntersection()
+          .stopBeforeVehicleInFront()
       }
 
     case Move(replyTo, tickDelta) if isTraversing =>
@@ -164,7 +184,6 @@ trait Driving extends VehiclePilot {
       move(replyTo, tickDelta) {
         slowDownForReservationRetry
       }
-      Behaviors.same
 
     case Move(replyTo, tickDelta) =>
       move(replyTo, tickDelta) {
@@ -173,6 +192,7 @@ trait Driving extends VehiclePilot {
   }
 
   def cancelReservation: Behavior[Protocol] = {
+    println("Canceling reservation")
     nextIntersectionManager.get ! IntersectionManager.Protocol
       .CancelReservation(reservationDetails.get.reservationId, context.self)
     nextReservationRequestAttempt = Some(

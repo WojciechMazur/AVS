@@ -184,7 +184,7 @@ object VehicleArrivalEstimator {
         case _ if distanceAccel < params.distanceTotal.asMeters => case2a
         case _ if distanceAccel isEqual params.distanceTotal    => case2b
         case _ =>
-          estimateMaxFinalVelocity(params) //TODO maxVEndForCase2AndCase5
+          estimateMaxFinalVelocity(params)
       }
     }
 

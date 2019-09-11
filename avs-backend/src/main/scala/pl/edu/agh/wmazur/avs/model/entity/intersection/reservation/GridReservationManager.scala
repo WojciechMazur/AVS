@@ -39,7 +39,8 @@ case class GridReservationManager(config: ManagerConfig,
     intersection.area,
     config.granularity
   )
-  private val reservationGrid = ReservationGrid(tilesGrid, 10.seconds)
+  private val reservationGrid =
+    ReservationGrid(tilesGrid, config.timeStep, config.timeStep)
 
   def clean(currentTime: Timestamp): Unit = {
     reservationGrid.cleanup(currentTime)
@@ -106,8 +107,7 @@ case class GridReservationManager(config: ManagerConfig,
 
     val initialDriverState: CrashTestDriver =
       driver.asInstanceOf[CrashTestDriver].copy()
-
-    val maximalArrivalTime = minimalArrivalTime + 30 * TickSource.timeStep.toMillis
+    val maximalArrivalTime = minimalArrivalTime + 30 * config.timeStepMillis
     @tailrec
     def iterate(driver: VehicleDriver,
                 arrivalTime: Timestamp,
@@ -137,15 +137,22 @@ case class GridReservationManager(config: ManagerConfig,
             timeRange.map(timestamp => TimeTile(tile.id, timestamp))
           }(breakOut)
 
-        if (tilesToReservation.exists(
-              tt =>
-                //TODO, przywrócić?
-//              reservationGrid.isRestrictedTile(tt.tileId) ||
-                reservationGrid.isReservedAt(tt.timestamp, tt.tileId))) {
+        val reservedTiles = tilesToReservation.filter(tt =>
+          reservationGrid.isReservedAt(tt.timestamp, tt.tileId))
 
-          val nextTestedArrivalTime = tilesToReservation
+        if (reservedTiles.nonEmpty) {
+//          println(
+//            s"reserved, currentTime ${currentTime}, path ${initialDriverState.currentLane.id} ~> ${driver
+//              .asInstanceOf[CrashTestDriver]
+//              .destinationLane
+//              .id}, ${driver.currentLane.spec.turningAllowance} ")
+//          reservedTiles.toList
+//            .sortBy(t => (t.timestamp, t.tileId))
+//            .foreach(t => println(s"\t${t.tileId} @ ${t.timestamp}"))
+          val nextTestedArrivalTime = reservedTiles
             .map(reservationGrid.firstAvailableTimestamp)
             .max
+            .max(currentTime + config.timeStepMillis)
 
           if (nextTestedArrivalTime <= maximalArrivalTime) {
             iterate(

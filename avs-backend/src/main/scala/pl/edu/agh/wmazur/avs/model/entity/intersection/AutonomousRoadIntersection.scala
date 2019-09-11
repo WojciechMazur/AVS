@@ -121,7 +121,7 @@ case class AutonomousRoadIntersection(
       iaSegments.geometry.get
     }
 
-  lazy val preparedGeometry: PreparedGeometry =
+  override lazy val preparedGeometry: PreparedGeometry =
     new PreparedGeometryFactory()
       .create(geometry.buffer(0.1.meters.asGeoDegrees))
 
@@ -197,7 +197,6 @@ case class AutonomousRoadIntersection(
                                      inletHeadings,
                                      outletHeadings),
             lane) =>
-        //TODO czy na pewno powinno być zależne od długości pasa?
         val expansionOffset = AutonomousRoadIntersection.expansionDistance.asMeters / lane.length.asMeters
         val (entryFraction, newEntryPoints, newEntryHeadings) =
           if (intersectionShape.relate(lane.entryPoint).intersects()) {
@@ -248,7 +247,7 @@ case class AutonomousRoadIntersection(
 object AutonomousRoadIntersection
     extends EntitySettings[AutonomousRoadIntersection] {
   //Offset for additional space at intersection, e.q
-  val expansionDistance: Dimension = 2.0.meters
+  val expansionDistance: Dimension = 5.meters
   private val shapeFactory = SpatialUtils.shapeFactory
 
 //  def apply(roads: Iterable[Road]): RoadIntersection =

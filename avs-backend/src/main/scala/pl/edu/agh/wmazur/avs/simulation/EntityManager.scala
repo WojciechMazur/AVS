@@ -32,7 +32,7 @@ import pl.edu.agh.wmazur.avs.{Agent, Services}
 
 import scala.collection.mutable
 import scala.util.Random
-
+import scala.concurrent.duration._
 class EntityManager(val context: ActorContext[EntityManager.Protocol],
                     globalNavigator: ActorRef[GlobalNavigator.Protocol])
     extends Agent[EntityManager.Protocol] {
@@ -92,9 +92,9 @@ class EntityManager(val context: ActorContext[EntityManager.Protocol],
       case SpawnProtocol.SpawnAutonomousIntersection(replyTo, roads) =>
         val intersectionId = Intersection.nextId
         val managerConfig = GridReservationManager.ManagerConfig(
-          timeStep = TickSource.timeStep,
-          granularity = 2.meters
-        )()
+          timeStep = 0.1.seconds,
+          granularity = 0.4.meters
+        )(_internalTimeBuffer = 0.seconds)
 
         context.spawn(
           AutonomousIntersectionManager.init(Some(intersectionId),

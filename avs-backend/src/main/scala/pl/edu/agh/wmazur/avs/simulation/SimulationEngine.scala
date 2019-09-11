@@ -117,7 +117,8 @@ object SimulationEngine {
         stateZipper.in1 <~ groupedStateExternalChanges
         stateZipper.in2 <~ simulationStateUpdate
 
-        stateZipper.out ~> simulationProcessor
+        stateZipper.out
+          .throttle(1, TickSource.timeStep) ~> simulationProcessor
 
         SourceShape(simulationProcessor.out)
       }

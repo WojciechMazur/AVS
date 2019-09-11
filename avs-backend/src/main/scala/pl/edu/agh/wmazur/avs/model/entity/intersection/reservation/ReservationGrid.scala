@@ -8,8 +8,9 @@ import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationAr
 import scala.concurrent.duration.FiniteDuration
 
 case class ReservationGrid(tilesGrid: TilesGrid,
-                           cleanupInterval: FiniteDuration)
-    extends ReservationArray(tilesGrid.size) {
+                           cleanupInterval: FiniteDuration,
+                           timeStep: FiniteDuration)
+    extends ReservationArray(tilesGrid.size, timeStep) {
 
   override def isRestrictedTile(tileId: TileId): Boolean =
     tilesGrid.tilesOutsideArea.contains(tileId)
