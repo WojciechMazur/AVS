@@ -14,11 +14,11 @@ case class VirtualVehicle(
     var gauges: VehicleGauges,
     spec: VehicleSpec,
     var targetVelocity: Velocity,
-    spawnTime: Int
+    spawnTime: Int,
+    accelerationSchedule: Option[AccelerationSchedule] = None
 ) extends BasicVehicle(-1L, gauges, spec, targetVelocity, spawnTime) {
 
   override def id: Id = -1L
-
   override def withTargetVelocity(targetVelocity: Velocity): this.type = {
     def boundedTargetVelocity =
       MathUtils.withConstraint(targetVelocity,
@@ -107,9 +107,12 @@ case class VirtualVehicle(
       .asInstanceOf[this.type]
   }
 
-  override def accelerationSchedule: Option[AccelerationSchedule] = None
-
   override def withAccelerationSchedule(
       accelerationSchedule: Option[AccelerationSchedule])
-    : VirtualVehicle.this.type = this
+    : VirtualVehicle.this.type = {
+    this
+      .modify(_.accelerationSchedule)
+      .setTo(accelerationSchedule)
+      .asInstanceOf[this.type]
+  }
 }

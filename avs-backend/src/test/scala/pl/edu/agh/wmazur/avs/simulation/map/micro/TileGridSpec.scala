@@ -1,14 +1,15 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.micro
+package pl.edu.agh.wmazur.avs.simulation.map.micro
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import org.scalatest.FlatSpec
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.TilesGrid
-import pl.edu.agh.wmazur.avs.utils.{East, North, South, West}
+import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.simulation.utils.BasicDirection._
 
 class TileGridSpec extends FlatSpec {
   val rec = new RectangleImpl(10, 15, 10, 15, SpatialContext.GEO)
-  val grid = TilesGrid(rec, 1)
+  val grid = TilesGrid(rec, 1.meters)
 
   "Tile grid" must "divide rectange into tiles" in {
 

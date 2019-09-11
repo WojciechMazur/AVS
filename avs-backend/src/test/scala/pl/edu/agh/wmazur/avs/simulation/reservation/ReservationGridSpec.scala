@@ -1,15 +1,25 @@
-package pl.edu.agh.wmazur.avs.model.entity.intersection.reservation
+package pl.edu.agh.wmazur.avs.simulation.reservation
 
 import org.locationtech.spatial4j.context.SpatialContext
 import org.locationtech.spatial4j.shape.impl.RectangleImpl
 import org.scalatest.FlatSpec
 import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.ReservationArray.TimeTile
+import pl.edu.agh.wmazur.avs.model.entity.intersection.reservation.{
+  ReservationGrid,
+  TilesGrid
+}
+import pl.edu.agh.wmazur.avs.Dimension
+import pl.edu.agh.wmazur.avs.simulation.TickSource
 
 import scala.concurrent.duration._
 class ReservationGridSpec extends FlatSpec {
-  val rec = new RectangleImpl(10, 20, 10, 20, SpatialContext.GEO)
-  val tilesGrid = TilesGrid(rec, 1.0)
-  val grid = ReservationGrid(tilesGrid, 50.millis)
+  val rec = new RectangleImpl(0,
+                              10.meters.asGeoDegrees,
+                              0,
+                              10.meters.asGeoDegrees,
+                              SpatialContext.GEO)
+  val tilesGrid = TilesGrid(rec, 1.0.meters)
+  val grid = ReservationGrid(tilesGrid, 50.millis, TickSource.timeStep)
 
   "Reservation Grid" must "allow to reserve tiles in single time grid" in {
     val tiles = 0.to(5).map(id => TimeTile(id, 0))

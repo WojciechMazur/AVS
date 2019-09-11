@@ -58,6 +58,7 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
     val events = schedule.timestamps
 
     if (events.isEmpty) {
+      println("finished schedule")
       (self.setAndMoveWithAcceleration(0.0, timeDelta), None)
     } else {
       val current = events.head
@@ -82,6 +83,8 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
         case event @ AccelerationTimestamp(acc, timeStart, timeEnd)
             if timeStart == currentTime =>
           if (event.durationSeconds < timeDelta) {
+            println(
+              "switching to schedule " + schedule.timestamps.mkString(" ~> "))
             setAndMoveWithAcceleration(acc, event.durationSeconds)
               .internalMoveWithSchedule(currentTime + event.durationMillis,
                                         timeDelta - event.durationSeconds,
@@ -98,6 +101,8 @@ trait AccelerationScheduleMovement extends ScheduledVehicleMovement {
           if (endOfCurrentStep > timeEnd) {
             val duration = timeEnd - currentTime
 
+            println(
+              "switching to schedule " + schedule.timestamps.mkString(" ~> "))
             setAndMoveWithAcceleration(acc, seconds(duration))
               .internalMoveWithSchedule(timeEnd,
                                         timeDelta - seconds(duration),
