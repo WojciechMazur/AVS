@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "You cam use destructuring here",
+        "createdAt" : "2020-02-13T12:12:57Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -19,6 +21,8 @@ export type AppReduxProps = ConnectStateProps & ConnectDispatchProps;\n const mapStateToProps = (state: StoreState): ConnectStateProps => ({\n     commentData: state.commentData,\n     theme: state.theme,\n+    textEditorVisibleRange: state.textEditorVisibleRange,\n+    textEditorLineCount: state.textEditorLineCount,"
+      }
+    ]
+  }
+]

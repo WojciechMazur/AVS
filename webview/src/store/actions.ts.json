@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "revert to previous version and use consts instead of strings",
+        "createdAt" : "2020-02-07T13:44:36Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -1,25 +1,38 @@\n import { CommentData } from \"../components/App/app.utils\";\n-import { SetCommentData, SET_COMMENT_DATA, SetLanguage, SET_LANGUAGE, SetTheme, SET_THEME, SetActiveComment, SET_ACTIVE_COMMENT } from \"./types\";\n+import { SetCommentData, SetLanguage, SetTheme, SetActiveComment, SetTextEditorLineCount, SetTextEditorVisibleRange } from \"./types\";\n import { Language } from \"../translations/i18n\";\n import { StyledThemeType } from \"../styles/themes.styled\";\n import { CommentID } from \"./state\";\n \n export const setCommentData = (data: CommentData[]): SetCommentData => ({\n-    type: SET_COMMENT_DATA,\n+    type: \"SET_COMMENT_DATA\","
+      }
+    ]
+  }
+]

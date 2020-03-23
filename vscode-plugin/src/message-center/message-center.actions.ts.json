@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "extract payload to other type",
+        "createdAt" : "2020-02-07T13:06:18Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,42 @@\n+export type IncomingMessage = SelectCommentRange;\n+\n+export type OutgoingMessage =\n+    SetTextEditorVisibleRange\n+    | SetTextEditorLineCount;\n+\n+const SELECT_COMMENT_RANGE = \"SELECT_COMMENT_RANGE\";\n+export type SelectCommentRange = {\n+    command: typeof SELECT_COMMENT_RANGE,\n+    payload: {"
+      }
+    ]
+  }
+]

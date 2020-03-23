@@ -1,0 +1,40 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "just lineForm && ...",
+        "createdAt" : "2020-02-07T13:09:12Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,44 @@\n+import * as vscode from 'vscode';\n+\n+const isPositionNotUndefined = (\n+    lineFrom: number | undefined,\n+    charFrom: number | undefined,\n+    lineTo: number | undefined,\n+    charTo: number | undefined,\n+): boolean => lineFrom !== undefined && charFrom !== undefined && lineTo !== undefined && charTo !== undefined;"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "extract part of the logic to another functions",
+        "createdAt" : "2020-02-07T13:11:23Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : 15,
+        "diffHunk" : "@@ -0,0 +1,44 @@\n+import * as vscode from 'vscode';\n+\n+const isPositionNotUndefined = (\n+    lineFrom: number | undefined,\n+    charFrom: number | undefined,\n+    lineTo: number | undefined,\n+    charTo: number | undefined,\n+): boolean => lineFrom !== undefined && charFrom !== undefined && lineTo !== undefined && charTo !== undefined;\n+\n+const areRangesEqual = (currentRange: vscode.Range, newRange: vscode.Range): boolean => currentRange.isEqual(newRange);\n+\n+export const focusSelectionOnTextEditor = async ("
+      }
+    ]
+  }
+]

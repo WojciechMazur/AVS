@@ -1,0 +1,40 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "You can put just `onDidReceiveMessage(MessageCenter.messageListener(message))`",
+        "createdAt" : "2020-02-13T12:05:46Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,30 @@\n+import * as vscode from \"vscode\";\n+import { focusSelectionOnTextEditor } from \"./message-center.utils\";\n+import { OutgoingMessage, IncomingMessage } from \"./message-cener.actions\";\n+\n+class MessageCenterClass {\n+    webviewPanel: vscode.WebviewPanel | undefined;\n+\n+    initWebviewCommunication = (context: vscode.WebviewPanel): void => {\n+        this.webviewPanel = context;\n+        this.webviewPanel.webview.onDidReceiveMessage(message => MessageCenter.messageListener(message));"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "even if You are hardcoding some data, it is worth to extract is as some GLOBAL variable which allow other developer to find hardcoded place at the begining of file",
+        "createdAt" : "2020-02-13T12:07:08Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,30 @@\n+import * as vscode from \"vscode\";\n+import { focusSelectionOnTextEditor } from \"./message-center.utils\";\n+import { OutgoingMessage, IncomingMessage } from \"./message-cener.actions\";\n+\n+class MessageCenterClass {\n+    webviewPanel: vscode.WebviewPanel | undefined;\n+\n+    initWebviewCommunication = (context: vscode.WebviewPanel): void => {\n+        this.webviewPanel = context;\n+        this.webviewPanel.webview.onDidReceiveMessage(message => MessageCenter.messageListener(message));\n+    }\n+\n+    messageListener = (message: IncomingMessage): void => {\n+        switch (message.command) {\n+            case \"SELECT_COMMENT_RANGE\": {\n+                const { lineFrom, charFrom, lineTo, charTo } = message.payload;\n+                const hardcodedDocumentUri = \"/Users/jakubbania/Desktop/github/codetale/intellij-plugin/src/main/scala/app/codetale/gui/CommentMarkerProvider.scala\";"
+      }
+    ]
+  }
+]

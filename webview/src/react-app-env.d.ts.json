@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "webp? it is very risky to use such format, especially that is not supported in even newest safari, so intelliJ with older webview based on safari Won't see thesee images",
+        "createdAt" : "2020-02-13T12:21:22Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -35,8 +37,8 @@ declare module '*.png' {\n }\n \n declare module '*.webp' {"
+      }
+    ]
+  }
+]

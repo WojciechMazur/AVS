@@ -1,0 +1,49 @@
+[
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "If it's one line private function used only in one place you can equally good inline it.",
+        "createdAt" : "2020-03-10T10:42:47Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package standard.utils\n+\n+import java.nio.file.Path\n+import spray.json._\n+\n+import standard.model.{Discussion, File}\n+import standard.model.JsonProtocol._\n+\n+object FilesOperations {\n+  def saveComments(outputDir: Path, path: Path, discussions: List[Discussion]): Unit = {"
+      },
+      {
+        "author" : {
+          "login" : "seleythen",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "Taking into account only DRY- yes. But if we want to hide conversion to JSON in saveAllDiscussion such intermediate level is good option for me.",
+        "createdAt" : "2020-03-10T11:28:11Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package standard.utils\n+\n+import java.nio.file.Path\n+import spray.json._\n+\n+import standard.model.{Discussion, File}\n+import standard.model.JsonProtocol._\n+\n+object FilesOperations {\n+  def saveComments(outputDir: Path, path: Path, discussions: List[Discussion]): Unit = {"
+      },
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "I'm fine either way, and generally I agree with you. My point is just that `saveComments` is not much different than `saveAllDiscussions` and does not suggest any json conversion inside anyway. So if you really want it to state some special behaviour maybe name could be more suggestive also.\r\nBut as I said I'm fine either way.",
+        "createdAt" : "2020-03-10T14:44:54Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package standard.utils\n+\n+import java.nio.file.Path\n+import spray.json._\n+\n+import standard.model.{Discussion, File}\n+import standard.model.JsonProtocol._\n+\n+object FilesOperations {\n+  def saveComments(outputDir: Path, path: Path, discussions: List[Discussion]): Unit = {"
+      }
+    ]
+  }
+]

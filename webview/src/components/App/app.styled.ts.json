@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "add also to after",
+        "createdAt" : "2020-02-07T13:17:32Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : 32,
+        "diffHunk" : "@@ -1,17 +1,48 @@\n import styled from \"styled-components\";\n+import { isInProductionMode } from \"./app.utils\";\n \n-export const CodetaleContainer = styled.main``;\n+type CodetaleContainerProps = {\n+    textEditorLines: number,\n+}\n \n-export const Container = styled.div`\n-    overflow: hidden;\n-    min-height: 100vh;\n-    background-color: ${({ theme }) => theme.background};\n+export const CodetaleContainer = styled.main<CodetaleContainerProps>`\n+    position: relative;\n+    overflow-x: hidden;\n+    height: 100vh;\n `;\n \n-export const Row = styled.div``;\n-\n export const Column = styled.div`\n-    padding: 2rem;\n+    height: 100vh;\n+    padding: 0;\n+\n+    ${isInProductionMode() && `\n+        overflow: hidden;\n+    `}\n+\n+    &::before {\n+        position: absolute;\n+        z-index: 1;"
+      }
+    ]
+  }
+]

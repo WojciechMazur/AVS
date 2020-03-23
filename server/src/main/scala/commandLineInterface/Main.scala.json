@@ -1,0 +1,54 @@
+[
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "First case could be written as `case commandLineArguments.github => github.StandardModelCrawler.run(commandLineArguments)`. Also, second case is unknown command? Proper naming could help. If it's unknown command we can improve error msg.",
+        "createdAt" : "2020-03-13T11:58:23Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package commandLineInterface\n+\n+object Main {\n+  def main(args: Array[String]): Unit = {\n+    val commandLineArguments = new CommandLineArguments(args)\n+    val subcommand = commandLineArguments.subcommand\n+    exitWithMessage(subcommand.isEmpty, \"No command chosen\")\n+    subcommand.get match {"
+      }
+    ]
+  },
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "Two additional questions:\r\n1) doesn't that library detect unknown commands automatically?\r\n2) we can just print help, this way we do not need to update this text by hand every time optiuns changes",
+        "createdAt" : "2020-03-17T09:33:10Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package commandLineInterface\n+\n+object Main {\n+  def main(args: Array[String]): Unit = {\n+    val commandLineArguments = new CommandLineArguments(args)\n+    val subcommand = commandLineArguments.subcommand\n+    exitWithMessage(subcommand.isEmpty, \"No command chosen\")\n+    subcommand.get match {\n+      case commandLineArguments.github => github.StandardModelCrawler.run(commandLineArguments.github)\n+      case _ => println(\"Unknown argument. Possible arguments: github\")"
+      },
+      {
+        "author" : {
+          "login" : "seleythen",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "Done",
+        "createdAt" : "2020-03-17T12:23:51Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,20 @@\n+package commandLineInterface\n+\n+object Main {\n+  def main(args: Array[String]): Unit = {\n+    val commandLineArguments = new CommandLineArguments(args)\n+    val subcommand = commandLineArguments.subcommand\n+    exitWithMessage(subcommand.isEmpty, \"No command chosen\")\n+    subcommand.get match {\n+      case commandLineArguments.github => github.StandardModelCrawler.run(commandLineArguments.github)\n+      case _ => println(\"Unknown argument. Possible arguments: github\")"
+      }
+    ]
+  }
+]

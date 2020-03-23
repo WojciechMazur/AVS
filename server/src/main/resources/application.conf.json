@@ -1,0 +1,40 @@
+[
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "Please use relative project path",
+        "createdAt" : "2020-03-10T08:25:24Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,11 @@\n+github {\n+  repository {\n+    owner = \"apache\"\n+    name = \"spark\"\n+  }\n+}\n+common {\n+  outputDirectory {\n+    path = \"/home/rafalmucha/work/codetale/output\""
+      }
+    ]
+  },
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "We may leave this hardcoded for now but we need to remember to remove it later",
+        "createdAt" : "2020-03-10T09:41:32Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,11 @@\n+github {\n+  repository {\n+    owner = \"apache\""
+      }
+    ]
+  }
+]

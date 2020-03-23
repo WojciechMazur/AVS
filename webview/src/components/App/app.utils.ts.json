@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "remove this line ;) ",
+        "createdAt" : "2020-02-13T12:14:20Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -36,3 +36,7 @@ export type CommentData = {\n }\n \n export { }"
+      }
+    ]
+  }
+]

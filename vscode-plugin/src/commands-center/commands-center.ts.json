@@ -1,0 +1,40 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "do not use any",
+        "createdAt" : "2020-02-07T13:00:15Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -1,15 +1,17 @@\n import { ExtensionContext, Uri, } from \"vscode\";\n import * as vscode from \"vscode\";\n import * as path from \"path\";\n-import { getWebviewContent } from \"./webview-content\";\n+import { getWebviewContent } from \"../webview/webview-content\";\n+import { MessageCenter } from \"../message-center/message-center\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from \"../message-center/message-center.actions\";\n \n-export interface CommandObject {\n+export type CommandObject = {\n     command: string;\n     function: any;"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "This typing is redundant ",
+        "createdAt" : "2020-02-13T09:37:35Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -1,24 +1,25 @@\n import { ExtensionContext, Uri, } from \"vscode\";\n import * as vscode from \"vscode\";\n import * as path from \"path\";\n-import { getWebviewContent } from \"./webview-content\";\n+import { getWebviewContent } from \"../webview/webview-content\";\n+import { MessageCenter } from \"../message-center/message-center\";\n \n-export interface CommandObject {\n-    command: string;\n-    function: any;\n-}\n+export type CommandObject = {\n+    command: string,\n+    callback: () => void,\n+};\n \n class CommandsCenterClass {\n-    currentPanel: vscode.WebviewPanel | undefined = undefined;\n+    webviewPanel: vscode.WebviewPanel | undefined;\n \n-    registerCommand(context: ExtensionContext, currentCommands: Array<CommandObject>) {\n-        currentCommands.forEach((el: CommandObject) => {\n-            context.subscriptions.push(vscode.commands.registerCommand(el.command, el.function));\n+    registerCommand(context: ExtensionContext, currentCommands: CommandObject[]) {\n+        currentCommands.forEach((commandObject: CommandObject) => {"
+      }
+    ]
+  }
+]

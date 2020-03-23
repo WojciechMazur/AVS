@@ -1,0 +1,97 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "unnecessary ",
+        "createdAt" : "2020-02-07T13:18:42Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -33,20 +34,49 @@ const Comment: React.FC<CommentProps> = ({\n     labels,\n     activeComment,\n     setActiveComment,\n+    textEditorVisibleRange,\n }) => {\n+    const messageHandler = useMessageHandler();\n     const isActive = activeComment === uid;\n \n-    const handleCommentFocus = (id: string): void => {\n-        setActiveComment(id);\n+    const selectTextEditorRange = (\n+        lineFrom: number | undefined,\n+        charFrom: number | undefined,\n+        lineTo: number | undefined,\n+        charTo: number | undefined\n+    ): void => messageHandler.postMessage(selectCommentRange(lineFrom, charFrom, lineTo, charTo));\n+\n+    const calculateCommentPosition = (lineFrom: number): number => {\n+        if (textEditorVisibleRange.lineFrom !== undefined) {"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "else is also unnecessary",
+        "createdAt" : "2020-02-07T13:19:38Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -33,20 +34,49 @@ const Comment: React.FC<CommentProps> = ({\n     labels,\n     activeComment,\n     setActiveComment,\n+    textEditorVisibleRange,\n }) => {\n+    const messageHandler = useMessageHandler();\n     const isActive = activeComment === uid;\n \n-    const handleCommentFocus = (id: string): void => {\n-        setActiveComment(id);\n+    const selectTextEditorRange = (\n+        lineFrom: number | undefined,\n+        charFrom: number | undefined,\n+        lineTo: number | undefined,\n+        charTo: number | undefined\n+    ): void => messageHandler.postMessage(selectCommentRange(lineFrom, charFrom, lineTo, charTo));\n+\n+    const calculateCommentPosition = (lineFrom: number): number => {\n+        if (textEditorVisibleRange.lineFrom !== undefined) {\n+            return lineFrom - textEditorVisibleRange.lineFrom;\n+        } else {"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "I dont understand what toggleId means",
+        "createdAt" : "2020-02-07T13:22:51Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -33,20 +34,49 @@ const Comment: React.FC<CommentProps> = ({\n     labels,\n     activeComment,\n     setActiveComment,\n+    textEditorVisibleRange,\n }) => {\n+    const messageHandler = useMessageHandler();\n     const isActive = activeComment === uid;\n \n-    const handleCommentFocus = (id: string): void => {\n-        setActiveComment(id);\n+    const selectTextEditorRange = (\n+        lineFrom: number | undefined,\n+        charFrom: number | undefined,\n+        lineTo: number | undefined,\n+        charTo: number | undefined\n+    ): void => messageHandler.postMessage(selectCommentRange(lineFrom, charFrom, lineTo, charTo));\n+\n+    const calculateCommentPosition = (lineFrom: number): number => {\n+        if (textEditorVisibleRange.lineFrom !== undefined) {\n+            return lineFrom - textEditorVisibleRange.lineFrom;\n+        } else {\n+            return lineFrom;\n+        }\n+    }\n+\n+    const handleOutsideClick = () => {\n+        if (!isActive) {\n+            setActiveComment(\"\")\n+            selectTextEditorRange(undefined, undefined, undefined, undefined);\n+        }\n+    }\n+\n+    const handleCommentClick = () => {\n+        if (!isActive) {\n+            setActiveComment(uid);\n+            selectTextEditorRange(location.startLine, location.startCharacter, location.endLine, location.endCharacter);\n+        }\n     }\n \n     return (\n-        <OutsideAlerter toggleId=\"comment-container\" callback={() => handleCommentFocus(\"\")}>\n+        <OutsideAlerter toggleId=\"comment-container\" callback={handleOutsideClick}>"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "if you want to leave it here, please also add description why",
+        "createdAt" : "2020-02-07T13:24:28Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -58,7 +88,7 @@ const Comment: React.FC<CommentProps> = ({\n                     labels={labels}\n                     activeComment={activeComment}\n                 />\n-                {(isActive && !isArchived) && <CommentInput />}\n+                {/* {(isActive && !isArchived) && <CommentInput />} */}"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "mstrag",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "You can convert arguments to a single object, and use already created type \r\n",
+        "createdAt" : "2020-02-13T12:15:35Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -33,20 +34,48 @@ const Comment: React.FC<CommentProps> = ({\n     labels,\n     activeComment,\n     setActiveComment,\n+    textEditorVisibleRange,\n }) => {\n+    const messageHandler = useMessageHandler();\n     const isActive = activeComment === uid;\n \n-    const handleCommentFocus = (id: string): void => {\n-        setActiveComment(id);\n+    const selectTextEditorRange = ("
+      }
+    ]
+  }
+]

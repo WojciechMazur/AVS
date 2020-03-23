@@ -1,0 +1,21 @@
+[
+  {
+    "prId" : 13,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "pkukielka",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "Indentation",
+        "createdAt" : "2020-03-10T10:45:48Z",
+        "updatedAt" : null,
+        "commit" : "aa6e686a8328839854467529b25b40ec71f21c0b",
+        "line" : 4,
+        "diffHunk" : "@@ -3,5 +3,6 @@ rootProject.name = 'codetale'\n include(\n     'intellij-plugin',\n     'vscode-plugin',\n-    'webview'"
+      }
+    ]
+  }
+]

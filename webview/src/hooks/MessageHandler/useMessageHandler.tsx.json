@@ -1,0 +1,111 @@
+[
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "change name",
+        "createdAt" : "2020-02-07T13:28:58Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "unnecessary",
+        "createdAt" : "2020-02-07T13:30:11Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {\n+    postMessage: (message: OutgoingMessage) => void;\n+}\n+\n+type AcquireVsCodeApiFunction = () => Vscode;\n+\n+declare const acquireVsCodeApi: undefined | AcquireVsCodeApiFunction;\n+\n+export const useMessageHandler = ((): () => Vscode => {\n+    let vscode: Vscode | undefined = undefined;"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "why string?",
+        "createdAt" : "2020-02-07T13:31:13Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : 16,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {\n+    postMessage: (message: OutgoingMessage) => void;\n+}\n+\n+type AcquireVsCodeApiFunction = () => Vscode;\n+\n+declare const acquireVsCodeApi: undefined | AcquireVsCodeApiFunction;\n+\n+export const useMessageHandler = ((): () => Vscode => {\n+    let vscode: Vscode | undefined = undefined;\n+    if (typeof acquireVsCodeApi !== 'undefined') {"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "I think that it will be better to use mapdispatch... instead of store.dispatch",
+        "createdAt" : "2020-02-07T13:38:14Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : 24,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {\n+    postMessage: (message: OutgoingMessage) => void;\n+}\n+\n+type AcquireVsCodeApiFunction = () => Vscode;\n+\n+declare const acquireVsCodeApi: undefined | AcquireVsCodeApiFunction;\n+\n+export const useMessageHandler = ((): () => Vscode => {\n+    let vscode: Vscode | undefined = undefined;\n+    if (typeof acquireVsCodeApi !== 'undefined') {\n+        vscode = acquireVsCodeApi();\n+    }\n+\n+    return () => {\n+        const handleIncomingMessage = ({ data }: { data: IncomingMessage }): void => {\n+            switch (data.command) {\n+                case \"SET_TEXT_EDITOR_VISIBLE_RANGE\": {\n+                    store.dispatch(setTextEditorVisibleRange(data.payload.lineFrom, data.payload.lineTo));"
+      },
+      {
+        "author" : {
+          "login" : "jakubbania",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "react-redux connect is designed to connect react components, `useMessageHandler` is not a components, it is a hook (function)\r\n\r\nmore information is needed, but for now i say to keep it as it is",
+        "createdAt" : "2020-02-11T12:49:36Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : 24,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {\n+    postMessage: (message: OutgoingMessage) => void;\n+}\n+\n+type AcquireVsCodeApiFunction = () => Vscode;\n+\n+declare const acquireVsCodeApi: undefined | AcquireVsCodeApiFunction;\n+\n+export const useMessageHandler = ((): () => Vscode => {\n+    let vscode: Vscode | undefined = undefined;\n+    if (typeof acquireVsCodeApi !== 'undefined') {\n+        vscode = acquireVsCodeApi();\n+    }\n+\n+    return () => {\n+        const handleIncomingMessage = ({ data }: { data: IncomingMessage }): void => {\n+            switch (data.command) {\n+                case \"SET_TEXT_EDITOR_VISIBLE_RANGE\": {\n+                    store.dispatch(setTextEditorVisibleRange(data.payload.lineFrom, data.payload.lineTo));"
+      }
+    ]
+  },
+  {
+    "prId" : 8,
+    "comments" : [
+      {
+        "author" : {
+          "login" : "fanixus96",
+          "name" : null,
+          "avatarUrl" : null,
+          "url" : null
+        },
+        "body" : "please also remove eventlistener",
+        "createdAt" : "2020-02-07T13:38:47Z",
+        "updatedAt" : null,
+        "commit" : "2abce7b79d2b250c1ef76173ce7555fde2618a24",
+        "line" : null,
+        "diffHunk" : "@@ -0,0 +1,50 @@\n+import * as React from 'react';\n+import { store } from \"../../store/store\";\n+import { IncomingMessage, OutgoingMessage } from \"./useMessageHandler.utils\";\n+import { setTextEditorVisibleRange, setTextEditorLineCount } from '../../store/actions';\n+\n+type Vscode = {\n+    postMessage: (message: OutgoingMessage) => void;\n+}\n+\n+type AcquireVsCodeApiFunction = () => Vscode;\n+\n+declare const acquireVsCodeApi: undefined | AcquireVsCodeApiFunction;\n+\n+export const useMessageHandler = ((): () => Vscode => {\n+    let vscode: Vscode | undefined = undefined;\n+    if (typeof acquireVsCodeApi !== 'undefined') {\n+        vscode = acquireVsCodeApi();\n+    }\n+\n+    return () => {\n+        const handleIncomingMessage = ({ data }: { data: IncomingMessage }): void => {\n+            switch (data.command) {\n+                case \"SET_TEXT_EDITOR_VISIBLE_RANGE\": {\n+                    store.dispatch(setTextEditorVisibleRange(data.payload.lineFrom, data.payload.lineTo));\n+                    break;\n+                }\n+                case \"SET_TEXT_EDITOR_LINE_COUNT\": {\n+                    store.dispatch(setTextEditorLineCount(data.payload));\n+                    break;\n+                }\n+            }\n+        }\n+\n+        const postMessage = (message: OutgoingMessage) => {\n+            if (vscode) {\n+                vscode.postMessage(message);\n+            }\n+        }\n+\n+        React.useEffect(() => {\n+            window.addEventListener('message', messageEvent => {"
+      }
+    ]
+  }
+]
